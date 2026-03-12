@@ -3,6 +3,7 @@
 import { useState, useRef, KeyboardEvent } from "react";
 import { useRouter } from "next/navigation";
 import { X, Upload, Music, FileArchive, ImageIcon } from "lucide-react";
+import { getSupabaseClient } from "@/lib/supabase/client";
 
 const MUSICAL_KEYS = [
   "C maj","C# maj","D maj","Eb maj","E maj","F maj",
@@ -96,8 +97,91 @@ export default function LastOppPage() {
     }
 
     setSubmitting(true);
-    await new Promise((r) => setTimeout(r, 500));
-    router.push("/profile/ljung");
+
+    const supabase = getSupabaseClient();
+
+    // 1. Get current user from session (no network call)
+    const { data: { session } } = await supabase.auth.getSession();
+    console.log("[lastopp] Session user:", session?.user?.email ?? "none");
+
+    if (!session) {
+      setError("Du må være innlogget for å laste opp beats.");
+      setSubmitting(false);
+      return;
+    }
+
+    const userId = session.user.id;
+    const username = session.user.user_metadata?.username as string;
+    const timestamp = Date.now();
+
+    // Helper: upload a file and return its public URL (or null on failure)
+    async function uploadFile(
+      bucket: string,
+      file: File,
+      suffix: string
+    ): Promise<string | null> {
+      const ext = file.name.split(".").pop() ?? "bin";
+      const path = `${userId}/${timestamp}_${suffix}.${ext}`;
+      console.log(`[lastopp] Uploading to ${bucket}/${path}`);
+      const { error } = await supabase.storage.from(bucket).upload(path, file, { upsert: false });
+      if (error) {
+        console.error(`[lastopp] Upload failed for ${bucket}:`, error.message);
+        return null;
+      }
+      const { data } = supabase.storage.from(bucket).getPublicUrl(path);
+      console.log(`[lastopp] Uploaded ${bucket}:`, data.publicUrl);
+      return data.publicUrl;
+    }
+
+    // 2. Upload files (cover + audio preview are public; project file is private)
+    const coverUrl = cover?.file ? await uploadFile("beat-covers", cover.file, "cover") : null;
+    const audioUrl = audioPreview?.file ? await uploadFile("beat-previews", audioPreview.file, "preview") : null;
+
+    // Project file: private bucket, store path only (not a public URL)
+    let projectFileUrl: string | null = null;
+    if (projectFile?.file) {
+      const ext = projectFile.file.name.split(".").pop() ?? "bin";
+      const path = `${userId}/${timestamp}_project.${ext}`;
+      console.log("[lastopp] Uploading project file to beat-files/" + path);
+      const { error } = await supabase.storage.from("beat-files").upload(path, projectFile.file, { upsert: false });
+      if (error) {
+        console.error("[lastopp] Project file upload failed:", error.message);
+      } else {
+        projectFileUrl = path; // store path, not public URL
+        console.log("[lastopp] Project file uploaded:", path);
+      }
+    }
+
+    // 3. Insert beat row
+    console.log("[lastopp] Inserting beat row...");
+    const { data: beat, error: insertError } = await supabase
+      .from("beats")
+      .insert({
+        producer_id: userId,
+        title: title.trim(),
+        description: description.trim(),
+        genre: genre.trim(),
+        bpm: bpmNum,
+        key,
+        tags,
+        price: priceNum,
+        cover_url: coverUrl,
+        audio_preview_url: audioUrl,
+        project_file_url: projectFileUrl,
+        is_published: isPublished,
+      })
+      .select("id")
+      .single();
+
+    if (insertError) {
+      console.error("[lastopp] Insert failed:", insertError.message);
+      setError("Kunne ikke lagre beat: " + insertError.message);
+      setSubmitting(false);
+      return;
+    }
+
+    console.log("[lastopp] Beat created with id:", beat.id, "— redirecting to profile");
+    router.push(`/profile/${username}`);
   }
 
   return (

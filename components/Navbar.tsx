@@ -121,6 +121,16 @@ export default function Navbar() {
           ) : session && username ? (
             <>
               <Link
+                href="/nedlastninger"
+                className="rounded-md px-3 py-1.5 text-sm font-medium transition-opacity hover:opacity-80"
+                style={{
+                  color: pathname.startsWith("/nedlastninger") ? "#f5f5f7" : "#86868b",
+                  background: pathname.startsWith("/nedlastninger") ? "rgba(255,255,255,0.06)" : "transparent",
+                }}
+              >
+                Mine nedlastninger
+              </Link>
+              <Link
                 href={`/profile/${username}`}
                 className="flex items-center gap-2 rounded-lg px-3 py-1.5 text-sm font-medium transition-opacity hover:opacity-80"
                 style={{ color: "#f5f5f7", background: "rgba(255,255,255,0.06)" }}

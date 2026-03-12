@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Play, Pause } from "lucide-react";
+import { Play, Pause, Download } from "lucide-react";
 import type { Beat } from "@/lib/supabase/types";
 
 type Props = {
@@ -108,14 +108,31 @@ export default function BeatCard({ beat, isPlaying, onPlay }: Props) {
         ))}
       </div>
 
-      {/* Price + buy */}
-      <div className="flex shrink-0 items-center gap-3">
+      {/* Price + actions */}
+      <div className="flex shrink-0 items-center gap-2">
         <span
           className="text-sm font-semibold"
           style={{ color: "#f5f5f7", minWidth: 64, textAlign: "right" }}
         >
           kr {beat.price.toLocaleString("nb-NO")}
         </span>
+        <button
+          title="Last ned"
+          className="flex items-center justify-center rounded-lg transition-all"
+          style={{
+            width: 32,
+            height: 32,
+            background: hovered ? "rgba(255,255,255,0.08)" : "transparent",
+            color: "#86868b",
+          }}
+          onClick={(e) => {
+            e.stopPropagation();
+            // TODO: trigger real download from Supabase Storage
+            alert("Last ned: " + beat.title);
+          }}
+        >
+          <Download size={14} />
+        </button>
         <button
           className="rounded-lg px-4 py-1.5 text-xs font-semibold transition-all"
           style={{

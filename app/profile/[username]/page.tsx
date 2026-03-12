@@ -3,7 +3,7 @@
 import { useState, useRef, useEffect } from "react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
-import { Pencil, Settings, Play, Pause, Package } from "lucide-react";
+import { Pencil, Settings, Play, Pause, Package, Trash2, Download } from "lucide-react";
 import { getSupabaseClient } from "@/lib/supabase/client";
 import { fetchProfileByUsername } from "@/lib/fetchProfile";
 import { fetchBeatsByProducer } from "@/lib/fetchBeats";
@@ -92,6 +92,18 @@ export default function ProfilePage() {
       bioTextareaRef.current.focus();
     }
   }, [editingBio]);
+
+  async function deleteBeat(beatId: string) {
+    if (!confirm("Er du sikker på at du vil slette dette beatet?")) return;
+    console.log("[profile] Deleting beat:", beatId);
+    const supabase = getSupabaseClient();
+    const { error } = await supabase.from("beats").delete().eq("id", beatId);
+    if (error) {
+      console.error("[profile] Failed to delete beat:", error.message);
+    } else {
+      setBeats((prev) => prev.filter((b) => b.id !== beatId));
+    }
+  }
 
   async function saveName() {
     const trimmed = nameInput.trim();
@@ -374,7 +386,7 @@ export default function ProfilePage() {
                     ))}
                   </div>
 
-                  <div className="flex items-center gap-3 shrink-0">
+                  <div className="flex items-center gap-2 shrink-0">
                     {isOwner && (
                       <span
                         className="text-xs px-2 py-0.5 rounded-full font-medium"
@@ -386,9 +398,27 @@ export default function ProfilePage() {
                         {beat.is_published ? "Publisert" : "Utkast"}
                       </span>
                     )}
-                    <span className="text-sm font-semibold" style={{ color: "#f5f5f7" }}>
+                    <span className="text-sm font-semibold" style={{ color: "#f5f5f7", minWidth: 56, textAlign: "right" }}>
                       kr {beat.price.toLocaleString("nb-NO")}
                     </span>
+                    <button
+                      title="Last ned"
+                      className="flex items-center justify-center rounded-lg transition-colors"
+                      style={{ width: 30, height: 30, color: "#86868b" }}
+                      onClick={() => alert("Last ned: " + beat.title)}
+                    >
+                      <Download size={14} />
+                    </button>
+                    {isOwner && (
+                      <button
+                        title="Slett beat"
+                        className="flex items-center justify-center rounded-lg transition-colors hover:opacity-80"
+                        style={{ width: 30, height: 30, color: "#ff3b30" }}
+                        onClick={() => deleteBeat(beat.id)}
+                      >
+                        <Trash2 size={14} />
+                      </button>
+                    )}
                   </div>
                 </div>
               ))}
