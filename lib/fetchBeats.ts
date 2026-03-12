@@ -1,14 +1,40 @@
-import { createClient } from "./supabase/client";
+import { getSupabaseClient } from "./supabase/client";
 import type { Beat } from "./supabase/types";
 
-export async function fetchBeats(): Promise<Beat[]> {
-  const supabase = createClient();
+export async function fetchBeatsByProducer(producerId: string): Promise<Beat[]> {
+  const supabase = getSupabaseClient();
+  console.log("[fetchBeats] Fetching beats for producer_id:", producerId);
+
   const { data, error } = await supabase
     .from("beats")
-    .select("*, producer:profiles(id, display_name, username, avatar_url)")
+    .select("*, producer:profiles(*)")
+    .eq("producer_id", producerId)
+    .order("created_at", { ascending: false });
+
+  if (error) {
+    console.error("[fetchBeats] Error fetching beats:", error.code, error.message);
+    return [];
+  }
+
+  console.log("[fetchBeats] Found", data?.length ?? 0, "beats for producer:", producerId);
+  return (data ?? []) as Beat[];
+}
+
+export async function fetchPublicBeats(): Promise<Beat[]> {
+  const supabase = getSupabaseClient();
+  console.log("[fetchBeats] Fetching all public beats...");
+
+  const { data, error } = await supabase
+    .from("beats")
+    .select("*, producer:profiles(*)")
     .eq("is_published", true)
     .order("created_at", { ascending: false });
 
-  if (error) throw error;
-  return (data as Beat[]) ?? [];
+  if (error) {
+    console.error("[fetchBeats] Error fetching public beats:", error.code, error.message);
+    return [];
+  }
+
+  console.log("[fetchBeats] Found", data?.length ?? 0, "public beats");
+  return (data ?? []) as Beat[];
 }

@@ -1,22 +1,49 @@
-import { createClient } from "./supabase/client";
-import type { Profile, Beat } from "./supabase/types";
+import { getSupabaseClient } from "./supabase/client";
+import type { Profile } from "./supabase/types";
 
-export async function fetchProfile(username: string): Promise<Profile | null> {
-  const supabase = createClient();
-  const { data } = await supabase
+export async function fetchProfileByUsername(username: string): Promise<Profile | null> {
+  const supabase = getSupabaseClient();
+  console.log("[fetchProfile] Fetching profile for username:", username);
+
+  const { data, error } = await supabase
     .from("profiles")
     .select("*")
-    .ilike("username", username)
+    .eq("username", username)
     .single();
-  return data;
+
+  if (error) {
+    // PGRST116 = row not found (expected when profile doesn't exist)
+    if (error.code === "PGRST116") {
+      console.log("[fetchProfile] No profile found for username:", username);
+    } else {
+      console.error("[fetchProfile] Unexpected error:", error.code, error.message);
+    }
+    return null;
+  }
+
+  console.log("[fetchProfile] Found profile:", data.username, "id:", data.id);
+  return data as Profile;
 }
 
-export async function fetchProfileBeats(producerId: string): Promise<Beat[]> {
-  const supabase = createClient();
-  const { data } = await supabase
-    .from("beats")
+export async function fetchProfileById(id: string): Promise<Profile | null> {
+  const supabase = getSupabaseClient();
+  console.log("[fetchProfile] Fetching profile for id:", id);
+
+  const { data, error } = await supabase
+    .from("profiles")
     .select("*")
-    .eq("producer_id", producerId)
-    .order("created_at", { ascending: false });
-  return (data as Beat[]) ?? [];
+    .eq("id", id)
+    .single();
+
+  if (error) {
+    if (error.code === "PGRST116") {
+      console.log("[fetchProfile] No profile found for id:", id);
+    } else {
+      console.error("[fetchProfile] Unexpected error:", error.code, error.message);
+    }
+    return null;
+  }
+
+  console.log("[fetchProfile] Found profile:", data.username);
+  return data as Profile;
 }

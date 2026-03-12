@@ -3,6 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { getSupabaseClient } from "@/lib/supabase/client";
 
 const inputStyle: React.CSSProperties = {
   background: "#141414",
@@ -20,12 +21,50 @@ export default function LoggInnPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
+    setError(null);
     setLoading(true);
-    await new Promise((r) => setTimeout(r, 500));
-    router.push("/profile/ljung");
+
+    console.log("[logg-inn] Attempting sign in for:", email);
+
+    const supabase = getSupabaseClient();
+    const { data, error: signInError } = await supabase.auth.signInWithPassword({
+      email,
+      password,
+    });
+
+    console.log(
+      "[logg-inn] Result — user:",
+      data.user?.email ?? "null",
+      "error:",
+      signInError?.message ?? "none"
+    );
+
+    if (signInError) {
+      setLoading(false);
+      setError("Feil e-post eller passord.");
+      return;
+    }
+
+    if (!data.user) {
+      setLoading(false);
+      setError("Innlogging mislyktes. Prøv igjen.");
+      return;
+    }
+
+    // Use the username stored in auth metadata — no extra DB call needed.
+    const username = data.user.user_metadata?.username as string | undefined;
+    console.log("[logg-inn] Success. Username from metadata:", username);
+
+    if (username) {
+      router.push(`/profile/${username}`);
+    } else {
+      console.warn("[logg-inn] No username in metadata, redirecting to /beats");
+      router.push("/beats");
+    }
   }
 
   return (
@@ -64,6 +103,12 @@ export default function LoggInnPage() {
             required
             style={inputStyle}
           />
+
+          {error && (
+            <p className="text-sm" style={{ color: "#ff453a" }}>
+              {error}
+            </p>
+          )}
 
           <button
             type="submit"

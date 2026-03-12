@@ -3,6 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { getSupabaseClient } from "@/lib/supabase/client";
 
 const inputStyle: React.CSSProperties = {
   background: "#141414",
@@ -26,12 +27,68 @@ export default function RegistrerPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
+    setError(null);
     setLoading(true);
-    await new Promise((r) => setTimeout(r, 500));
-    router.push(`/profile/${username || "ljung"}`);
+
+    console.log("[registrer] Attempting sign up — email:", email, "username:", username);
+
+    const supabase = getSupabaseClient();
+    const { data, error: signUpError } = await supabase.auth.signUp({
+      email,
+      password,
+      options: {
+        // These values are written to auth.users.raw_user_meta_data.
+        // The handle_new_user() DB trigger reads them to create the profile row.
+        data: {
+          username,
+          display_name: displayName,
+        },
+      },
+    });
+
+    console.log(
+      "[registrer] signUp result — user:", data.user?.email ?? "null",
+      "identities:", data.user?.identities?.length ?? "n/a",
+      "session:", data.session ? "yes" : "no",
+      "error:", signUpError?.message ?? "none"
+    );
+
+    if (signUpError) {
+      setLoading(false);
+      setError(signUpError.message);
+      return;
+    }
+
+    // Supabase silently "succeeds" on duplicate email (prevents email enumeration).
+    // We detect it by checking identities — a real new user has at least 1 identity.
+    if (data.user && data.user.identities?.length === 0) {
+      console.warn("[registrer] Duplicate email detected (empty identities array)");
+      setLoading(false);
+      setError("E-postadressen er allerede i bruk.");
+      return;
+    }
+
+    if (!data.user) {
+      setLoading(false);
+      setError("Registrering mislyktes. Prøv igjen.");
+      return;
+    }
+
+    // If email confirmation is DISABLED in Supabase: data.session is non-null → redirect now.
+    // If email confirmation is ENABLED: data.session is null → ask user to check email.
+    if (data.session) {
+      console.log("[registrer] Session created immediately — redirecting to /profile/" + username);
+      router.push(`/profile/${username}`);
+      return;
+    }
+
+    console.log("[registrer] Email confirmation required — user must confirm before logging in");
+    setLoading(false);
+    setError("Sjekk e-posten din og klikk på bekreftelseslenken, og logg deretter inn.");
   }
 
   return (
@@ -97,6 +154,15 @@ export default function RegistrerPage() {
             minLength={6}
             style={inputStyle}
           />
+
+          {error && (
+            <p
+              className="text-sm"
+              style={{ color: error.startsWith("Sjekk") ? "#34c759" : "#ff453a" }}
+            >
+              {error}
+            </p>
+          )}
 
           <button
             type="submit"

@@ -18,7 +18,7 @@ export type Beat = {
   bpm: number;
   key: string;
   tags: string[];
-  price: number; // i hele NOK
+  price: number;
   cover_url: string | null;
   audio_preview_url: string | null;
   project_file_url: string | null;
@@ -34,5 +34,4 @@ export type Purchase = {
   amount_paid: number;
   stripe_payment_intent_id: string;
   created_at: string;
-  beat?: Beat;
 };

@@ -2,8 +2,12 @@
 
 import { useState, useRef, useEffect } from "react";
 import Link from "next/link";
+import { useParams } from "next/navigation";
 import { Pencil, Settings, Play, Pause, Package } from "lucide-react";
-import { MOCK_BEATS, MOCK_PROFILE } from "@/lib/mock-data";
+import { getSupabaseClient } from "@/lib/supabase/client";
+import { fetchProfileByUsername } from "@/lib/fetchProfile";
+import { fetchBeatsByProducer } from "@/lib/fetchBeats";
+import type { Profile } from "@/lib/supabase/types";
 import type { Beat } from "@/lib/supabase/types";
 
 function genreColor(genre: string): string {
@@ -14,22 +18,67 @@ function genreColor(genre: string): string {
 }
 
 export default function ProfilePage() {
-  const profile = MOCK_PROFILE;
-  const beats: Beat[] = MOCK_BEATS;
-  const isOwner = true;
+  const params = useParams();
+  const usernameParam = params.username as string;
 
-  const [displayName, setDisplayName] = useState(profile.display_name);
+  const [profile, setProfile] = useState<Profile | null>(null);
+  const [beats, setBeats] = useState<Beat[]>([]);
+  const [isOwner, setIsOwner] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [notFound, setNotFound] = useState(false);
+
+  const [displayName, setDisplayName] = useState("");
   const [editingName, setEditingName] = useState(false);
-  const [nameInput, setNameInput] = useState(profile.display_name);
+  const [nameInput, setNameInput] = useState("");
 
-  const [bio, setBio] = useState(profile.bio ?? "");
+  const [bio, setBio] = useState("");
   const [editingBio, setEditingBio] = useState(false);
-  const [bioInput, setBioInput] = useState(profile.bio ?? "");
+  const [bioInput, setBioInput] = useState("");
 
   const [playingId, setPlayingId] = useState<string | null>(null);
 
   const nameInputRef = useRef<HTMLInputElement>(null);
   const bioTextareaRef = useRef<HTMLTextAreaElement>(null);
+
+  useEffect(() => {
+    async function load() {
+      console.log("[profile] Loading profile for username:", usernameParam);
+
+      // Run profile fetch and session check in parallel — both are fast local/DB ops.
+      const [fetchedProfile, sessionResult] = await Promise.all([
+        fetchProfileByUsername(usernameParam),
+        getSupabaseClient().auth.getSession(),
+      ]);
+
+      console.log("[profile] Profile:", fetchedProfile?.username ?? "not found");
+      console.log("[profile] Session user:", sessionResult.data.session?.user?.email ?? "none");
+
+      if (!fetchedProfile) {
+        setNotFound(true);
+        setLoading(false);
+        return;
+      }
+
+      const currentUserId = sessionResult.data.session?.user?.id ?? null;
+      const owner = currentUserId === fetchedProfile.id;
+      console.log("[profile] isOwner:", owner);
+
+      setProfile(fetchedProfile);
+      setDisplayName(fetchedProfile.display_name);
+      setNameInput(fetchedProfile.display_name);
+      setBio(fetchedProfile.bio ?? "");
+      setBioInput(fetchedProfile.bio ?? "");
+      setIsOwner(owner);
+
+      // Fetch beats after profile is confirmed
+      const fetchedBeats = await fetchBeatsByProducer(fetchedProfile.id);
+      setBeats(fetchedBeats);
+
+      setLoading(false);
+    }
+
+    load();
+  }, [usernameParam]);
 
   useEffect(() => {
     if (editingName && nameInputRef.current) {
@@ -44,16 +93,74 @@ export default function ProfilePage() {
     }
   }, [editingBio]);
 
-  function saveName() {
+  async function saveName() {
     const trimmed = nameInput.trim();
-    if (!trimmed) { setNameInput(displayName); setEditingName(false); return; }
-    setDisplayName(trimmed);
+    if (!trimmed) {
+      setNameInput(displayName);
+      setEditingName(false);
+      return;
+    }
+
+    console.log("[profile] Saving new display name:", trimmed);
+    const supabase = getSupabaseClient();
+    const { error } = await supabase
+      .from("profiles")
+      .update({ display_name: trimmed })
+      .eq("id", profile!.id);
+
+    if (error) {
+      console.error("[profile] Failed to save display name:", error.message);
+    } else {
+      setDisplayName(trimmed);
+    }
     setEditingName(false);
   }
 
-  function saveBio() {
-    setBio(bioInput.trim());
+  async function saveBio() {
+    const trimmed = bioInput.trim();
+    console.log("[profile] Saving new bio");
+    const supabase = getSupabaseClient();
+    const { error } = await supabase
+      .from("profiles")
+      .update({ bio: trimmed })
+      .eq("id", profile!.id);
+
+    if (error) {
+      console.error("[profile] Failed to save bio:", error.message);
+    } else {
+      setBio(trimmed);
+    }
     setEditingBio(false);
+  }
+
+  if (loading) {
+    return (
+      <div className="flex min-h-screen items-center justify-center">
+        <p className="text-sm" style={{ color: "#3a3a3a" }}>
+          Laster profil...
+        </p>
+      </div>
+    );
+  }
+
+  if (notFound || !profile) {
+    return (
+      <div className="flex min-h-screen flex-col items-center justify-center gap-3">
+        <p className="text-lg font-semibold" style={{ color: "#f5f5f7" }}>
+          Profil ikke funnet
+        </p>
+        <p className="text-sm" style={{ color: "#86868b" }}>
+          @{usernameParam} eksisterer ikke
+        </p>
+        <Link
+          href="/beats"
+          className="mt-4 rounded-xl px-5 py-2 text-sm font-medium"
+          style={{ background: "rgba(255,255,255,0.06)", color: "#f5f5f7" }}
+        >
+          Gå til beats
+        </Link>
+      </div>
+    );
   }
 
   return (
@@ -199,7 +306,7 @@ export default function ProfilePage() {
         <section className="mb-10">
           <div className="mb-4 flex items-center justify-between">
             <h2 className="text-base font-semibold tracking-tight" style={{ color: "#f5f5f7" }}>
-              Mine beats
+              {isOwner ? "Mine beats" : "Beats"}
             </h2>
             {isOwner && (
               <Link
@@ -212,77 +319,87 @@ export default function ProfilePage() {
             )}
           </div>
 
-          <div>
-            {beats.map((beat) => (
-              <div
-                key={beat.id}
-                className="flex items-center gap-4 rounded-xl px-3 py-2.5"
-                style={{ borderBottom: "1px solid #141414" }}
-              >
-                <button
-                  onClick={() => setPlayingId((p) => (p === beat.id ? null : beat.id))}
-                  className="flex shrink-0 items-center justify-center rounded-full"
-                  style={{
-                    width: 32, height: 32,
-                    background: playingId === beat.id ? "#6366f1" : "rgba(255,255,255,0.06)",
-                    color: "#f5f5f7",
-                  }}
-                >
-                  {playingId === beat.id ? <Pause size={12} fill="#f5f5f7" /> : <Play size={12} fill="#f5f5f7" />}
-                </button>
-
+          {beats.length === 0 ? (
+            <div
+              className="flex flex-col items-center justify-center rounded-2xl py-16"
+              style={{ background: "rgba(255,255,255,0.02)", border: "1px solid #1e1e1e" }}
+            >
+              <p className="text-sm font-medium" style={{ color: "#3a3a3a" }}>
+                Ingen beats enda
+              </p>
+            </div>
+          ) : (
+            <div>
+              {beats.map((beat) => (
                 <div
-                  className="shrink-0 rounded-md"
-                  style={{
-                    width: 36, height: 36,
-                    background: genreColor(beat.genre),
-                  }}
-                />
-
-                <div className="min-w-0 flex-1">
-                  <p className="truncate text-sm font-medium" style={{ color: "#f5f5f7" }}>
-                    {beat.title}
-                  </p>
-                  <p className="text-xs mt-0.5" style={{ color: "#86868b" }}>
-                    {beat.genre} &middot; {beat.bpm} BPM
-                  </p>
-                </div>
-
-                <div className="hidden items-center gap-1.5 md:flex">
-                  {beat.tags.slice(0, 2).map((tag) => (
-                    <span
-                      key={tag}
-                      className="rounded-full px-2 py-0.5 text-xs"
-                      style={{ background: "rgba(255,255,255,0.05)", color: "#86868b" }}
-                    >
-                      {tag}
-                    </span>
-                  ))}
-                </div>
-
-                <div className="flex items-center gap-3 shrink-0">
-                  <span
-                    className="text-xs px-2 py-0.5 rounded-full font-medium"
+                  key={beat.id}
+                  className="flex items-center gap-4 rounded-xl px-3 py-2.5"
+                  style={{ borderBottom: "1px solid #141414" }}
+                >
+                  <button
+                    onClick={() => setPlayingId((p) => (p === beat.id ? null : beat.id))}
+                    className="flex shrink-0 items-center justify-center rounded-full"
                     style={{
-                      background: beat.is_published ? "rgba(52,199,89,0.1)" : "rgba(255,255,255,0.05)",
-                      color: beat.is_published ? "#34c759" : "#86868b",
+                      width: 32, height: 32,
+                      background: playingId === beat.id ? "#6366f1" : "rgba(255,255,255,0.06)",
+                      color: "#f5f5f7",
                     }}
                   >
-                    {beat.is_published ? "Publisert" : "Utkast"}
-                  </span>
-                  <span className="text-sm font-semibold" style={{ color: "#f5f5f7" }}>
-                    kr {beat.price.toLocaleString("nb-NO")}
-                  </span>
+                    {playingId === beat.id ? <Pause size={12} fill="#f5f5f7" /> : <Play size={12} fill="#f5f5f7" />}
+                  </button>
+
+                  <div
+                    className="shrink-0 rounded-md"
+                    style={{ width: 36, height: 36, background: genreColor(beat.genre) }}
+                  />
+
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate text-sm font-medium" style={{ color: "#f5f5f7" }}>
+                      {beat.title}
+                    </p>
+                    <p className="text-xs mt-0.5" style={{ color: "#86868b" }}>
+                      {beat.genre} &middot; {beat.bpm} BPM
+                    </p>
+                  </div>
+
+                  <div className="hidden items-center gap-1.5 md:flex">
+                    {beat.tags.slice(0, 2).map((tag) => (
+                      <span
+                        key={tag}
+                        className="rounded-full px-2 py-0.5 text-xs"
+                        style={{ background: "rgba(255,255,255,0.05)", color: "#86868b" }}
+                      >
+                        {tag}
+                      </span>
+                    ))}
+                  </div>
+
+                  <div className="flex items-center gap-3 shrink-0">
+                    {isOwner && (
+                      <span
+                        className="text-xs px-2 py-0.5 rounded-full font-medium"
+                        style={{
+                          background: beat.is_published ? "rgba(52,199,89,0.1)" : "rgba(255,255,255,0.05)",
+                          color: beat.is_published ? "#34c759" : "#86868b",
+                        }}
+                      >
+                        {beat.is_published ? "Publisert" : "Utkast"}
+                      </span>
+                    )}
+                    <span className="text-sm font-semibold" style={{ color: "#f5f5f7" }}>
+                      kr {beat.price.toLocaleString("nb-NO")}
+                    </span>
+                  </div>
                 </div>
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+          )}
         </section>
 
         {/* Mine samples & presets */}
         <section className="mb-16">
           <h2 className="mb-4 text-base font-semibold tracking-tight" style={{ color: "#f5f5f7" }}>
-            Mine samples & presets
+            {isOwner ? "Mine samples & presets" : "Samples & presets"}
           </h2>
           <div
             className="flex flex-col items-center justify-center rounded-2xl py-16"

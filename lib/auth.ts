@@ -1,37 +1,37 @@
-import { createClient } from "./supabase/client";
+import { getSupabaseClient } from "./supabase/client";
 
-export async function signIn(email: string, password: string) {
-  const supabase = createClient();
-  return supabase.auth.signInWithPassword({ email, password });
+/**
+ * Returns the current session from local storage / cookie.
+ *
+ * IMPORTANT: We use getSession() intentionally, NOT getUser().
+ * - getSession() reads the local JWT — zero network calls, instant.
+ * - getUser() always hits the Supabase auth server — adds ~200-500ms latency
+ *   on every call and was the root cause of previous hanging issues.
+ *
+ * The session was already validated by Supabase when the user signed in,
+ * so reading it locally is safe for client-side use.
+ */
+export async function getSession() {
+  const supabase = getSupabaseClient();
+  console.log("[auth] getSession() called");
+
+  const { data, error } = await supabase.auth.getSession();
+
+  if (error) {
+    console.error("[auth] getSession error:", error.message);
+    return null;
+  }
+
+  console.log(
+    "[auth] getSession result:",
+    data.session ? `user=${data.session.user.email}` : "no session"
+  );
+
+  return data.session;
 }
 
-export async function signUp(
-  email: string,
-  password: string,
-  username: string,
-  displayName: string,
-  emailRedirectTo: string
-) {
-  const supabase = createClient();
-  return supabase.auth.signUp({
-    email,
-    password,
-    options: {
-      data: { username, display_name: displayName },
-      emailRedirectTo,
-    },
-  });
-}
-
-export async function signOut() {
-  const supabase = createClient();
-  return supabase.auth.signOut();
-}
-
-export async function getCurrentUser() {
-  const supabase = createClient();
-  const {
-    data: { session },
-  } = await supabase.auth.getSession();
+/** Returns just the user from the current session (no network call). */
+export async function getSessionUser() {
+  const session = await getSession();
   return session?.user ?? null;
 }

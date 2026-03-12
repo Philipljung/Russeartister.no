@@ -1,8 +1,11 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
+import { getSupabaseClient } from "@/lib/supabase/client";
+import type { Session } from "@supabase/supabase-js";
 
 const navLinks = [
   { label: "Beats", href: "/beats", active: true },
@@ -12,6 +15,46 @@ const navLinks = [
 
 export default function Navbar() {
   const pathname = usePathname();
+  const router = useRouter();
+  const [session, setSession] = useState<Session | null>(null);
+  const [authReady, setAuthReady] = useState(false);
+
+  useEffect(() => {
+    const supabase = getSupabaseClient();
+
+    // Read session from local storage — instant, no network call.
+    supabase.auth.getSession().then(({ data, error }) => {
+      console.log(
+        "[Navbar] Initial session:",
+        data.session ? `user=${data.session.user.email}` : "none",
+        error ? `error=${error.message}` : ""
+      );
+      setSession(data.session);
+      setAuthReady(true);
+    });
+
+    // Subscribe to auth state changes (login, logout, token refresh).
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((event, newSession) => {
+      console.log("[Navbar] Auth state changed:", event, newSession?.user?.email ?? "null");
+      setSession(newSession);
+      setAuthReady(true);
+    });
+
+    return () => subscription.unsubscribe();
+  }, []);
+
+  async function handleSignOut() {
+    console.log("[Navbar] Signing out...");
+    const supabase = getSupabaseClient();
+    await supabase.auth.signOut();
+    console.log("[Navbar] Signed out");
+    router.push("/beats");
+    router.refresh();
+  }
+
+  const username = session?.user?.user_metadata?.username as string | undefined;
 
   return (
     <nav
@@ -68,22 +111,60 @@ export default function Navbar() {
           })}
         </div>
 
-        {/* Auth */}
-        <div className="flex items-center gap-2">
-          <Link
-            href="/logg-inn"
-            className="rounded-md px-4 py-1.5 text-sm font-medium transition-colors hover:opacity-80"
-            style={{ color: "#86868b" }}
-          >
-            Logg inn
-          </Link>
-          <Link
-            href="/registrer"
-            className="rounded-md px-4 py-1.5 text-sm font-semibold transition-opacity hover:opacity-90"
-            style={{ background: "#f5f5f7", color: "#080808" }}
-          >
-            Registrer deg
-          </Link>
+        {/* Auth — hidden until we know the auth state to prevent layout flash */}
+        <div
+          className="flex items-center gap-2"
+          style={{ minWidth: 160, justifyContent: "flex-end" }}
+        >
+          {!authReady ? (
+            <div style={{ width: 160, height: 32 }} />
+          ) : session && username ? (
+            <>
+              <Link
+                href={`/profile/${username}`}
+                className="flex items-center gap-2 rounded-lg px-3 py-1.5 text-sm font-medium transition-opacity hover:opacity-80"
+                style={{ color: "#f5f5f7", background: "rgba(255,255,255,0.06)" }}
+              >
+                <div
+                  className="flex items-center justify-center rounded-md text-xs font-bold select-none"
+                  style={{
+                    width: 22,
+                    height: 22,
+                    background: "linear-gradient(135deg, #2a1a5e 0%, #1a2a5e 100%)",
+                    color: "rgba(255,255,255,0.6)",
+                    flexShrink: 0,
+                  }}
+                >
+                  {username.slice(0, 1).toUpperCase()}
+                </div>
+                {username}
+              </Link>
+              <button
+                onClick={handleSignOut}
+                className="rounded-md px-3 py-1.5 text-sm transition-colors hover:opacity-80"
+                style={{ color: "#86868b" }}
+              >
+                Logg ut
+              </button>
+            </>
+          ) : (
+            <>
+              <Link
+                href="/logg-inn"
+                className="rounded-md px-4 py-1.5 text-sm font-medium transition-colors hover:opacity-80"
+                style={{ color: "#86868b" }}
+              >
+                Logg inn
+              </Link>
+              <Link
+                href="/registrer"
+                className="rounded-md px-4 py-1.5 text-sm font-semibold transition-opacity hover:opacity-90"
+                style={{ background: "#f5f5f7", color: "#080808" }}
+              >
+                Registrer deg
+              </Link>
+            </>
+          )}
         </div>
       </div>
     </nav>
