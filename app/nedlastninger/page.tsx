@@ -2,6 +2,7 @@
 
 import { Download, Music, Package } from "lucide-react";
 import { MOCK_BEATS } from "@/lib/mock-data";
+import { useToast } from "@/lib/toast-context";
 
 function genreColor(genre: string): string {
   const palette = ["#1a1040", "#001a2e", "#1a2e00", "#2e1a00", "#001e14", "#14001e", "#1e0a0a", "#00141e"];
@@ -10,10 +11,11 @@ function genreColor(genre: string): string {
   return palette[Math.abs(hash) % palette.length];
 }
 
-// Mock purchases — the first 2 beats are "bought"
 const MOCK_PURCHASED_BEATS = MOCK_BEATS.slice(0, 2);
 
 export default function NedlastningerPage() {
+  const { toast } = useToast();
+
   return (
     <div className="mx-auto max-w-7xl px-6 py-10">
       <h1
@@ -90,10 +92,7 @@ export default function NedlastningerPage() {
                 <button
                   className="flex shrink-0 items-center gap-2 rounded-xl px-4 py-1.5 text-xs font-semibold transition-opacity hover:opacity-80"
                   style={{ background: "#0071e3", color: "#fff" }}
-                  onClick={() => {
-                    // TODO: trigger real download from Supabase Storage
-                    alert("Last ned: " + beat.title);
-                  }}
+                  onClick={() => toast("Nedlasting kommer snart!", "info")}
                 >
                   <Download size={13} />
                   Last ned

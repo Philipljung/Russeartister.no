@@ -1,16 +1,14 @@
 "use client";
 
 import { useState } from "react";
-import { Play, Pause, Download } from "lucide-react";
+import { Play, Pause } from "lucide-react";
 import type { Beat } from "@/lib/supabase/types";
+import { usePlayer } from "@/lib/player-context";
 
 type Props = {
   beat: Beat;
-  isPlaying: boolean;
-  onPlay: (id: string) => void;
 };
 
-/** Genererer en deterministisk mørk bakgrunnsfarge fra sjanger-streng */
 function genreColor(genre: string): string {
   const palette = [
     "#1a1040", "#001a2e", "#1a2e00", "#2e1a00",
@@ -21,9 +19,12 @@ function genreColor(genre: string): string {
   return palette[Math.abs(hash) % palette.length];
 }
 
-export default function BeatCard({ beat, isPlaying, onPlay }: Props) {
+export default function BeatCard({ beat }: Props) {
   const [hovered, setHovered] = useState(false);
+  const { currentBeat, isPlaying, toggleBeat } = usePlayer();
 
+  const isActive = currentBeat?.id === beat.id;
+  const isCurrentlyPlaying = isActive && isPlaying;
   const coverBg = beat.cover_url ? undefined : genreColor(beat.genre);
 
   return (
@@ -38,12 +39,12 @@ export default function BeatCard({ beat, isPlaying, onPlay }: Props) {
     >
       {/* Play button */}
       <button
-        onClick={() => onPlay(beat.id)}
+        onClick={() => toggleBeat(beat)}
         className="flex shrink-0 items-center justify-center rounded-full transition-all"
         style={{
           width: 36,
           height: 36,
-          background: isPlaying
+          background: isActive
             ? "#6366f1"
             : hovered
             ? "rgba(255,255,255,0.1)"
@@ -51,7 +52,7 @@ export default function BeatCard({ beat, isPlaying, onPlay }: Props) {
           color: "#f5f5f7",
         }}
       >
-        {isPlaying ? (
+        {isCurrentlyPlaying ? (
           <Pause size={14} fill="#f5f5f7" />
         ) : (
           <Play size={14} fill="#f5f5f7" />
@@ -108,7 +109,7 @@ export default function BeatCard({ beat, isPlaying, onPlay }: Props) {
         ))}
       </div>
 
-      {/* Price + actions */}
+      {/* Price + buy */}
       <div className="flex shrink-0 items-center gap-2">
         <span
           className="text-sm font-semibold"
@@ -116,23 +117,6 @@ export default function BeatCard({ beat, isPlaying, onPlay }: Props) {
         >
           kr {beat.price.toLocaleString("nb-NO")}
         </span>
-        <button
-          title="Last ned"
-          className="flex items-center justify-center rounded-lg transition-all"
-          style={{
-            width: 32,
-            height: 32,
-            background: hovered ? "rgba(255,255,255,0.08)" : "transparent",
-            color: "#86868b",
-          }}
-          onClick={(e) => {
-            e.stopPropagation();
-            // TODO: trigger real download from Supabase Storage
-            alert("Last ned: " + beat.title);
-          }}
-        >
-          <Download size={14} />
-        </button>
         <button
           className="rounded-lg px-4 py-1.5 text-xs font-semibold transition-all"
           style={{

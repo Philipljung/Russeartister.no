@@ -3,12 +3,13 @@
 import { useState, useRef, useEffect } from "react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
-import { Pencil, Settings, Play, Pause, Package, Trash2, Download } from "lucide-react";
+import { Pencil, Settings, Play, Pause, Package, Trash2, CreditCard } from "lucide-react";
 import { getSupabaseClient } from "@/lib/supabase/client";
 import { fetchProfileByUsername } from "@/lib/fetchProfile";
 import { fetchBeatsByProducer } from "@/lib/fetchBeats";
-import type { Profile } from "@/lib/supabase/types";
-import type { Beat } from "@/lib/supabase/types";
+import { usePlayer } from "@/lib/player-context";
+import { useToast } from "@/lib/toast-context";
+import type { Profile, Beat } from "@/lib/supabase/types";
 
 function genreColor(genre: string): string {
   const palette = ["#1a1040", "#001a2e", "#1a2e00", "#2e1a00", "#001e14", "#14001e", "#1e0a0a", "#00141e"];
@@ -20,6 +21,8 @@ function genreColor(genre: string): string {
 export default function ProfilePage() {
   const params = useParams();
   const usernameParam = params.username as string;
+  const { toast } = useToast();
+  const { currentBeat, isPlaying, toggleBeat } = usePlayer();
 
   const [profile, setProfile] = useState<Profile | null>(null);
   const [beats, setBeats] = useState<Beat[]>([]);
@@ -35,8 +38,6 @@ export default function ProfilePage() {
   const [editingBio, setEditingBio] = useState(false);
   const [bioInput, setBioInput] = useState("");
 
-  const [playingId, setPlayingId] = useState<string | null>(null);
-
   const nameInputRef = useRef<HTMLInputElement>(null);
   const bioTextareaRef = useRef<HTMLTextAreaElement>(null);
 
@@ -44,7 +45,6 @@ export default function ProfilePage() {
     async function load() {
       console.log("[profile] Loading profile for username:", usernameParam);
 
-      // Run profile fetch and session check in parallel — both are fast local/DB ops.
       const [fetchedProfile, sessionResult] = await Promise.all([
         fetchProfileByUsername(usernameParam),
         getSupabaseClient().auth.getSession(),
@@ -70,7 +70,6 @@ export default function ProfilePage() {
       setBioInput(fetchedProfile.bio ?? "");
       setIsOwner(owner);
 
-      // Fetch beats after profile is confirmed
       const fetchedBeats = await fetchBeatsByProducer(fetchedProfile.id);
       setBeats(fetchedBeats);
 
@@ -100,8 +99,10 @@ export default function ProfilePage() {
     const { error } = await supabase.from("beats").delete().eq("id", beatId);
     if (error) {
       console.error("[profile] Failed to delete beat:", error.message);
+      toast("Kunne ikke slette beatet. Prøv igjen.", "error");
     } else {
       setBeats((prev) => prev.filter((b) => b.id !== beatId));
+      toast("Beatet ble slettet.", "success");
     }
   }
 
@@ -122,6 +123,7 @@ export default function ProfilePage() {
 
     if (error) {
       console.error("[profile] Failed to save display name:", error.message);
+      toast("Kunne ikke lagre navn.", "error");
     } else {
       setDisplayName(trimmed);
     }
@@ -139,6 +141,7 @@ export default function ProfilePage() {
 
     if (error) {
       console.error("[profile] Failed to save bio:", error.message);
+      toast("Kunne ikke lagre bio.", "error");
     } else {
       setBio(trimmed);
     }
@@ -311,6 +314,31 @@ export default function ProfilePage() {
           )}
         </div>
 
+        {/* Stripe banner — owner only, shown when Stripe not set up */}
+        {isOwner && !profile.stripe_onboarding_complete && (
+          <div
+            className="mt-5 flex items-center justify-between gap-4 rounded-2xl px-5 py-4"
+            style={{ background: "rgba(99,102,241,0.08)", border: "1px solid rgba(99,102,241,0.2)" }}
+          >
+            <div>
+              <p className="text-sm font-semibold" style={{ color: "#f5f5f7" }}>
+                Sett opp betalinger
+              </p>
+              <p className="text-xs mt-0.5" style={{ color: "#86868b" }}>
+                Koble til Stripe for å motta betaling for beats
+              </p>
+            </div>
+            <button
+              className="flex shrink-0 items-center gap-2 rounded-xl px-4 py-2 text-sm font-semibold transition-opacity hover:opacity-80"
+              style={{ background: "#6366f1", color: "#fff" }}
+              onClick={() => toast("Stripe-integrasjon kommer snart!", "info")}
+            >
+              <CreditCard size={14} />
+              Sett opp Stripe
+            </button>
+          </div>
+        )}
+
         {/* Divider */}
         <div className="mt-8 mb-6 h-px w-full" style={{ background: "#1e1e1e" }} />
 
@@ -342,86 +370,84 @@ export default function ProfilePage() {
             </div>
           ) : (
             <div>
-              {beats.map((beat) => (
-                <div
-                  key={beat.id}
-                  className="flex items-center gap-4 rounded-xl px-3 py-2.5"
-                  style={{ borderBottom: "1px solid #141414" }}
-                >
-                  <button
-                    onClick={() => setPlayingId((p) => (p === beat.id ? null : beat.id))}
-                    className="flex shrink-0 items-center justify-center rounded-full"
-                    style={{
-                      width: 32, height: 32,
-                      background: playingId === beat.id ? "#6366f1" : "rgba(255,255,255,0.06)",
-                      color: "#f5f5f7",
-                    }}
-                  >
-                    {playingId === beat.id ? <Pause size={12} fill="#f5f5f7" /> : <Play size={12} fill="#f5f5f7" />}
-                  </button>
-
+              {beats.map((beat) => {
+                const isActive = currentBeat?.id === beat.id;
+                const isCurrentlyPlaying = isActive && isPlaying;
+                return (
                   <div
-                    className="shrink-0 rounded-md"
-                    style={{ width: 36, height: 36, background: genreColor(beat.genre) }}
-                  />
-
-                  <div className="min-w-0 flex-1">
-                    <p className="truncate text-sm font-medium" style={{ color: "#f5f5f7" }}>
-                      {beat.title}
-                    </p>
-                    <p className="text-xs mt-0.5" style={{ color: "#86868b" }}>
-                      {beat.genre} &middot; {beat.bpm} BPM
-                    </p>
-                  </div>
-
-                  <div className="hidden items-center gap-1.5 md:flex">
-                    {beat.tags.slice(0, 2).map((tag) => (
-                      <span
-                        key={tag}
-                        className="rounded-full px-2 py-0.5 text-xs"
-                        style={{ background: "rgba(255,255,255,0.05)", color: "#86868b" }}
-                      >
-                        {tag}
-                      </span>
-                    ))}
-                  </div>
-
-                  <div className="flex items-center gap-2 shrink-0">
-                    {isOwner && (
-                      <span
-                        className="text-xs px-2 py-0.5 rounded-full font-medium"
-                        style={{
-                          background: beat.is_published ? "rgba(52,199,89,0.1)" : "rgba(255,255,255,0.05)",
-                          color: beat.is_published ? "#34c759" : "#86868b",
-                        }}
-                      >
-                        {beat.is_published ? "Publisert" : "Utkast"}
-                      </span>
-                    )}
-                    <span className="text-sm font-semibold" style={{ color: "#f5f5f7", minWidth: 56, textAlign: "right" }}>
-                      kr {beat.price.toLocaleString("nb-NO")}
-                    </span>
+                    key={beat.id}
+                    className="flex items-center gap-4 rounded-xl px-3 py-2.5"
+                    style={{ borderBottom: "1px solid #141414" }}
+                  >
                     <button
-                      title="Last ned"
-                      className="flex items-center justify-center rounded-lg transition-colors"
-                      style={{ width: 30, height: 30, color: "#86868b" }}
-                      onClick={() => alert("Last ned: " + beat.title)}
+                      onClick={() => toggleBeat(beat)}
+                      className="flex shrink-0 items-center justify-center rounded-full"
+                      style={{
+                        width: 32, height: 32,
+                        background: isActive ? "#6366f1" : "rgba(255,255,255,0.06)",
+                        color: "#f5f5f7",
+                      }}
                     >
-                      <Download size={14} />
+                      {isCurrentlyPlaying
+                        ? <Pause size={12} fill="#f5f5f7" />
+                        : <Play size={12} fill="#f5f5f7" />}
                     </button>
-                    {isOwner && (
-                      <button
-                        title="Slett beat"
-                        className="flex items-center justify-center rounded-lg transition-colors hover:opacity-80"
-                        style={{ width: 30, height: 30, color: "#ff3b30" }}
-                        onClick={() => deleteBeat(beat.id)}
-                      >
-                        <Trash2 size={14} />
-                      </button>
-                    )}
+
+                    <div
+                      className="shrink-0 rounded-md"
+                      style={{ width: 36, height: 36, background: genreColor(beat.genre) }}
+                    />
+
+                    <div className="min-w-0 flex-1">
+                      <p className="truncate text-sm font-medium" style={{ color: "#f5f5f7" }}>
+                        {beat.title}
+                      </p>
+                      <p className="text-xs mt-0.5" style={{ color: "#86868b" }}>
+                        {beat.genre} &middot; {beat.bpm} BPM
+                      </p>
+                    </div>
+
+                    <div className="hidden items-center gap-1.5 md:flex">
+                      {beat.tags.slice(0, 2).map((tag) => (
+                        <span
+                          key={tag}
+                          className="rounded-full px-2 py-0.5 text-xs"
+                          style={{ background: "rgba(255,255,255,0.05)", color: "#86868b" }}
+                        >
+                          {tag}
+                        </span>
+                      ))}
+                    </div>
+
+                    <div className="flex items-center gap-2 shrink-0">
+                      {isOwner && (
+                        <span
+                          className="text-xs px-2 py-0.5 rounded-full font-medium"
+                          style={{
+                            background: beat.is_published ? "rgba(52,199,89,0.1)" : "rgba(255,255,255,0.05)",
+                            color: beat.is_published ? "#34c759" : "#86868b",
+                          }}
+                        >
+                          {beat.is_published ? "Publisert" : "Utkast"}
+                        </span>
+                      )}
+                      <span className="text-sm font-semibold" style={{ color: "#f5f5f7", minWidth: 56, textAlign: "right" }}>
+                        kr {beat.price.toLocaleString("nb-NO")}
+                      </span>
+                      {isOwner && (
+                        <button
+                          title="Slett beat"
+                          className="flex items-center justify-center rounded-lg transition-colors hover:opacity-80"
+                          style={{ width: 30, height: 30, color: "#ff3b30" }}
+                          onClick={() => deleteBeat(beat.id)}
+                        >
+                          <Trash2 size={14} />
+                        </button>
+                      )}
+                    </div>
                   </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           )}
         </section>
