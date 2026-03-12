@@ -1,0 +1,496 @@
+"use client";
+
+import { useState, useRef, KeyboardEvent } from "react";
+import { useRouter } from "next/navigation";
+import { X, Upload, Music, FileArchive, ImageIcon } from "lucide-react";
+
+const MUSICAL_KEYS = [
+  "C maj","C# maj","D maj","Eb maj","E maj","F maj",
+  "F# maj","G maj","Ab maj","A maj","Bb maj","B maj",
+  "C min","C# min","D min","Eb min","E min","F min",
+  "F# min","G min","Ab min","A min","Bb min","B min",
+];
+
+type UploadFile = { file: File; previewUrl?: string } | null;
+
+export default function LastOppPage() {
+  const router = useRouter();
+
+  // Form state
+  const [title, setTitle] = useState("");
+  const [description, setDescription] = useState("");
+  const [genre, setGenre] = useState("");
+  const [bpm, setBpm] = useState("");
+  const [key, setKey] = useState("");
+  const [tags, setTags] = useState<string[]>([]);
+  const [tagInput, setTagInput] = useState("");
+  const [price, setPrice] = useState("");
+  const [isPublished, setIsPublished] = useState(true);
+
+  // Files
+  const [cover, setCover] = useState<UploadFile>(null);
+  const [audioPreview, setAudioPreview] = useState<UploadFile>(null);
+  const [projectFile, setProjectFile] = useState<UploadFile>(null);
+
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const coverInputRef = useRef<HTMLInputElement>(null);
+  const audioInputRef = useRef<HTMLInputElement>(null);
+  const projectInputRef = useRef<HTMLInputElement>(null);
+
+  function addTag() {
+    const t = tagInput.trim().toLowerCase().replace(/\s+/g, "-");
+    if (t && !tags.includes(t) && tags.length < 6) {
+      setTags([...tags, t]);
+    }
+    setTagInput("");
+  }
+
+  function handleTagKeyDown(e: KeyboardEvent<HTMLInputElement>) {
+    if (e.key === "Enter" || e.key === ",") {
+      e.preventDefault();
+      addTag();
+    }
+    if (e.key === "Backspace" && !tagInput && tags.length > 0) {
+      setTags(tags.slice(0, -1));
+    }
+  }
+
+  function handleCoverChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const previewUrl = URL.createObjectURL(file);
+    setCover({ file, previewUrl });
+  }
+
+  function handleAudioChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (file) setAudioPreview({ file });
+  }
+
+  function handleProjectChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (file) setProjectFile({ file });
+  }
+
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    setError(null);
+
+    if (!title || !genre || !bpm || !key || !price) {
+      setError("Fyll ut alle obligatoriske felt.");
+      return;
+    }
+
+    const bpmNum = parseInt(bpm);
+    const priceNum = parseInt(price);
+
+    if (bpmNum < 60 || bpmNum > 220) {
+      setError("BPM må være mellom 60 og 220.");
+      return;
+    }
+    if (priceNum < 100) {
+      setError("Pris må være minst kr 100.");
+      return;
+    }
+
+    setSubmitting(true);
+    await new Promise((r) => setTimeout(r, 500));
+    router.push("/profile/ljung");
+  }
+
+  return (
+    <div className="mx-auto max-w-2xl px-6 py-10">
+      <h1
+        className="mb-1 text-2xl font-bold tracking-tight"
+        style={{ color: "#f5f5f7" }}
+      >
+        Last opp beat
+      </h1>
+      <p className="mb-8 text-sm" style={{ color: "#86868b" }}>
+        Fyll ut informasjon om beatet ditt.
+      </p>
+
+      <form onSubmit={handleSubmit} className="flex flex-col gap-6">
+
+        {/* Cover + tittel row */}
+        <div className="flex gap-5 items-start">
+          {/* Cover upload */}
+          <button
+            type="button"
+            onClick={() => coverInputRef.current?.click()}
+            className="shrink-0 rounded-2xl transition-opacity hover:opacity-80 overflow-hidden"
+            style={{
+              width: 100,
+              height: 100,
+              background: cover?.previewUrl
+                ? undefined
+                : "#141414",
+              backgroundImage: cover?.previewUrl
+                ? `url(${cover.previewUrl})`
+                : undefined,
+              backgroundSize: "cover",
+              backgroundPosition: "center",
+              border: "1px solid #2a2a2a",
+              display: "flex",
+              flexDirection: "column",
+              alignItems: "center",
+              justifyContent: "center",
+              gap: 6,
+            }}
+          >
+            {!cover?.previewUrl && (
+              <>
+                <ImageIcon size={20} style={{ color: "#3a3a3a" }} />
+                <span className="text-xs" style={{ color: "#3a3a3a" }}>
+                  Cover
+                </span>
+              </>
+            )}
+          </button>
+          <input
+            ref={coverInputRef}
+            type="file"
+            accept="image/*"
+            className="hidden"
+            onChange={handleCoverChange}
+          />
+
+          {/* Tittel */}
+          <div className="flex-1">
+            <Label>Tittel *</Label>
+            <input
+              type="text"
+              placeholder="MIDNIGHT RUSH"
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+              required
+              style={inputStyle}
+            />
+          </div>
+        </div>
+
+        {/* Genre + BPM + Key */}
+        <div className="grid grid-cols-3 gap-3">
+          <div>
+            <Label>Sjanger *</Label>
+            <input
+              type="text"
+              placeholder="Drill"
+              value={genre}
+              onChange={(e) => setGenre(e.target.value)}
+              required
+              style={inputStyle}
+            />
+          </div>
+          <div>
+            <Label>BPM *</Label>
+            <input
+              type="number"
+              placeholder="140"
+              value={bpm}
+              onChange={(e) => setBpm(e.target.value)}
+              min={60}
+              max={220}
+              required
+              style={inputStyle}
+            />
+          </div>
+          <div>
+            <Label>Toneart *</Label>
+            <select
+              value={key}
+              onChange={(e) => setKey(e.target.value)}
+              required
+              style={{ ...inputStyle, cursor: "pointer" }}
+            >
+              <option value="">Velg...</option>
+              {MUSICAL_KEYS.map((k) => (
+                <option key={k} value={k}>{k}</option>
+              ))}
+            </select>
+          </div>
+        </div>
+
+        {/* Tags */}
+        <div>
+          <Label>Tags (maks 6)</Label>
+          <div
+            className="flex flex-wrap items-center gap-2 rounded-xl px-3 py-2.5 min-h-[44px]"
+            style={{ background: "#141414", border: "1px solid #2a2a2a" }}
+            onClick={() => document.getElementById("tag-input")?.focus()}
+          >
+            {tags.map((tag) => (
+              <span
+                key={tag}
+                className="flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs"
+                style={{ background: "rgba(255,255,255,0.08)", color: "#f5f5f7" }}
+              >
+                {tag}
+                <button
+                  type="button"
+                  onClick={(e) => { e.stopPropagation(); setTags(tags.filter((t) => t !== tag)); }}
+                  style={{ color: "#86868b" }}
+                >
+                  <X size={10} />
+                </button>
+              </span>
+            ))}
+            {tags.length < 6 && (
+              <input
+                id="tag-input"
+                type="text"
+                placeholder={tags.length === 0 ? "Legg til tags..." : ""}
+                value={tagInput}
+                onChange={(e) => setTagInput(e.target.value)}
+                onKeyDown={handleTagKeyDown}
+                onBlur={addTag}
+                style={{
+                  background: "transparent",
+                  border: "none",
+                  outline: "none",
+                  color: "#f5f5f7",
+                  fontSize: 13,
+                  minWidth: 120,
+                }}
+              />
+            )}
+          </div>
+          <p className="mt-1 text-xs" style={{ color: "#3a3a3a" }}>
+            Trykk Enter eller komma for å legge til
+          </p>
+        </div>
+
+        {/* Beskrivelse */}
+        <div>
+          <Label>Beskrivelse</Label>
+          <textarea
+            placeholder="Kort beskrivelse av beatet..."
+            value={description}
+            onChange={(e) => setDescription(e.target.value)}
+            rows={3}
+            style={{
+              ...inputStyle,
+              resize: "vertical",
+              lineHeight: 1.6,
+            }}
+          />
+        </div>
+
+        {/* Pris */}
+        <div style={{ maxWidth: 200 }}>
+          <Label>Pris (kr) *</Label>
+          <div className="relative">
+            <span
+              className="absolute left-3.5 top-1/2 -translate-y-1/2 text-sm"
+              style={{ color: "#86868b" }}
+            >
+              kr
+            </span>
+            <input
+              type="number"
+              placeholder="299"
+              value={price}
+              onChange={(e) => setPrice(e.target.value)}
+              min={100}
+              required
+              style={{ ...inputStyle, paddingLeft: 32 }}
+            />
+          </div>
+        </div>
+
+        {/* Filer */}
+        <div
+          className="rounded-2xl p-5 flex flex-col gap-4"
+          style={{ background: "#0f0f0f", border: "1px solid #1e1e1e" }}
+        >
+          <p className="text-sm font-medium" style={{ color: "#86868b" }}>
+            Filer
+          </p>
+
+          <FileRow
+            label="Lydforhåndsvisning"
+            hint="MP3 eller WAV, maks 30 MB"
+            accept="audio/*"
+            icon={<Music size={15} style={{ color: "#86868b" }} />}
+            file={audioPreview?.file ?? null}
+            inputRef={audioInputRef}
+            onChange={handleAudioChange}
+          />
+
+          <FileRow
+            label="Prosjektfil"
+            hint=".als, .flp, .logic, .zip, ..."
+            accept="*"
+            icon={<FileArchive size={15} style={{ color: "#86868b" }} />}
+            file={projectFile?.file ?? null}
+            inputRef={projectInputRef}
+            onChange={handleProjectChange}
+          />
+        </div>
+
+        {/* Publiser toggle */}
+        <div className="flex items-center justify-between rounded-xl px-4 py-3"
+          style={{ background: "#141414", border: "1px solid #2a2a2a" }}
+        >
+          <div>
+            <p className="text-sm font-medium" style={{ color: "#f5f5f7" }}>
+              Publiser nå
+            </p>
+            <p className="text-xs mt-0.5" style={{ color: "#86868b" }}>
+              Slå av for å lagre som utkast
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={() => setIsPublished(!isPublished)}
+            className="relative rounded-full transition-colors"
+            style={{
+              width: 44,
+              height: 26,
+              background: isPublished ? "#0071e3" : "#2a2a2a",
+              flexShrink: 0,
+            }}
+          >
+            <div
+              className="absolute top-1 rounded-full transition-all"
+              style={{
+                width: 18,
+                height: 18,
+                background: "#f5f5f7",
+                left: isPublished ? 22 : 4,
+              }}
+            />
+          </button>
+        </div>
+
+        {error && (
+          <p className="text-sm" style={{ color: "#ff453a" }}>
+            {error}
+          </p>
+        )}
+
+        {/* Submit */}
+        <div className="flex items-center gap-3 pt-2">
+          <button
+            type="submit"
+            disabled={submitting}
+            className="rounded-xl px-6 py-2.5 text-sm font-semibold transition-opacity disabled:opacity-50"
+            style={{ background: "#0071e3", color: "#fff" }}
+          >
+            {submitting ? (
+              <span className="flex items-center gap-2">
+                <span
+                  className="inline-block h-3.5 w-3.5 animate-spin rounded-full border-2 border-transparent"
+                  style={{ borderTopColor: "rgba(255,255,255,0.8)" }}
+                />
+                Laster opp...
+              </span>
+            ) : (
+              <span className="flex items-center gap-2">
+                <Upload size={14} />
+                {isPublished ? "Publiser beat" : "Lagre utkast"}
+              </span>
+            )}
+          </button>
+          <button
+            type="button"
+            onClick={() => router.back()}
+            className="rounded-xl px-4 py-2.5 text-sm transition-opacity hover:opacity-80"
+            style={{ color: "#86868b" }}
+          >
+            Avbryt
+          </button>
+        </div>
+      </form>
+    </div>
+  );
+}
+
+// ── Hjelpkomponenter ───────────────────────────────────────────────────────
+
+function Label({ children }: { children: React.ReactNode }) {
+  return (
+    <p className="mb-1.5 text-xs font-medium" style={{ color: "#86868b" }}>
+      {children}
+    </p>
+  );
+}
+
+function FileRow({
+  label,
+  hint,
+  accept,
+  icon,
+  file,
+  inputRef,
+  onChange,
+}: {
+  label: string;
+  hint: string;
+  accept: string;
+  icon: React.ReactNode;
+  file: File | null;
+  inputRef: React.RefObject<HTMLInputElement | null>;
+  onChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
+}) {
+  return (
+    <div className="flex items-center justify-between gap-4">
+      <div className="flex items-center gap-2.5 min-w-0">
+        {icon}
+        <div className="min-w-0">
+          <p className="text-sm font-medium truncate" style={{ color: "#f5f5f7" }}>
+            {file ? file.name : label}
+          </p>
+          <p className="text-xs mt-0.5" style={{ color: "#3a3a3a" }}>
+            {file
+              ? `${(file.size / 1024 / 1024).toFixed(1)} MB`
+              : hint}
+          </p>
+        </div>
+      </div>
+      <div className="flex items-center gap-2 shrink-0">
+        {file && (
+          <button
+            type="button"
+            onClick={() => {
+              if (inputRef.current) inputRef.current.value = "";
+              onChange({ target: { files: null } } as never);
+            }}
+            className="rounded-lg p-1.5"
+            style={{ color: "#86868b" }}
+          >
+            <X size={13} />
+          </button>
+        )}
+        <button
+          type="button"
+          onClick={() => inputRef.current?.click()}
+          className="rounded-lg px-3 py-1.5 text-xs font-medium transition-opacity hover:opacity-80"
+          style={{ background: "rgba(255,255,255,0.08)", color: "#f5f5f7" }}
+        >
+          {file ? "Bytt" : "Velg fil"}
+        </button>
+      </div>
+      <input
+        ref={inputRef}
+        type="file"
+        accept={accept}
+        className="hidden"
+        onChange={onChange}
+      />
+    </div>
+  );
+}
+
+const inputStyle: React.CSSProperties = {
+  background: "#141414",
+  border: "1px solid #2a2a2a",
+  borderRadius: 12,
+  padding: "10px 14px",
+  fontSize: 13,
+  color: "#f5f5f7",
+  outline: "none",
+  width: "100%",
+};

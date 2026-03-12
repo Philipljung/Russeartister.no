@@ -1,0 +1,300 @@
+"use client";
+
+import { useState, useRef, useEffect } from "react";
+import Link from "next/link";
+import { Pencil, Settings, Play, Pause, Package } from "lucide-react";
+import { MOCK_BEATS, MOCK_PROFILE } from "@/lib/mock-data";
+import type { Beat } from "@/lib/supabase/types";
+
+function genreColor(genre: string): string {
+  const palette = ["#1a1040", "#001a2e", "#1a2e00", "#2e1a00", "#001e14", "#14001e", "#1e0a0a", "#00141e"];
+  let hash = 0;
+  for (let i = 0; i < genre.length; i++) hash = genre.charCodeAt(i) + ((hash << 5) - hash);
+  return palette[Math.abs(hash) % palette.length];
+}
+
+export default function ProfilePage() {
+  const profile = MOCK_PROFILE;
+  const beats: Beat[] = MOCK_BEATS;
+  const isOwner = true;
+
+  const [displayName, setDisplayName] = useState(profile.display_name);
+  const [editingName, setEditingName] = useState(false);
+  const [nameInput, setNameInput] = useState(profile.display_name);
+
+  const [bio, setBio] = useState(profile.bio ?? "");
+  const [editingBio, setEditingBio] = useState(false);
+  const [bioInput, setBioInput] = useState(profile.bio ?? "");
+
+  const [playingId, setPlayingId] = useState<string | null>(null);
+
+  const nameInputRef = useRef<HTMLInputElement>(null);
+  const bioTextareaRef = useRef<HTMLTextAreaElement>(null);
+
+  useEffect(() => {
+    if (editingName && nameInputRef.current) {
+      nameInputRef.current.focus();
+      nameInputRef.current.select();
+    }
+  }, [editingName]);
+
+  useEffect(() => {
+    if (editingBio && bioTextareaRef.current) {
+      bioTextareaRef.current.focus();
+    }
+  }, [editingBio]);
+
+  function saveName() {
+    const trimmed = nameInput.trim();
+    if (!trimmed) { setNameInput(displayName); setEditingName(false); return; }
+    setDisplayName(trimmed);
+    setEditingName(false);
+  }
+
+  function saveBio() {
+    setBio(bioInput.trim());
+    setEditingBio(false);
+  }
+
+  return (
+    <div>
+      {/* ── HEADER ── */}
+      <div
+        className="relative"
+        style={{
+          background: "linear-gradient(135deg, #1a0d3a 0%, #0d1a40 40%, #001430 70%, #0a0a14 100%)",
+          height: 220,
+        }}
+      >
+        <div
+          className="absolute inset-0"
+          style={{
+            background:
+              "radial-gradient(ellipse at 30% 50%, rgba(99,102,241,0.12) 0%, transparent 60%), radial-gradient(ellipse at 80% 20%, rgba(139,92,246,0.08) 0%, transparent 50%)",
+          }}
+        />
+
+        {isOwner && (
+          <button
+            className="absolute right-6 top-5 rounded-lg p-2 transition-colors"
+            style={{ background: "rgba(255,255,255,0.06)", color: "#86868b" }}
+            title="Innstillinger"
+          >
+            <Settings size={18} />
+          </button>
+        )}
+
+        {/* Avatar */}
+        <div className="absolute bottom-0 left-0 translate-y-1/2 px-6 md:px-10">
+          <div
+            className="shrink-0 rounded-2xl"
+            style={{
+              width: 88,
+              height: 88,
+              background: "linear-gradient(135deg, #2a1a5e 0%, #1a2a5e 100%)",
+              border: "3px solid #0a0a14",
+              boxShadow: "0 8px 32px rgba(0,0,0,0.6)",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+            }}
+          >
+            <span
+              className="text-2xl font-bold tracking-wider select-none"
+              style={{ color: "rgba(255,255,255,0.3)" }}
+            >
+              {displayName.slice(0, 2).toUpperCase()}
+            </span>
+          </div>
+        </div>
+      </div>
+
+      {/* ── CONTENT ── */}
+      <div className="mx-auto max-w-7xl px-6 md:px-10">
+        {/* Name row */}
+        <div className="pt-14 pb-1 flex items-center gap-2 flex-wrap">
+          {editingName && isOwner ? (
+            <input
+              ref={nameInputRef}
+              value={nameInput}
+              onChange={(e) => setNameInput(e.target.value)}
+              onBlur={saveName}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") saveName();
+                if (e.key === "Escape") { setNameInput(displayName); setEditingName(false); }
+              }}
+              className="rounded-lg px-2 py-0.5 text-2xl font-bold tracking-tight outline-none"
+              style={{
+                background: "rgba(255,255,255,0.06)",
+                border: "1px solid rgba(99,102,241,0.5)",
+                color: "#f5f5f7",
+                width: Math.max(120, nameInput.length * 16),
+              }}
+            />
+          ) : (
+            <h1 className="text-2xl font-bold tracking-tight" style={{ color: "#f5f5f7" }}>
+              {displayName}
+            </h1>
+          )}
+
+          {isOwner && !editingName && (
+            <button
+              onClick={() => { setNameInput(displayName); setEditingName(true); }}
+              className="rounded-md p-1.5 transition-colors"
+              style={{ color: "#3a3a3a" }}
+              title="Endre navn"
+            >
+              <Pencil size={14} />
+            </button>
+          )}
+        </div>
+
+        <p className="text-xs mt-0.5" style={{ color: "#3a3a3a" }}>
+          @{profile.username}
+        </p>
+
+        {/* Bio */}
+        <div className="mt-3 max-w-xl">
+          {editingBio && isOwner ? (
+            <textarea
+              ref={bioTextareaRef}
+              value={bioInput}
+              onChange={(e) => setBioInput(e.target.value)}
+              onBlur={saveBio}
+              onKeyDown={(e) => {
+                if (e.key === "Escape") { setBioInput(bio); setEditingBio(false); }
+              }}
+              rows={3}
+              className="w-full resize-none rounded-lg px-3 py-2 text-sm outline-none"
+              style={{
+                background: "rgba(255,255,255,0.04)",
+                border: "1px solid rgba(99,102,241,0.5)",
+                color: "#f5f5f7",
+                lineHeight: 1.6,
+              }}
+            />
+          ) : (
+            <p
+              className="text-sm leading-relaxed"
+              style={{
+                color: bio ? "#86868b" : "#3a3a3a",
+                cursor: isOwner ? "text" : "default",
+              }}
+              onClick={() => {
+                if (!isOwner) return;
+                setBioInput(bio);
+                setEditingBio(true);
+              }}
+              title={isOwner ? "Klikk for å redigere" : undefined}
+            >
+              {bio || (isOwner ? "Legg til en beskrivelse..." : "")}
+            </p>
+          )}
+        </div>
+
+        {/* Divider */}
+        <div className="mt-8 mb-6 h-px w-full" style={{ background: "#1e1e1e" }} />
+
+        {/* Mine beats */}
+        <section className="mb-10">
+          <div className="mb-4 flex items-center justify-between">
+            <h2 className="text-base font-semibold tracking-tight" style={{ color: "#f5f5f7" }}>
+              Mine beats
+            </h2>
+            {isOwner && (
+              <Link
+                href="/lastopp"
+                className="rounded-xl px-4 py-1.5 text-sm font-semibold transition-opacity hover:opacity-90"
+                style={{ background: "#0071e3", color: "#fff" }}
+              >
+                Last opp
+              </Link>
+            )}
+          </div>
+
+          <div>
+            {beats.map((beat) => (
+              <div
+                key={beat.id}
+                className="flex items-center gap-4 rounded-xl px-3 py-2.5"
+                style={{ borderBottom: "1px solid #141414" }}
+              >
+                <button
+                  onClick={() => setPlayingId((p) => (p === beat.id ? null : beat.id))}
+                  className="flex shrink-0 items-center justify-center rounded-full"
+                  style={{
+                    width: 32, height: 32,
+                    background: playingId === beat.id ? "#6366f1" : "rgba(255,255,255,0.06)",
+                    color: "#f5f5f7",
+                  }}
+                >
+                  {playingId === beat.id ? <Pause size={12} fill="#f5f5f7" /> : <Play size={12} fill="#f5f5f7" />}
+                </button>
+
+                <div
+                  className="shrink-0 rounded-md"
+                  style={{
+                    width: 36, height: 36,
+                    background: genreColor(beat.genre),
+                  }}
+                />
+
+                <div className="min-w-0 flex-1">
+                  <p className="truncate text-sm font-medium" style={{ color: "#f5f5f7" }}>
+                    {beat.title}
+                  </p>
+                  <p className="text-xs mt-0.5" style={{ color: "#86868b" }}>
+                    {beat.genre} &middot; {beat.bpm} BPM
+                  </p>
+                </div>
+
+                <div className="hidden items-center gap-1.5 md:flex">
+                  {beat.tags.slice(0, 2).map((tag) => (
+                    <span
+                      key={tag}
+                      className="rounded-full px-2 py-0.5 text-xs"
+                      style={{ background: "rgba(255,255,255,0.05)", color: "#86868b" }}
+                    >
+                      {tag}
+                    </span>
+                  ))}
+                </div>
+
+                <div className="flex items-center gap-3 shrink-0">
+                  <span
+                    className="text-xs px-2 py-0.5 rounded-full font-medium"
+                    style={{
+                      background: beat.is_published ? "rgba(52,199,89,0.1)" : "rgba(255,255,255,0.05)",
+                      color: beat.is_published ? "#34c759" : "#86868b",
+                    }}
+                  >
+                    {beat.is_published ? "Publisert" : "Utkast"}
+                  </span>
+                  <span className="text-sm font-semibold" style={{ color: "#f5f5f7" }}>
+                    kr {beat.price.toLocaleString("nb-NO")}
+                  </span>
+                </div>
+              </div>
+            ))}
+          </div>
+        </section>
+
+        {/* Mine samples & presets */}
+        <section className="mb-16">
+          <h2 className="mb-4 text-base font-semibold tracking-tight" style={{ color: "#f5f5f7" }}>
+            Mine samples & presets
+          </h2>
+          <div
+            className="flex flex-col items-center justify-center rounded-2xl py-16"
+            style={{ background: "rgba(255,255,255,0.02)", border: "1px solid #1e1e1e" }}
+          >
+            <Package size={28} style={{ color: "#2a2a2a" }} />
+            <p className="mt-3 text-sm font-medium" style={{ color: "#3a3a3a" }}>
+              Ingen samples eller presets enda
+            </p>
+          </div>
+        </section>
+      </div>
+    </div>
+  );
+}
