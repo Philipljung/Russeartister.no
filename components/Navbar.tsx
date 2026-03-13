@@ -37,7 +37,7 @@ export default function Navbar() {
     // Subscribe to auth state changes (login, logout, token refresh).
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange((event: AuthChangeEvent, newSession) => {
+    } = supabase.auth.onAuthStateChange((event: AuthChangeEvent, newSession: Session | null) => {
       console.log("[Navbar] Auth state changed:", event, newSession?.user?.email ?? "null");
       setSession(newSession);
       setAuthReady(true);

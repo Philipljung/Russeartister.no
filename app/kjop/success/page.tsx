@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { Download, CheckCircle, Music } from "lucide-react";
@@ -28,7 +28,7 @@ function genreColor(genre: string): string {
   return palette[Math.abs(hash) % palette.length];
 }
 
-export default function SuccessPage() {
+function SuccessContent() {
   const searchParams = useSearchParams();
   const sessionId = searchParams.get("session_id");
 
@@ -183,5 +183,17 @@ export default function SuccessPage() {
         </Link>
       </div>
     </div>
+  );
+}
+
+export default function SuccessPage() {
+  return (
+    <Suspense fallback={
+      <div className="flex min-h-screen items-center justify-center">
+        <p className="text-sm" style={{ color: "#3a3a3a" }}>Bekrefter betaling...</p>
+      </div>
+    }>
+      <SuccessContent />
+    </Suspense>
   );
 }
