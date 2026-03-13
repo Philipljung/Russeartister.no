@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useRef, useEffect, useCallback } from "react";
-import { Search, X, ChevronDown, Check } from "lucide-react";
+import { Search, X, ChevronDown, Check, SlidersHorizontal } from "lucide-react";
 
 export const BPM_MIN = 60;
 export const BPM_MAX = 220;
@@ -67,6 +67,7 @@ function GenreDropdown({
           border: `1px solid ${value ? "rgba(99,102,241,0.35)" : "#2a2a2a"}`,
           color: value ? "#818cf8" : "#f5f5f7",
           minWidth: 140,
+          width: "100%",
         }}
       >
         <span className="flex-1 text-left">{value || "Alle sjangre"}</span>
@@ -345,6 +346,8 @@ type Props = {
 export default function BeatFilters({ filters, genres, onChange }: Props) {
   // Local state for the search input — debounced before propagating
   const [inputQuery, setInputQuery] = useState(filters.query);
+  // Mobile filter panel open/close
+  const [filtersOpen, setFiltersOpen] = useState(false);
 
   useEffect(() => {
     const id = setTimeout(() => {
@@ -356,11 +359,14 @@ export default function BeatFilters({ filters, genres, onChange }: Props) {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [inputQuery]);
 
-  const hasActiveFilters =
-    filters.genre !== "" ||
-    filters.minBpm > BPM_MIN ||
-    filters.maxBpm < BPM_MAX ||
-    filters.maxPrice < PRICE_MAX;
+  const activeFilterCount = [
+    filters.genre !== "",
+    filters.minBpm > BPM_MIN,
+    filters.maxBpm < BPM_MAX,
+    filters.maxPrice < PRICE_MAX,
+  ].filter(Boolean).length;
+
+  const hasActiveFilters = activeFilterCount > 0;
 
   function set<K extends keyof Filters>(key: K, value: Filters[K]) {
     onChange({ ...filters, [key]: value });
@@ -374,6 +380,121 @@ export default function BeatFilters({ filters, genres, onChange }: Props) {
   const bpmActive = filters.minBpm > BPM_MIN || filters.maxBpm < BPM_MAX;
   const priceActive = filters.maxPrice < PRICE_MAX;
 
+  const filterPanel = (
+    <div className="flex flex-wrap items-end gap-5">
+      {/* Genre */}
+      <div className="flex flex-col gap-2">
+        <span className="text-xs font-medium" style={{ color: "#86868b" }}>
+          Sjanger
+        </span>
+        <GenreDropdown
+          value={filters.genre}
+          genres={genres}
+          onChange={(v) => set("genre", v)}
+        />
+      </div>
+
+      {/* BPM */}
+      <div className="flex flex-col gap-2" style={{ minWidth: 180 }}>
+        <div className="flex items-center justify-between">
+          <span
+            className="text-xs font-medium"
+            style={{ color: bpmActive ? "#f5f5f7" : "#86868b" }}
+          >
+            BPM
+          </span>
+          <span
+            className="text-xs tabular-nums"
+            style={{ color: bpmActive ? "#f5f5f7" : "#3a3a3a" }}
+          >
+            {filters.minBpm} — {filters.maxBpm}
+          </span>
+        </div>
+        <DualKnobSlider
+          min={BPM_MIN}
+          max={BPM_MAX}
+          step={1}
+          minVal={filters.minBpm}
+          maxVal={filters.maxBpm}
+          onMinChange={(v) => set("minBpm", v)}
+          onMaxChange={(v) => set("maxBpm", v)}
+        />
+      </div>
+
+      {/* Price */}
+      <div className="flex flex-col gap-2" style={{ minWidth: 160 }}>
+        <div className="flex items-center justify-between">
+          <span
+            className="text-xs font-medium"
+            style={{ color: priceActive ? "#f5f5f7" : "#86868b" }}
+          >
+            Maks pris
+          </span>
+          <span
+            className="text-xs tabular-nums"
+            style={{ color: priceActive ? "#f5f5f7" : "#3a3a3a" }}
+          >
+            {filters.maxPrice >= PRICE_MAX
+              ? "Alle"
+              : `kr ${filters.maxPrice.toLocaleString("nb-NO")}`}
+          </span>
+        </div>
+        <SingleKnobSlider
+          min={PRICE_MIN}
+          max={PRICE_MAX}
+          step={50}
+          value={filters.maxPrice}
+          onChange={(v) => set("maxPrice", v)}
+        />
+      </div>
+
+      <div className="flex-1" />
+
+      {/* Sort */}
+      <div className="flex shrink-0 flex-col gap-2">
+        <span className="text-xs font-medium" style={{ color: "#86868b" }}>
+          Sorter
+        </span>
+        <select
+          value={filters.sortBy}
+          onChange={(e) => set("sortBy", e.target.value)}
+          style={{
+            background: "#141414",
+            color: "#f5f5f7",
+            border: "1px solid #2a2a2a",
+            borderRadius: 12,
+            padding: "8px 12px",
+            fontSize: 13,
+            outline: "none",
+            cursor: "pointer",
+          }}
+        >
+          {sortOptions.map((o) => (
+            <option key={o.value} value={o.value}>
+              {o.label}
+            </option>
+          ))}
+        </select>
+      </div>
+
+      {/* Reset */}
+      {hasActiveFilters && (
+        <button
+          onClick={reset}
+          className="flex shrink-0 items-center gap-1.5 self-end rounded-xl px-3 py-2 text-xs"
+          style={{
+            background: "rgba(255,255,255,0.06)",
+            border: "1px solid #2a2a2a",
+            color: "#86868b",
+          }}
+        >
+          <X size={12} />
+          Nullstill
+        </button>
+      )}
+    </div>
+  );
+
   return (
     <div
       className="sticky top-14 z-40 border-b"
@@ -384,155 +505,70 @@ export default function BeatFilters({ filters, genres, onChange }: Props) {
         borderColor: "#1e1e1e",
       }}
     >
-      <div className="mx-auto max-w-7xl space-y-3 px-6 py-4">
-        {/* Search */}
-        <div className="relative">
-          <Search
-            size={15}
-            className="absolute left-3.5 top-1/2 -translate-y-1/2"
-            style={{ color: "#86868b" }}
-          />
-          <input
-            type="text"
-            placeholder="Søk etter beats, sjanger, tags..."
-            value={inputQuery}
-            onChange={(e) => setInputQuery(e.target.value)}
-            style={{
-              background: "#141414",
-              border: "1px solid #2a2a2a",
-              borderRadius: 12,
-              padding: "9px 12px 9px 36px",
-              paddingRight: filters.query ? 36 : 12,
-              fontSize: 13,
-              color: "#f5f5f7",
-              outline: "none",
-              width: "100%",
-            }}
-          />
-          {inputQuery && (
-            <button
-              onClick={() => { setInputQuery(""); onChange({ ...filters, query: "" }); }}
-              className="absolute right-3.5 top-1/2 -translate-y-1/2"
+      <div className="mx-auto max-w-7xl space-y-3 px-4 md:px-6 py-4">
+        {/* Search + mobile filter toggle */}
+        <div className="flex items-center gap-2">
+          <div className="relative flex-1">
+            <Search
+              size={15}
+              className="absolute left-3.5 top-1/2 -translate-y-1/2"
               style={{ color: "#86868b" }}
-            >
-              <X size={14} />
-            </button>
-          )}
-        </div>
-
-        {/* Filters row */}
-        <div className="flex flex-wrap items-end gap-5">
-          {/* Genre */}
-          <div className="flex flex-col gap-2">
-            <span className="text-xs font-medium" style={{ color: "#86868b" }}>
-              Sjanger
-            </span>
-            <GenreDropdown
-              value={filters.genre}
-              genres={genres}
-              onChange={(v) => set("genre", v)}
             />
-          </div>
-
-          {/* BPM */}
-          <div className="flex flex-col gap-2" style={{ minWidth: 180 }}>
-            <div className="flex items-center justify-between">
-              <span
-                className="text-xs font-medium"
-                style={{ color: bpmActive ? "#f5f5f7" : "#86868b" }}
-              >
-                BPM
-              </span>
-              <span
-                className="text-xs tabular-nums"
-                style={{ color: bpmActive ? "#f5f5f7" : "#3a3a3a" }}
-              >
-                {filters.minBpm} — {filters.maxBpm}
-              </span>
-            </div>
-            <DualKnobSlider
-              min={BPM_MIN}
-              max={BPM_MAX}
-              step={1}
-              minVal={filters.minBpm}
-              maxVal={filters.maxBpm}
-              onMinChange={(v) => set("minBpm", v)}
-              onMaxChange={(v) => set("maxBpm", v)}
-            />
-          </div>
-
-          {/* Price */}
-          <div className="flex flex-col gap-2" style={{ minWidth: 160 }}>
-            <div className="flex items-center justify-between">
-              <span
-                className="text-xs font-medium"
-                style={{ color: priceActive ? "#f5f5f7" : "#86868b" }}
-              >
-                Maks pris
-              </span>
-              <span
-                className="text-xs tabular-nums"
-                style={{ color: priceActive ? "#f5f5f7" : "#3a3a3a" }}
-              >
-                {filters.maxPrice >= PRICE_MAX
-                  ? "Alle"
-                  : `kr ${filters.maxPrice.toLocaleString("nb-NO")}`}
-              </span>
-            </div>
-            <SingleKnobSlider
-              min={PRICE_MIN}
-              max={PRICE_MAX}
-              step={50}
-              value={filters.maxPrice}
-              onChange={(v) => set("maxPrice", v)}
-            />
-          </div>
-
-          <div className="flex-1" />
-
-          {/* Sort */}
-          <div className="flex shrink-0 flex-col gap-2">
-            <span className="text-xs font-medium" style={{ color: "#86868b" }}>
-              Sorter
-            </span>
-            <select
-              value={filters.sortBy}
-              onChange={(e) => set("sortBy", e.target.value)}
+            <input
+              type="text"
+              placeholder="Søk etter beats, sjanger, tags..."
+              value={inputQuery}
+              onChange={(e) => setInputQuery(e.target.value)}
               style={{
                 background: "#141414",
-                color: "#f5f5f7",
                 border: "1px solid #2a2a2a",
                 borderRadius: 12,
-                padding: "8px 12px",
+                padding: "9px 12px 9px 36px",
+                paddingRight: filters.query ? 36 : 12,
                 fontSize: 13,
+                color: "#f5f5f7",
                 outline: "none",
-                cursor: "pointer",
+                width: "100%",
               }}
-            >
-              {sortOptions.map((o) => (
-                <option key={o.value} value={o.value}>
-                  {o.label}
-                </option>
-              ))}
-            </select>
+            />
+            {inputQuery && (
+              <button
+                onClick={() => { setInputQuery(""); onChange({ ...filters, query: "" }); }}
+                className="absolute right-3.5 top-1/2 -translate-y-1/2"
+                style={{ color: "#86868b" }}
+              >
+                <X size={14} />
+              </button>
+            )}
           </div>
 
-          {/* Reset */}
-          {hasActiveFilters && (
-            <button
-              onClick={reset}
-              className="flex shrink-0 items-center gap-1.5 self-end rounded-xl px-3 py-2 text-xs"
-              style={{
-                background: "rgba(255,255,255,0.06)",
-                border: "1px solid #2a2a2a",
-                color: "#86868b",
-              }}
-            >
-              <X size={12} />
-              Nullstill
-            </button>
-          )}
+          {/* Mobile: filter toggle button */}
+          <button
+            className="md:hidden flex shrink-0 items-center gap-1.5 rounded-xl px-3 py-2 text-xs font-medium"
+            style={{
+              background: filtersOpen || hasActiveFilters ? "rgba(99,102,241,0.12)" : "#141414",
+              border: `1px solid ${filtersOpen || hasActiveFilters ? "rgba(99,102,241,0.35)" : "#2a2a2a"}`,
+              color: filtersOpen || hasActiveFilters ? "#818cf8" : "#86868b",
+              whiteSpace: "nowrap",
+            }}
+            onClick={() => setFiltersOpen((o) => !o)}
+          >
+            <SlidersHorizontal size={13} />
+            {hasActiveFilters ? `Filter (${activeFilterCount})` : "Filter"}
+          </button>
         </div>
+
+        {/* Desktop: always-visible filter row */}
+        <div className="hidden md:block">
+          {filterPanel}
+        </div>
+
+        {/* Mobile: collapsible filter panel */}
+        {filtersOpen && (
+          <div className="md:hidden">
+            {filterPanel}
+          </div>
+        )}
       </div>
     </div>
   );

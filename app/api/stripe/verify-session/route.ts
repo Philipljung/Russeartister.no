@@ -32,12 +32,26 @@ export async function GET(request: NextRequest) {
   }
 
   const beatId = session.metadata?.beat_id;
+  const isExclusive = session.metadata?.exclusive === "true";
   if (!beatId) {
     return NextResponse.json({ error: "Beat-metadata mangler" }, { status: 400 });
   }
 
   // 2. Fetch beat from DB
   const supabase = createServiceClient();
+
+  // If exclusive purchase, mark beat as exclusively_sold so it disappears from store
+  if (isExclusive) {
+    const { error: exclusiveError } = await supabase
+      .from("beats")
+      .update({ exclusively_sold: true })
+      .eq("id", beatId);
+    if (exclusiveError) {
+      console.error("[verify-session] Failed to mark beat as exclusively_sold:", exclusiveError.message);
+    } else {
+      console.log("[verify-session] Beat marked as exclusively_sold:", beatId);
+    }
+  }
   const { data: beat, error: beatError } = await supabase
     .from("beats")
     .select("id, title, genre, bpm, key, cover_url, project_file_url, producer:profiles(display_name)")

@@ -8,10 +8,12 @@ import { Pencil, Settings, Play, Pause, Package, Trash2, CreditCard, CheckCircle
 import { getSupabaseClient } from "@/lib/supabase/client";
 import { fetchProfileByUsername } from "@/lib/fetchProfile";
 import { fetchBeatsByProducer } from "@/lib/fetchBeats";
+import { fetchSamplesByProducer } from "@/lib/fetchSamples";
 import { usePlayer } from "@/lib/player-context";
 import { useToast } from "@/lib/toast-context";
 import StripeOnboardingModal from "@/components/StripeOnboardingModal";
-import type { Profile, Beat } from "@/lib/supabase/types";
+import { CATEGORY_LABELS } from "@/app/samples/page";
+import type { Profile, Beat, Sample } from "@/lib/supabase/types";
 
 function genreColor(genre: string): string {
   const palette = ["#1a1040", "#001a2e", "#1a2e00", "#2e1a00", "#001e14", "#14001e", "#1e0a0a", "#00141e"];
@@ -28,6 +30,7 @@ export default function ProfilePage() {
 
   const [profile, setProfile] = useState<Profile | null>(null);
   const [beats, setBeats] = useState<Beat[]>([]);
+  const [samples, setSamples] = useState<Sample[]>([]);
   const [isOwner, setIsOwner] = useState(false);
   const [loading, setLoading] = useState(true);
   const [notFound, setNotFound] = useState(false);
@@ -90,8 +93,12 @@ export default function ProfilePage() {
       setAvatarUrl(fetchedProfile.avatar_url);
       setIsOwner(owner);
 
-      const fetchedBeats = await fetchBeatsByProducer(fetchedProfile.id);
+      const [fetchedBeats, fetchedSamples] = await Promise.all([
+        fetchBeatsByProducer(fetchedProfile.id),
+        fetchSamplesByProducer(fetchedProfile.id),
+      ]);
       setBeats(fetchedBeats);
+      setSamples(fetchedSamples);
 
       setLoading(false);
     }
@@ -276,7 +283,7 @@ export default function ProfilePage() {
         className="relative"
         style={{
           background: "linear-gradient(135deg, #1a0d3a 0%, #0d1a40 40%, #001430 70%, #0a0a14 100%)",
-          height: 220,
+          height: 160,
         }}
       >
         <div
@@ -373,7 +380,7 @@ export default function ProfilePage() {
       </div>
 
       {/* ── CONTENT ── */}
-      <div className="mx-auto max-w-7xl px-6 md:px-10">
+      <div className="mx-auto max-w-7xl px-4 md:px-10">
         {/* Name row */}
         <div className="pt-14 pb-1 flex items-center gap-2 flex-wrap">
           {editingName && isOwner ? (
@@ -601,7 +608,7 @@ export default function ProfilePage() {
             </div>
           ) : (
             <div
-              className="mt-5 flex items-center justify-between gap-4 rounded-2xl px-5 py-4"
+              className="mt-5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 rounded-2xl px-4 md:px-5 py-4"
               style={{ background: "rgba(99,102,241,0.08)", border: "1px solid rgba(99,102,241,0.2)" }}
             >
               <div>
@@ -613,7 +620,7 @@ export default function ProfilePage() {
                 </p>
               </div>
               <button
-                className="flex shrink-0 items-center gap-2 rounded-xl px-4 py-2 text-sm font-semibold transition-opacity hover:opacity-80"
+                className="flex shrink-0 items-center gap-2 rounded-xl px-4 py-2 text-sm font-semibold transition-opacity hover:opacity-80 self-start sm:self-auto"
                 style={{ background: "#6366f1", color: "#fff" }}
                 onClick={() => setShowStripeModal(true)}
               >
@@ -639,7 +646,7 @@ export default function ProfilePage() {
                 className="rounded-xl px-4 py-1.5 text-sm font-semibold transition-opacity hover:opacity-90"
                 style={{ background: "#0071e3", color: "#fff" }}
               >
-                Last opp
+                Last opp beat
               </Link>
             )}
           </div>
@@ -661,7 +668,7 @@ export default function ProfilePage() {
                 return (
                   <div
                     key={beat.id}
-                    className="flex items-center gap-4 rounded-xl px-3 py-2.5"
+                    className="flex items-center gap-2 md:gap-4 rounded-xl px-2 md:px-3 py-2.5"
                     style={{ borderBottom: "1px solid #141414" }}
                   >
                     <button
@@ -679,7 +686,7 @@ export default function ProfilePage() {
                     </button>
 
                     <div
-                      className="shrink-0 rounded-md"
+                      className="shrink-0 rounded-md hidden sm:block"
                       style={{ width: 36, height: 36, background: genreColor(beat.genre) }}
                     />
 
@@ -704,10 +711,10 @@ export default function ProfilePage() {
                       ))}
                     </div>
 
-                    <div className="flex items-center gap-2 shrink-0">
+                    <div className="flex items-center gap-1.5 md:gap-2 shrink-0">
                       {isOwner && (
                         <span
-                          className="text-xs px-2 py-0.5 rounded-full font-medium"
+                          className="hidden sm:inline text-xs px-2 py-0.5 rounded-full font-medium"
                           style={{
                             background: beat.is_published ? "rgba(52,199,89,0.1)" : "rgba(255,255,255,0.05)",
                             color: beat.is_published ? "#34c759" : "#86868b",
@@ -716,7 +723,7 @@ export default function ProfilePage() {
                           {beat.is_published ? "Publisert" : "Utkast"}
                         </span>
                       )}
-                      <span className="text-sm font-semibold" style={{ color: "#f5f5f7", minWidth: 56, textAlign: "right" }}>
+                      <span className="text-sm font-semibold" style={{ color: "#f5f5f7", minWidth: 48, textAlign: "right" }}>
                         kr {beat.price.toLocaleString("nb-NO")}
                       </span>
                       {isOwner && (
@@ -739,18 +746,76 @@ export default function ProfilePage() {
 
         {/* Mine samples & presets */}
         <section className="mb-16">
-          <h2 className="mb-4 text-base font-semibold tracking-tight" style={{ color: "#f5f5f7" }}>
-            {isOwner ? "Mine samples & presets" : "Samples & presets"}
-          </h2>
-          <div
-            className="flex flex-col items-center justify-center rounded-2xl py-16"
-            style={{ background: "rgba(255,255,255,0.02)", border: "1px solid #1e1e1e" }}
-          >
-            <Package size={28} style={{ color: "#2a2a2a" }} />
-            <p className="mt-3 text-sm font-medium" style={{ color: "#3a3a3a" }}>
-              Ingen samples eller presets enda
-            </p>
+          <div className="mb-4 flex items-center justify-between">
+            <h2 className="text-base font-semibold tracking-tight" style={{ color: "#f5f5f7" }}>
+              {isOwner ? "Mine samples & presets" : "Samples & presets"}
+            </h2>
+            {isOwner && (
+              <Link
+                href="/lastopp-sample"
+                className="rounded-xl px-4 py-1.5 text-sm font-semibold transition-opacity hover:opacity-90"
+                style={{ background: "#0071e3", color: "#fff" }}
+              >
+                Last opp Sample eller Preset
+              </Link>
+            )}
           </div>
+
+          {samples.length === 0 ? (
+            <div
+              className="flex flex-col items-center justify-center rounded-2xl py-16"
+              style={{ background: "rgba(255,255,255,0.02)", border: "1px solid #1e1e1e" }}
+            >
+              <Package size={28} style={{ color: "#2a2a2a" }} />
+              <p className="mt-3 text-sm font-medium" style={{ color: "#3a3a3a" }}>
+                Ingen samples eller presets enda
+              </p>
+            </div>
+          ) : (
+            <div>
+              {samples.map((sample) => (
+                <div
+                  key={sample.id}
+                  className="flex items-center gap-2 md:gap-4 rounded-xl px-2 md:px-3 py-2.5"
+                  style={{ borderBottom: "1px solid #141414" }}
+                >
+                  <div
+                    className="shrink-0 flex items-center justify-center rounded-full"
+                    style={{ width: 32, height: 32, background: "rgba(255,255,255,0.06)", color: "#86868b" }}
+                  >
+                    <Package size={13} />
+                  </div>
+
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate text-sm font-medium" style={{ color: "#f5f5f7" }}>
+                      {sample.title}
+                    </p>
+                    <p className="text-xs mt-0.5" style={{ color: "#86868b" }}>
+                      {sample.item_type === "preset" ? "Preset" : "Sample"} &middot; {CATEGORY_LABELS[sample.category] ?? sample.category}
+                      {sample.bpm ? ` · ${sample.bpm} BPM` : ""}
+                    </p>
+                  </div>
+
+                  <div className="flex items-center gap-2 shrink-0">
+                    {isOwner && (
+                      <span
+                        className="hidden sm:inline text-xs px-2 py-0.5 rounded-full font-medium"
+                        style={{
+                          background: sample.is_published ? "rgba(52,199,89,0.1)" : "rgba(255,255,255,0.05)",
+                          color: sample.is_published ? "#34c759" : "#86868b",
+                        }}
+                      >
+                        {sample.is_published ? "Publisert" : "Utkast"}
+                      </span>
+                    )}
+                    <span className="text-sm font-semibold" style={{ color: "#f5f5f7", minWidth: 48, textAlign: "right" }}>
+                      {sample.price === 0 ? "Gratis" : `kr ${sample.price.toLocaleString("nb-NO")}`}
+                    </span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
         </section>
       </div>
     </div>

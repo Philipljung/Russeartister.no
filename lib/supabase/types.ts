@@ -22,10 +22,33 @@ export type Beat = {
   key: string;
   tags: string[];
   price: number;
+  exclusive_price: number | null;
+  exclusively_sold: boolean;
   cover_url: string | null;
   audio_preview_url: string | null;
   project_file_url: string | null;
   is_published: boolean;
+  created_at: string;
+  producer?: Profile;
+};
+
+export type Sample = {
+  id: string;
+  producer_id: string;
+  title: string;
+  description: string;
+  item_type: "sample" | "preset";
+  category: string;
+  genre: string;
+  bpm: number | null;
+  key: string;
+  tags: string[];
+  price: number;
+  cover_url: string | null;
+  audio_preview_url: string | null;
+  file_url: string | null;
+  is_published: boolean;
+  deleted_at: string | null;
   created_at: string;
   producer?: Profile;
 };

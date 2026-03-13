@@ -30,7 +30,8 @@ export default function BeatCard({ beat }: Props) {
 
   const isActive = currentBeat?.id === beat.id;
   const isCurrentlyPlaying = isActive && isPlaying;
-  const coverBg = beat.cover_url ? undefined : genreColor(beat.genre);
+  const coverImg = beat.cover_url ?? beat.producer?.avatar_url ?? null;
+  const coverBg = coverImg ? undefined : genreColor(beat.genre);
 
   function handleBuy(e: React.MouseEvent) {
     e.stopPropagation();
@@ -80,7 +81,7 @@ export default function BeatCard({ beat }: Props) {
           width: 40,
           height: 40,
           backgroundColor: coverBg ?? "transparent",
-          backgroundImage: beat.cover_url ? `url(${beat.cover_url})` : "none",
+          backgroundImage: coverImg ? `url(${coverImg})` : "none",
           backgroundSize: "cover",
           backgroundPosition: "center",
           boxShadow: "0 2px 8px rgba(0,0,0,0.4)",

@@ -60,11 +60,12 @@ export default function AudioPlayer() {
   if (!currentBeat) return null;
 
   const progress = duration > 0 ? currentTime / duration : 0;
-  const coverBg = currentBeat.cover_url ? undefined : genreColor(currentBeat.genre);
+  const coverImg = currentBeat.cover_url ?? currentBeat.producer?.avatar_url ?? null;
+  const coverBg = coverImg ? undefined : genreColor(currentBeat.genre);
 
   return (
     <div
-      className="fixed bottom-0 left-0 right-0 z-50 flex items-center gap-4 px-6"
+      className="fixed bottom-0 left-0 right-0 z-50 flex items-center gap-2 md:gap-4 px-3 md:px-6"
       style={{
         height: 64,
         background: "rgba(12,12,12,0.95)",
@@ -80,27 +81,25 @@ export default function AudioPlayer() {
         onEnded={stopPlayer}
       />
 
-      {/* Cover + info */}
-      <div className="flex items-center gap-3 shrink-0" style={{ width: 220 }}>
+      {/* Cover + info — constrained width on mobile */}
+      <div className="flex items-center gap-2 md:gap-3 shrink-0" style={{ width: "auto", maxWidth: "40vw", minWidth: 0 }}>
         <div
           className="shrink-0 rounded-lg"
           style={{
             width: 38,
             height: 38,
             backgroundColor: coverBg ?? "transparent",
-            backgroundImage: currentBeat.cover_url
-              ? `url(${currentBeat.cover_url})`
-              : "none",
+            backgroundImage: coverImg ? `url(${coverImg})` : "none",
             backgroundSize: "cover",
             backgroundPosition: "center",
             boxShadow: "0 2px 8px rgba(0,0,0,0.5)",
           }}
         />
         <div className="min-w-0">
-          <p className="truncate text-sm font-semibold" style={{ color: "#f5f5f7" }}>
+          <p className="truncate text-xs md:text-sm font-semibold" style={{ color: "#f5f5f7" }}>
             {currentBeat.title}
           </p>
-          <p className="truncate text-xs mt-0.5" style={{ color: "#86868b" }}>
+          <p className="truncate text-xs mt-0.5 hidden sm:block" style={{ color: "#86868b" }}>
             {currentBeat.producer?.display_name ?? "Ukjent"}
           </p>
         </div>
@@ -125,8 +124,8 @@ export default function AudioPlayer() {
       </button>
 
       {/* Progress bar + times */}
-      <div className="flex flex-1 items-center gap-3 min-w-0">
-        <span className="shrink-0 tabular-nums text-xs" style={{ color: "#86868b", minWidth: 32 }}>
+      <div className="flex flex-1 items-center gap-2 md:gap-3 min-w-0">
+        <span className="shrink-0 tabular-nums text-xs hidden sm:block" style={{ color: "#86868b", minWidth: 32 }}>
           {formatTime(currentTime)}
         </span>
 
@@ -160,7 +159,7 @@ export default function AudioPlayer() {
           />
         </div>
 
-        <span className="shrink-0 tabular-nums text-xs" style={{ color: "#3a3a3a", minWidth: 32 }}>
+        <span className="shrink-0 tabular-nums text-xs hidden sm:block" style={{ color: "#3a3a3a", minWidth: 32 }}>
           {formatTime(duration)}
         </span>
       </div>

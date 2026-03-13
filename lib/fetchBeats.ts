@@ -29,6 +29,7 @@ export async function fetchPublicBeats(): Promise<Beat[]> {
     .from("beats")
     .select("*, producer:profiles(*)")
     .eq("is_published", true)
+    .eq("exclusively_sold", false)
     .is("deleted_at", null)
     .order("created_at", { ascending: false });
 

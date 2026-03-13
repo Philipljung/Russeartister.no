@@ -58,7 +58,7 @@ export default function BeatsPage() {
       <HeroCarousel />
       <BeatFilters filters={filters} genres={genres} onChange={setFilters} />
 
-      <div className="mx-auto max-w-7xl px-6 py-6">
+      <div className="mx-auto max-w-7xl px-4 md:px-6 py-6">
         <div className="mb-6 flex items-baseline justify-between">
           <h1 className="text-xl font-semibold tracking-tight" style={{ color: "#f5f5f7" }}>
             Beats

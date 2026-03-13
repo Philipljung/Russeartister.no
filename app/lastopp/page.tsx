@@ -1,9 +1,10 @@
 "use client";
 
-import { useState, useRef, KeyboardEvent } from "react";
+import { useState, useRef, KeyboardEvent, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { X, Upload, Music, FileArchive, ImageIcon } from "lucide-react";
+import { X, Upload, Music, FileArchive, ImageIcon, AlertCircle } from "lucide-react";
 import { getSupabaseClient } from "@/lib/supabase/client";
+import Link from "next/link";
 
 const MUSICAL_KEYS = [
   "C maj","C# maj","D maj","Eb maj","E maj","F maj",
@@ -16,6 +17,20 @@ type UploadFile = { file: File; previewUrl?: string } | null;
 
 export default function LastOppPage() {
   const router = useRouter();
+  const [stripeReady, setStripeReady] = useState<boolean | null>(null); // null = loading
+
+  useEffect(() => {
+    const supabase = getSupabaseClient();
+    supabase.auth.getSession().then(async ({ data: { session } }: { data: { session: import("@supabase/supabase-js").Session | null } }) => {
+      if (!session) { setStripeReady(false); return; }
+      const { data } = await supabase
+        .from("profiles")
+        .select("stripe_onboarding_complete")
+        .eq("id", session.user.id)
+        .single();
+      setStripeReady(data?.stripe_onboarding_complete ?? false);
+    });
+  }, []);
 
   // Form state
   const [title, setTitle] = useState("");
@@ -26,6 +41,8 @@ export default function LastOppPage() {
   const [tags, setTags] = useState<string[]>([]);
   const [tagInput, setTagInput] = useState("");
   const [price, setPrice] = useState("");
+  const [exclusiveEnabled, setExclusiveEnabled] = useState(false);
+  const [exclusivePrice, setExclusivePrice] = useState("");
   const [isPublished, setIsPublished] = useState(true);
 
   // Files
@@ -79,21 +96,38 @@ export default function LastOppPage() {
     e.preventDefault();
     setError(null);
 
-    if (!title || !genre || !bpm || !key || !price) {
+    if (!title || !genre || !bpm || !key) {
+      setError("Fyll ut alle obligatoriske felt.");
+      return;
+    }
+    if (stripeReady && !price) {
       setError("Fyll ut alle obligatoriske felt.");
       return;
     }
 
     const bpmNum = parseInt(bpm);
-    const priceNum = parseInt(price);
+    const priceNum = stripeReady ? parseInt(price) : 0;
 
     if (bpmNum < 60 || bpmNum > 220) {
       setError("BPM må være mellom 60 og 220.");
       return;
     }
-    if (priceNum < 100) {
+    if (stripeReady && priceNum < 100) {
       setError("Pris må være minst kr 100.");
       return;
+    }
+
+    let exclusivePriceNum: number | null = null;
+    if (stripeReady && exclusiveEnabled) {
+      exclusivePriceNum = parseInt(exclusivePrice);
+      if (isNaN(exclusivePriceNum) || exclusivePriceNum < 100) {
+        setError("Eksklusiv pris må være minst kr 100.");
+        return;
+      }
+      if (exclusivePriceNum <= priceNum) {
+        setError("Eksklusiv pris må være høyere enn vanlig pris.");
+        return;
+      }
     }
 
     setSubmitting(true);
@@ -165,6 +199,7 @@ export default function LastOppPage() {
         key,
         tags,
         price: priceNum,
+        exclusive_price: exclusivePriceNum,
         cover_url: coverUrl,
         audio_preview_url: audioUrl,
         project_file_url: projectFileUrl,
@@ -195,6 +230,27 @@ export default function LastOppPage() {
       <p className="mb-8 text-sm" style={{ color: "#86868b" }}>
         Fyll ut informasjon om beatet ditt.
       </p>
+
+      {stripeReady === false && (
+        <div
+          className="mb-6 flex items-start gap-3 rounded-xl px-4 py-3"
+          style={{ background: "rgba(255,149,0,0.08)", border: "1px solid rgba(255,149,0,0.2)" }}
+        >
+          <AlertCircle size={16} style={{ color: "#ff9500", flexShrink: 0, marginTop: 2 }} />
+          <div>
+            <p className="text-sm font-medium" style={{ color: "#ff9500" }}>
+              Stripe ikke konfigurert
+            </p>
+            <p className="mt-0.5 text-xs" style={{ color: "#86868b" }}>
+              Beatet blir gratis inntil du{" "}
+              <Link href="/profile" className="underline" style={{ color: "#ff9500" }}>
+                setter opp Stripe
+              </Link>{" "}
+              for å begynne å tjene penger.
+            </p>
+          </div>
+        </div>
+      )}
 
       <form onSubmit={handleSubmit} className="flex flex-col gap-6">
 
@@ -364,25 +420,75 @@ export default function LastOppPage() {
 
         {/* Pris */}
         <div style={{ maxWidth: 200 }}>
-          <Label>Pris (kr) *</Label>
-          <div className="relative">
-            <span
-              className="absolute left-3.5 top-1/2 -translate-y-1/2 text-sm"
-              style={{ color: "#86868b" }}
+          <Label>Pris (kr) {stripeReady ? "*" : ""}</Label>
+          {stripeReady === false ? (
+            <div
+              className="flex items-center gap-2 rounded-xl px-3.5 py-2.5"
+              style={{ background: "#141414", border: "1px solid #2a2a2a", opacity: 0.5 }}
             >
-              kr
-            </span>
-            <input
-              type="number"
-              placeholder="299"
-              value={price}
-              onChange={(e) => setPrice(e.target.value)}
-              min={100}
-              required
-              style={{ ...inputStyle, paddingLeft: 32 }}
-            />
-          </div>
+              <span className="text-sm" style={{ color: "#86868b" }}>kr</span>
+              <span className="text-sm font-semibold" style={{ color: "#86868b" }}>Gratis</span>
+            </div>
+          ) : (
+            <div className="relative">
+              <span
+                className="absolute left-3.5 top-1/2 -translate-y-1/2 text-sm"
+                style={{ color: "#86868b" }}
+              >
+                kr
+              </span>
+              <input
+                type="number"
+                placeholder="299"
+                value={price}
+                onChange={(e) => setPrice(e.target.value)}
+                min={100}
+                required
+                style={{ ...inputStyle, paddingLeft: 32 }}
+              />
+            </div>
+          )}
         </div>
+
+        {/* Eksklusiv lisens */}
+        {stripeReady && (
+          <div className="rounded-2xl p-5 flex flex-col gap-4" style={{ background: "#0f0f0f", border: "1px solid #1e1e1e" }}>
+            <div className="flex items-start justify-between gap-4">
+              <div className="flex-1">
+                <p className="text-sm font-semibold" style={{ color: "#f5f5f7" }}>Tilby eksklusivt kjøp</p>
+                <p className="mt-1 text-xs leading-relaxed" style={{ color: "#86868b" }}>
+                  Med eksklusiv lisens kan én kjøper betale en høyere pris for å eie beatet alene — det fjernes fra salg umiddelbart etter kjøpet. Eksklusivt kjøp tilbys kun til den første kjøperen: har noen allerede kjøpt vanlig lisens, er dette alternativet ikke lenger tilgjengelig.
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => { setExclusiveEnabled(!exclusiveEnabled); if (exclusiveEnabled) setExclusivePrice(""); }}
+                className="relative rounded-full transition-colors shrink-0"
+                style={{ width: 44, height: 26, background: exclusiveEnabled ? "#0071e3" : "#2a2a2a", marginTop: 2 }}
+              >
+                <div className="absolute top-1 rounded-full transition-all" style={{ width: 18, height: 18, background: "#f5f5f7", left: exclusiveEnabled ? 22 : 4 }} />
+              </button>
+            </div>
+
+            {exclusiveEnabled && (
+              <div style={{ maxWidth: 200 }}>
+                <Label>Eksklusiv pris (kr) *</Label>
+                <div className="relative">
+                  <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-sm" style={{ color: "#86868b" }}>kr</span>
+                  <input
+                    type="number"
+                    placeholder="2999"
+                    value={exclusivePrice}
+                    onChange={(e) => setExclusivePrice(e.target.value)}
+                    min={100}
+                    style={{ ...inputStyle, paddingLeft: 32 }}
+                  />
+                </div>
+                <p className="mt-1.5 text-xs" style={{ color: "#3a3a3a" }}>Må være høyere enn vanlig pris</p>
+              </div>
+            )}
+          </div>
+        )}
 
         {/* Filer */}
         <div

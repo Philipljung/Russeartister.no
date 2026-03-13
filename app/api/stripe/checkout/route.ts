@@ -9,14 +9,14 @@ export async function POST(request: NextRequest) {
     const supabase = await createClient();
 
     const body = await request.json();
-    const { beatId } = body;
+    const { beatId, exclusive = false } = body;
 
     if (!beatId) {
       console.error("[checkout] beatId missing in request body");
       return NextResponse.json({ error: "beatId mangler" }, { status: 400 });
     }
 
-    console.log("[checkout] Fetching beat:", beatId);
+    console.log("[checkout] Fetching beat:", beatId, "exclusive:", exclusive);
 
     // Fetch beat + producer's Stripe account
     const { data: beat, error: beatError } = await supabase
@@ -24,6 +24,7 @@ export async function POST(request: NextRequest) {
       .select("*, producer:profiles(stripe_account_id, stripe_onboarding_complete, display_name)")
       .eq("id", beatId)
       .eq("is_published", true)
+      .eq("exclusively_sold", false)
       .single();
 
     if (beatError || !beat) {
@@ -45,12 +46,28 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const amountOre = nokToOre(beat.price);
+    // Exclusive: server-side eligibility check
+    if (exclusive) {
+      if (!beat.exclusive_price) {
+        return NextResponse.json({ error: "Eksklusiv lisens ikke tilgjengelig" }, { status: 400 });
+      }
+      const { count } = await supabase
+        .from("purchases")
+        .select("id", { count: "exact", head: true })
+        .eq("beat_id", beatId);
+      if ((count ?? 0) > 0) {
+        return NextResponse.json({ error: "Eksklusiv lisens ikke lenger tilgjengelig — noen har allerede kjøpt dette beatet" }, { status: 409 });
+      }
+    }
+
+    const priceToUse = exclusive ? beat.exclusive_price! : beat.price;
+    const amountOre = nokToOre(priceToUse);
     const feeOre = Math.round(amountOre * APPLICATION_FEE_PERCENT);
 
     console.log(
       "[checkout] Creating Checkout Session for beat:",
       beat.title,
+      exclusive ? "(EXCLUSIVE)" : "",
       "price:",
       amountOre,
       "øre, fee:",
@@ -76,8 +93,10 @@ export async function POST(request: NextRequest) {
           price_data: {
             currency: "nok",
             product_data: {
-              name: beat.title,
-              description: `${producer.display_name} · ${beat.genre} · ${beat.bpm} BPM`,
+              name: exclusive ? `${beat.title} (Eksklusiv lisens)` : beat.title,
+              description: exclusive
+                ? `Eksklusiv lisens — ${producer.display_name} · ${beat.genre} · ${beat.bpm} BPM`
+                : `${producer.display_name} · ${beat.genre} · ${beat.bpm} BPM`,
               ...(beat.cover_url ? { images: [beat.cover_url] } : {}),
             },
             unit_amount: amountOre,
@@ -95,6 +114,7 @@ export async function POST(request: NextRequest) {
       metadata: {
         beat_id: beatId,
         beat_title: beat.title,
+        exclusive: exclusive ? "true" : "false",
       },
       ...(buyerId ? { client_reference_id: buyerId } : {}),
       return_url: `${appUrl}/kjop/success?session_id={CHECKOUT_SESSION_ID}`,
