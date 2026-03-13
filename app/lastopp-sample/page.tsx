@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { X, Upload, Package, ImageIcon, AlertCircle, Music } from "lucide-react";
 import { getSupabaseClient } from "@/lib/supabase/client";
 import Link from "next/link";
-import { SAMPLE_CATEGORIES, CATEGORY_LABELS } from "@/app/samples/page";
+import { SAMPLE_CATEGORIES, CATEGORY_LABELS } from "@/lib/sampleCategories";
 
 const MUSICAL_KEYS = [
   "C maj","C# maj","D maj","Eb maj","E maj","F maj",

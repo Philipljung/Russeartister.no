@@ -12,7 +12,7 @@ import { fetchSamplesByProducer } from "@/lib/fetchSamples";
 import { usePlayer } from "@/lib/player-context";
 import { useToast } from "@/lib/toast-context";
 import StripeOnboardingModal from "@/components/StripeOnboardingModal";
-import { CATEGORY_LABELS } from "@/app/samples/page";
+import { CATEGORY_LABELS } from "@/lib/sampleCategories";
 import type { Profile, Beat, Sample } from "@/lib/supabase/types";
 
 function genreColor(genre: string): string {

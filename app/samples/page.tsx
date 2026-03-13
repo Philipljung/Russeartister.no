@@ -5,25 +5,8 @@ import { Search, X, Package, Sliders, Music, Play, Pause } from "lucide-react";
 import Link from "next/link";
 import Image from "next/image";
 import { fetchPublicSamples } from "@/lib/fetchSamples";
+import { SAMPLE_CATEGORIES, CATEGORY_LABELS } from "@/lib/sampleCategories";
 import type { Sample } from "@/lib/supabase/types";
-
-// ── Category definitions ────────────────────────────────────────────────────
-export const SAMPLE_CATEGORIES = {
-  Trommer: ["kick", "snare", "clap", "hihat", "808", "cymbal", "tom", "percussion", "drum-loop", "full-loop"],
-  Melodisk: ["melody-loop", "bass-loop", "synth-loop", "guitar-loop", "piano-loop", "vocal-chop"],
-  FX: ["one-shot", "fx-riser", "pad"],
-} as const;
-
-export const ALL_SAMPLE_CATEGORIES = Object.values(SAMPLE_CATEGORIES).flat();
-
-export const CATEGORY_LABELS: Record<string, string> = {
-  kick: "Kick", snare: "Snare", clap: "Clap", hihat: "Hi-hat", "808": "808/Sub",
-  cymbal: "Cymbal", tom: "Tom", percussion: "Percussion", "drum-loop": "Drum Loop",
-  "full-loop": "Full Loop", "melody-loop": "Melody Loop", "bass-loop": "Bass Loop",
-  "synth-loop": "Synth Loop", "guitar-loop": "Guitar Loop", "piano-loop": "Piano Loop",
-  "vocal-chop": "Vocal Chop", "one-shot": "One-Shot", "fx-riser": "FX/Riser",
-  pad: "Pad", preset: "Preset",
-};
 
 function genreColor(cat: string): string {
   const palette = ["#1a1040","#001a2e","#1a2e00","#2e1a00","#001e14","#14001e","#1e0a0a","#00141e"];
