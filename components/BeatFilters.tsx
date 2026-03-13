@@ -6,7 +6,7 @@ import { Search, X, ChevronDown, Check } from "lucide-react";
 export const BPM_MIN = 60;
 export const BPM_MAX = 220;
 export const PRICE_MIN = 100;
-export const PRICE_MAX = 10000;
+export const PRICE_MAX = 30000;
 
 export type Filters = {
   query: string;
@@ -343,6 +343,19 @@ type Props = {
 };
 
 export default function BeatFilters({ filters, genres, onChange }: Props) {
+  // Local state for the search input — debounced before propagating
+  const [inputQuery, setInputQuery] = useState(filters.query);
+
+  useEffect(() => {
+    const id = setTimeout(() => {
+      if (inputQuery !== filters.query) {
+        onChange({ ...filters, query: inputQuery });
+      }
+    }, 300);
+    return () => clearTimeout(id);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [inputQuery]);
+
   const hasActiveFilters =
     filters.genre !== "" ||
     filters.minBpm > BPM_MIN ||
@@ -354,7 +367,8 @@ export default function BeatFilters({ filters, genres, onChange }: Props) {
   }
 
   function reset() {
-    onChange({ ...DEFAULT_FILTERS, query: filters.query });
+    setInputQuery("");
+    onChange({ ...DEFAULT_FILTERS, query: "" });
   }
 
   const bpmActive = filters.minBpm > BPM_MIN || filters.maxBpm < BPM_MAX;
@@ -381,8 +395,8 @@ export default function BeatFilters({ filters, genres, onChange }: Props) {
           <input
             type="text"
             placeholder="Søk etter beats, sjanger, tags..."
-            value={filters.query}
-            onChange={(e) => set("query", e.target.value)}
+            value={inputQuery}
+            onChange={(e) => setInputQuery(e.target.value)}
             style={{
               background: "#141414",
               border: "1px solid #2a2a2a",
@@ -395,9 +409,9 @@ export default function BeatFilters({ filters, genres, onChange }: Props) {
               width: "100%",
             }}
           />
-          {filters.query && (
+          {inputQuery && (
             <button
-              onClick={() => set("query", "")}
+              onClick={() => { setInputQuery(""); onChange({ ...filters, query: "" }); }}
               className="absolute right-3.5 top-1/2 -translate-y-1/2"
               style={{ color: "#86868b" }}
             >

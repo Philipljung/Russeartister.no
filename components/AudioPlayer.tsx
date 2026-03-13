@@ -87,10 +87,10 @@ export default function AudioPlayer() {
           style={{
             width: 38,
             height: 38,
-            background: coverBg,
+            backgroundColor: coverBg ?? "transparent",
             backgroundImage: currentBeat.cover_url
               ? `url(${currentBeat.cover_url})`
-              : undefined,
+              : "none",
             backgroundSize: "cover",
             backgroundPosition: "center",
             boxShadow: "0 2px 8px rgba(0,0,0,0.5)",

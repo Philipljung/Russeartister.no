@@ -110,8 +110,8 @@ export default function BeatCard({ beat }: Props) {
         style={{
           width: 40,
           height: 40,
-          background: coverBg,
-          backgroundImage: beat.cover_url ? `url(${beat.cover_url})` : undefined,
+          backgroundColor: coverBg ?? "transparent",
+          backgroundImage: beat.cover_url ? `url(${beat.cover_url})` : "none",
           backgroundSize: "cover",
           backgroundPosition: "center",
           boxShadow: "0 2px 8px rgba(0,0,0,0.4)",

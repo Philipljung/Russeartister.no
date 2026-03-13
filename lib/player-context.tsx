@@ -19,14 +19,15 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
 
   const toggleBeat = useCallback((beat: Beat) => {
     setCurrentBeat((prev) => {
-      if (prev?.id === beat.id) {
-        setIsPlaying((p) => !p);
-        return prev;
-      }
-      setIsPlaying(true);
+      if (prev?.id === beat.id) return prev;
       return beat;
     });
-  }, []);
+    setIsPlaying((prevPlaying) => {
+      // Same beat → toggle; different beat → always start playing
+      if (currentBeat?.id === beat.id) return !prevPlaying;
+      return true;
+    });
+  }, [currentBeat?.id]);
 
   const pausePlayer = useCallback(() => setIsPlaying(false), []);
   const stopPlayer = useCallback(() => setIsPlaying(false), []);
