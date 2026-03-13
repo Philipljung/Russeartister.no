@@ -3,6 +3,7 @@
 import { useState, useMemo, useEffect } from "react";
 import BeatCard from "@/components/BeatCard";
 import BeatFilters, { DEFAULT_FILTERS, Filters, BPM_MIN, BPM_MAX, PRICE_MAX } from "@/components/BeatFilters";
+import HeroCarousel from "@/components/HeroCarousel";
 import { fetchPublicBeats } from "@/lib/fetchBeats";
 import type { Beat } from "@/lib/supabase/types";
 
@@ -54,6 +55,7 @@ export default function BeatsPage() {
 
   return (
     <>
+      <HeroCarousel />
       <BeatFilters filters={filters} genres={genres} onChange={setFilters} />
 
       <div className="mx-auto max-w-7xl px-6 py-6">

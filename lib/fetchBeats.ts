@@ -9,6 +9,7 @@ export async function fetchBeatsByProducer(producerId: string): Promise<Beat[]> 
     .from("beats")
     .select("*, producer:profiles(*)")
     .eq("producer_id", producerId)
+    .is("deleted_at", null)
     .order("created_at", { ascending: false });
 
   if (error) {
@@ -28,6 +29,7 @@ export async function fetchPublicBeats(): Promise<Beat[]> {
     .from("beats")
     .select("*, producer:profiles(*)")
     .eq("is_published", true)
+    .is("deleted_at", null)
     .order("created_at", { ascending: false });
 
   if (error) {

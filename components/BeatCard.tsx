@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { Play, Pause } from "lucide-react";
 import type { Beat } from "@/lib/supabase/types";
 import { usePlayer } from "@/lib/player-context";
@@ -102,8 +103,10 @@ export default function BeatCard({ beat }: Props) {
       </button>
 
       {/* Cover */}
-      <div
-        className="shrink-0 rounded-lg"
+      <Link
+        href={`/profile/${beat.producer?.username ?? ""}`}
+        onClick={(e) => e.stopPropagation()}
+        className="shrink-0 rounded-lg transition-opacity hover:opacity-80"
         style={{
           width: 40,
           height: 40,
@@ -112,6 +115,7 @@ export default function BeatCard({ beat }: Props) {
           backgroundSize: "cover",
           backgroundPosition: "center",
           boxShadow: "0 2px 8px rgba(0,0,0,0.4)",
+          display: "block",
         }}
       />
 
@@ -124,7 +128,15 @@ export default function BeatCard({ beat }: Props) {
           {beat.title}
         </p>
         <p className="text-xs mt-0.5 truncate" style={{ color: "#86868b" }}>
-          {beat.producer?.display_name ?? "Ukjent"} &middot; {beat.genre}
+          <Link
+            href={`/profile/${beat.producer?.username ?? ""}`}
+            onClick={(e) => e.stopPropagation()}
+            className="hover:underline"
+            style={{ color: "#86868b" }}
+          >
+            {beat.producer?.display_name ?? "Ukjent"}
+          </Link>
+          {" "}&middot; {beat.genre}
         </p>
       </div>
 

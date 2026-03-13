@@ -6,6 +6,9 @@ export type Profile = {
   avatar_url: string | null;
   stripe_account_id: string | null;
   stripe_onboarding_complete: boolean;
+  instagram_url: string | null;
+  spotify_url: string | null;
+  soundcloud_url: string | null;
   created_at: string;
 };
 

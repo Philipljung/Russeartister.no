@@ -8,6 +8,9 @@ export const MOCK_PROFILE: Profile = {
   avatar_url: null,
   stripe_account_id: null,
   stripe_onboarding_complete: false,
+  instagram_url: null,
+  spotify_url: null,
+  soundcloud_url: null,
   created_at: new Date().toISOString(),
 };
 

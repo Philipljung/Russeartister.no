@@ -2,6 +2,7 @@
 
 import { useState, useRef, useEffect } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { useParams } from "next/navigation";
 import { Pencil, Settings, Play, Pause, Package, Trash2, CreditCard, CheckCircle2 } from "lucide-react";
 import { getSupabaseClient } from "@/lib/supabase/client";
@@ -41,8 +42,16 @@ export default function ProfilePage() {
 
   const [showStripeModal, setShowStripeModal] = useState(false);
 
+  const [socialLinks, setSocialLinks] = useState({ instagram: "", spotify: "", soundcloud: "" });
+  const [editingSocial, setEditingSocial] = useState(false);
+  const [socialInput, setSocialInput] = useState({ instagram: "", spotify: "", soundcloud: "" });
+
+  const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
+  const [uploadingAvatar, setUploadingAvatar] = useState(false);
+
   const nameInputRef = useRef<HTMLInputElement>(null);
   const bioTextareaRef = useRef<HTMLTextAreaElement>(null);
+  const avatarInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     async function load() {
@@ -71,6 +80,14 @@ export default function ProfilePage() {
       setNameInput(fetchedProfile.display_name);
       setBio(fetchedProfile.bio ?? "");
       setBioInput(fetchedProfile.bio ?? "");
+      const links = {
+        instagram: fetchedProfile.instagram_url ?? "",
+        spotify: fetchedProfile.spotify_url ?? "",
+        soundcloud: fetchedProfile.soundcloud_url ?? "",
+      };
+      setSocialLinks(links);
+      setSocialInput(links);
+      setAvatarUrl(fetchedProfile.avatar_url);
       setIsOwner(owner);
 
       const fetchedBeats = await fetchBeatsByProducer(fetchedProfile.id);
@@ -96,16 +113,19 @@ export default function ProfilePage() {
   }, [editingBio]);
 
   async function deleteBeat(beatId: string) {
-    if (!confirm("Er du sikker på at du vil slette dette beatet?")) return;
-    console.log("[profile] Deleting beat:", beatId);
+    if (!confirm("Er du sikker på at du vil slette?")) return;
+    console.log("[profile] Soft-deleting beat:", beatId);
     const supabase = getSupabaseClient();
-    const { error } = await supabase.from("beats").delete().eq("id", beatId);
+    const { error } = await supabase
+      .from("beats")
+      .update({ deleted_at: new Date().toISOString() })
+      .eq("id", beatId);
     if (error) {
       console.error("[profile] Failed to delete beat:", error.message);
-      toast("Kunne ikke slette beatet. Prøv igjen.", "error");
+      toast("Kunne ikke slette. Prøv igjen.", "error");
     } else {
       setBeats((prev) => prev.filter((b) => b.id !== beatId));
-      toast("Beatet ble slettet.", "success");
+      toast("Beat ble slettet.", "success");
     }
   }
 
@@ -149,6 +169,73 @@ export default function ProfilePage() {
       setBio(trimmed);
     }
     setEditingBio(false);
+  }
+
+  async function handleAvatarUpload(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file || !profile) return;
+
+    const ext = file.name.split(".").pop();
+    const path = `${profile.id}/avatar.${ext}`;
+    console.log("[profile] Uploading avatar:", path);
+    setUploadingAvatar(true);
+
+    try {
+      const supabase = getSupabaseClient();
+      const { error: uploadError } = await supabase.storage
+        .from("avatars")
+        .upload(path, file, { upsert: true });
+
+      if (uploadError) {
+        console.error("[profile] Avatar upload error:", uploadError.message);
+        toast("Kunne ikke laste opp bilde.", "error");
+        return;
+      }
+
+      const { data: urlData } = supabase.storage.from("avatars").getPublicUrl(path);
+      const publicUrl = urlData.publicUrl + `?t=${Date.now()}`;
+
+      const { error: updateError } = await supabase
+        .from("profiles")
+        .update({ avatar_url: publicUrl })
+        .eq("id", profile.id);
+
+      if (updateError) {
+        console.error("[profile] Failed to save avatar_url:", updateError.message);
+        toast("Bilde lastet opp, men kunne ikke lagre.", "error");
+        return;
+      }
+
+      setAvatarUrl(publicUrl);
+      toast("Profilbilde oppdatert.", "success");
+    } catch (err) {
+      console.error("[profile] Unexpected avatar error:", err);
+      toast("Noe gikk galt.", "error");
+    } finally {
+      setUploadingAvatar(false);
+    }
+  }
+
+  async function saveSocialLinks() {
+    console.log("[profile] Saving social links");
+    const supabase = getSupabaseClient();
+    const { error } = await supabase
+      .from("profiles")
+      .update({
+        instagram_url: socialInput.instagram.trim() || null,
+        spotify_url: socialInput.spotify.trim() || null,
+        soundcloud_url: socialInput.soundcloud.trim() || null,
+      })
+      .eq("id", profile!.id);
+
+    if (error) {
+      console.error("[profile] Failed to save social links:", error.message);
+      toast("Kunne ikke lagre lenker.", "error");
+    } else {
+      setSocialLinks({ ...socialInput });
+      toast("Lenker lagret.", "success");
+    }
+    setEditingSocial(false);
   }
 
   if (loading) {
@@ -213,25 +300,75 @@ export default function ProfilePage() {
         {/* Avatar */}
         <div className="absolute bottom-0 left-0 translate-y-1/2 px-6 md:px-10">
           <div
-            className="shrink-0 rounded-2xl"
+            className="relative shrink-0 rounded-2xl"
             style={{
-              width: 88,
-              height: 88,
+              width: 88, height: 88,
               background: "linear-gradient(135deg, #2a1a5e 0%, #1a2a5e 100%)",
               border: "3px solid #0a0a14",
               boxShadow: "0 8px 32px rgba(0,0,0,0.6)",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
+              cursor: isOwner ? "pointer" : "default",
+              overflow: "hidden",
             }}
+            onClick={() => isOwner && avatarInputRef.current?.click()}
+            title={isOwner ? "Endre profilbilde" : undefined}
           >
-            <span
-              className="text-2xl font-bold tracking-wider select-none"
-              style={{ color: "rgba(255,255,255,0.3)" }}
-            >
-              {displayName.slice(0, 2).toUpperCase()}
-            </span>
+            {avatarUrl ? (
+              <Image src={avatarUrl} alt="Profilbilde" fill style={{ objectFit: "cover" }} />
+            ) : (
+              <span
+                className="flex h-full w-full items-center justify-center text-2xl font-bold tracking-wider select-none"
+                style={{ color: "rgba(255,255,255,0.3)" }}
+              >
+                {displayName.slice(0, 2).toUpperCase()}
+              </span>
+            )}
+
+            {/* Hover overlay for owner */}
+            {isOwner && (
+              <div
+                className="absolute inset-0 flex flex-col items-center justify-center gap-1.5 opacity-0 hover:opacity-100 transition-opacity"
+                style={{ background: "rgba(0,0,0,0.65)" }}
+              >
+                {uploadingAvatar ? (
+                  <div className="h-4 w-4 rounded-full border-2 border-white border-t-transparent animate-spin" />
+                ) : (
+                  <>
+                    <button
+                      onClick={(e) => { e.stopPropagation(); avatarInputRef.current?.click(); }}
+                      className="flex items-center gap-1 rounded-md px-2 py-0.5 text-xs font-medium transition-colors hover:bg-white/20"
+                      style={{ color: "#fff" }}
+                    >
+                      <Pencil size={11} /> Endre
+                    </button>
+                    {avatarUrl && (
+                      <button
+                        onClick={async (e) => {
+                          e.stopPropagation();
+                          const supabase = getSupabaseClient();
+                          const { error } = await supabase.from("profiles").update({ avatar_url: null }).eq("id", profile!.id);
+                          if (!error) { setAvatarUrl(null); toast("Profilbilde fjernet.", "success"); }
+                          else toast("Kunne ikke fjerne bilde.", "error");
+                        }}
+                        className="flex items-center gap-1 rounded-md px-2 py-0.5 text-xs font-medium transition-colors hover:bg-white/20"
+                        style={{ color: "#ff6b6b" }}
+                      >
+                        Fjern
+                      </button>
+                    )}
+                  </>
+                )}
+              </div>
+            )}
           </div>
+
+          {/* Hidden file input */}
+          <input
+            ref={avatarInputRef}
+            type="file"
+            accept="image/*"
+            className="hidden"
+            onChange={handleAvatarUpload}
+          />
         </div>
       </div>
 
@@ -318,6 +455,140 @@ export default function ProfilePage() {
           )}
         </div>
 
+        {/* Social links */}
+        <div className="mt-4 flex items-center gap-2 flex-wrap">
+          {(["instagram", "spotify", "soundcloud"] as const).map((platform) => {
+            const logos: Record<string, string> = {
+              instagram: "/instagramlogo.jpg",
+              spotify: "/spotifylogo.jpg",
+              soundcloud: "/soundcloudlogo.png",
+            };
+            const labels: Record<string, string> = {
+              instagram: "Instagram",
+              spotify: "Spotify",
+              soundcloud: "SoundCloud",
+            };
+            const url = socialLinks[platform];
+
+            if (url) {
+              return (
+                <a
+                  key={platform}
+                  href={url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  title={labels[platform]}
+                  className="transition-opacity hover:opacity-70"
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    width: 34,
+                    height: 34,
+                    borderRadius: 10,
+                    overflow: "hidden",
+                    border: "1px solid rgba(255,255,255,0.08)",
+                  }}
+                >
+                  <Image src={logos[platform]} alt={labels[platform]} width={34} height={34} style={{ objectFit: "cover" }} />
+                </a>
+              );
+            }
+
+            if (!isOwner) return null;
+
+            return (
+              <button
+                key={platform}
+                onClick={() => { setSocialInput({ ...socialLinks }); setEditingSocial(true); }}
+                className="flex items-center gap-1.5 rounded-full px-3 py-1 text-xs transition-colors hover:opacity-80"
+                style={{
+                  background: "rgba(255,255,255,0.04)",
+                  border: "1px dashed rgba(255,255,255,0.1)",
+                  color: "#3a3a3a",
+                }}
+              >
+                <Image src={logos[platform]} alt={labels[platform]} width={14} height={14} style={{ objectFit: "cover", borderRadius: 3, opacity: 0.4 }} />
+                Legg til {labels[platform]}
+              </button>
+            );
+          })}
+
+          {/* Always-visible edit button for owner */}
+          {isOwner && (
+            <button
+              onClick={() => { setSocialInput({ ...socialLinks }); setEditingSocial(true); }}
+              className="flex items-center justify-center rounded-full transition-colors hover:opacity-80"
+              style={{ width: 28, height: 28, background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.08)", color: "#3a3a3a" }}
+              title="Endre sosiale lenker"
+            >
+              <Pencil size={11} />
+            </button>
+          )}
+        </div>
+
+        {/* Social links edit modal */}
+        {editingSocial && isOwner && (
+          <div
+            className="fixed inset-0 z-50 flex items-center justify-center p-4"
+            style={{ background: "rgba(0,0,0,0.7)" }}
+            onClick={() => setEditingSocial(false)}
+          >
+            <div
+              className="w-full max-w-sm rounded-2xl p-6 flex flex-col gap-4"
+              style={{ background: "#111", border: "1px solid #222" }}
+              onClick={(e) => e.stopPropagation()}
+            >
+              <h3 className="text-base font-semibold" style={{ color: "#f5f5f7" }}>Sosiale lenker</h3>
+              {(["instagram", "spotify", "soundcloud"] as const).map((platform) => {
+                const placeholders: Record<string, string> = {
+                  instagram: "https://instagram.com/brukernavn",
+                  spotify: "https://open.spotify.com/artist/...",
+                  soundcloud: "https://soundcloud.com/brukernavn",
+                };
+                const labels: Record<string, string> = {
+                  instagram: "Instagram",
+                  spotify: "Spotify",
+                  soundcloud: "SoundCloud",
+                };
+                return (
+                  <div key={platform} className="flex flex-col gap-1">
+                    <label className="text-xs font-medium" style={{ color: "#86868b" }}>{labels[platform]}</label>
+                    <input
+                      type="url"
+                      value={socialInput[platform]}
+                      onChange={(e) => setSocialInput((prev) => ({ ...prev, [platform]: e.target.value }))}
+                      placeholder={placeholders[platform]}
+                      className="rounded-xl px-3 py-2 text-sm outline-none"
+                      style={{
+                        background: "rgba(255,255,255,0.05)",
+                        border: "1px solid rgba(255,255,255,0.1)",
+                        color: "#f5f5f7",
+                      }}
+                    />
+                  </div>
+                );
+              })}
+              <div className="flex gap-2 mt-1">
+                <button
+                  onClick={() => setEditingSocial(false)}
+                  className="flex-1 rounded-xl py-2 text-sm font-medium"
+                  style={{ background: "rgba(255,255,255,0.06)", color: "#86868b" }}
+                >
+                  Avbryt
+                </button>
+                <button
+                  onClick={saveSocialLinks}
+                  className="flex-1 rounded-xl py-2 text-sm font-semibold"
+                  style={{ background: "#6366f1", color: "#fff" }}
+                >
+                  Lagre
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Stripe banner — owner only */}
         {isOwner && (
           profile.stripe_onboarding_complete ? (
@@ -338,7 +609,7 @@ export default function ProfilePage() {
                   Sett opp betalinger
                 </p>
                 <p className="text-xs mt-0.5" style={{ color: "#86868b" }}>
-                  Koble til Stripe for å motta betaling for låter
+                  Koble til Stripe for å begynne å selge
                 </p>
               </div>
               <button
