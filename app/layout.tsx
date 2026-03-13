@@ -23,8 +23,8 @@ export default function RootLayout({
     <html lang="no">
       <body className={`${geist.variable} antialiased`}>
         <Providers>
-          <Navbar />
-          <main className="min-h-screen pb-16">{children}</main>
+            <Navbar />
+            <main className="min-h-screen pb-16">{children}</main>
         </Providers>
       </body>
     </html>
