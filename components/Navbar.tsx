@@ -23,7 +23,8 @@ export default function Navbar() {
     const supabase = getSupabaseClient();
 
     // Read session from local storage — instant, no network call.
-    supabase.auth.getSession().then(({ data, error }) => {
+    supabase.auth.getSession().then((result) => {
+      const { data, error } = result;
       console.log(
         "[Navbar] Initial session:",
         data.session ? `user=${data.session.user.email}` : "none",
