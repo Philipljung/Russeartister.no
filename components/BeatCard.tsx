@@ -6,6 +6,7 @@ import { Play, Pause } from "lucide-react";
 import type { Beat } from "@/lib/supabase/types";
 import { usePlayer } from "@/lib/player-context";
 import { useToast } from "@/lib/toast-context";
+import BeatCheckoutModal from "./BeatCheckoutModal";
 
 type Props = {
   beat: Beat;
@@ -23,7 +24,7 @@ function genreColor(genre: string): string {
 
 export default function BeatCard({ beat }: Props) {
   const [hovered, setHovered] = useState(false);
-  const [buying, setBuying] = useState(false);
+  const [checkoutOpen, setCheckoutOpen] = useState(false);
   const { currentBeat, isPlaying, toggleBeat } = usePlayer();
   const { toast } = useToast();
 
@@ -31,46 +32,14 @@ export default function BeatCard({ beat }: Props) {
   const isCurrentlyPlaying = isActive && isPlaying;
   const coverBg = beat.cover_url ? undefined : genreColor(beat.genre);
 
-  async function handleBuy(e: React.MouseEvent) {
+  function handleBuy(e: React.MouseEvent) {
     e.stopPropagation();
-    if (buying) return;
-    setBuying(true);
-    console.log("[BeatCard] Starting checkout for beat:", beat.id, beat.title);
-
-    try {
-      const res = await fetch("/api/stripe/checkout", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ beatId: beat.id }),
-      });
-
-      const data = await res.json();
-
-      if (!res.ok) {
-        console.error("[BeatCard] Checkout error:", data.error);
-        toast(data.error ?? "Kunne ikke starte betaling.", "error");
-        setBuying(false);
-        return;
-      }
-
-      if (!data.url) {
-        console.error("[BeatCard] No checkout URL in response");
-        toast("Noe gikk galt. Prøv igjen.", "error");
-        setBuying(false);
-        return;
-      }
-
-      console.log("[BeatCard] Redirecting to Stripe:", data.url);
-      window.location.href = data.url;
-      // Don't reset buying — we're navigating away
-    } catch (err) {
-      console.error("[BeatCard] Unexpected error:", err);
-      toast("Noe gikk galt. Sjekk nettverkstilkoblingen.", "error");
-      setBuying(false);
-    }
+    console.log("[BeatCard] Opening checkout modal for beat:", beat.id, beat.title);
+    setCheckoutOpen(true);
   }
 
   return (
+    <>
     <div
       className="group flex items-center gap-4 rounded-xl px-4 py-3 transition-colors cursor-pointer"
       style={{
@@ -176,15 +145,17 @@ export default function BeatCard({ beat }: Props) {
           style={{
             background: hovered ? "#f5f5f7" : "rgba(255,255,255,0.08)",
             color: hovered ? "#080808" : "#f5f5f7",
-            opacity: buying ? 0.6 : 1,
-            cursor: buying ? "not-allowed" : "pointer",
           }}
           onClick={handleBuy}
-          disabled={buying}
         >
-          {buying ? "Laster..." : "Kjøp"}
+          Kjøp
         </button>
       </div>
     </div>
+
+    {checkoutOpen && (
+      <BeatCheckoutModal beat={beat} onClose={() => setCheckoutOpen(false)} />
+    )}
+    </>
   );
 }

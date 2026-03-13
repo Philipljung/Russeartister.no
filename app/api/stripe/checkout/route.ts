@@ -69,6 +69,7 @@ export async function POST(request: NextRequest) {
     const appUrl = process.env.NEXT_PUBLIC_APP_URL;
 
     const checkoutSession = await stripe.checkout.sessions.create({
+      ui_mode: "embedded",
       payment_method_types: ["card"],
       line_items: [
         {
@@ -95,15 +96,13 @@ export async function POST(request: NextRequest) {
         beat_id: beatId,
         beat_title: beat.title,
       },
-      // Pass buyer ID so the webhook can link the purchase to the user
       ...(buyerId ? { client_reference_id: buyerId } : {}),
-      success_url: `${appUrl}/kjop/success?session_id={CHECKOUT_SESSION_ID}`,
-      cancel_url: `${appUrl}/kjop/avbryt`,
+      return_url: `${appUrl}/kjop/success?session_id={CHECKOUT_SESSION_ID}`,
     });
 
-    console.log("[checkout] Checkout Session created:", checkoutSession.id, "url:", checkoutSession.url);
+    console.log("[checkout] Embedded Checkout Session created:", checkoutSession.id);
 
-    return NextResponse.json({ url: checkoutSession.url });
+    return NextResponse.json({ clientSecret: checkoutSession.client_secret });
   } catch (err) {
     console.error("[checkout] Unexpected error:", err);
     return NextResponse.json({ error: "Intern feil" }, { status: 500 });
