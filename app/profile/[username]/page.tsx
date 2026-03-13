@@ -3,12 +3,13 @@
 import { useState, useRef, useEffect } from "react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
-import { Pencil, Settings, Play, Pause, Package, Trash2, CreditCard } from "lucide-react";
+import { Pencil, Settings, Play, Pause, Package, Trash2, CreditCard, CheckCircle2 } from "lucide-react";
 import { getSupabaseClient } from "@/lib/supabase/client";
 import { fetchProfileByUsername } from "@/lib/fetchProfile";
 import { fetchBeatsByProducer } from "@/lib/fetchBeats";
 import { usePlayer } from "@/lib/player-context";
 import { useToast } from "@/lib/toast-context";
+import StripeOnboardingModal from "@/components/StripeOnboardingModal";
 import type { Profile, Beat } from "@/lib/supabase/types";
 
 function genreColor(genre: string): string {
@@ -37,6 +38,8 @@ export default function ProfilePage() {
   const [bio, setBio] = useState("");
   const [editingBio, setEditingBio] = useState(false);
   const [bioInput, setBioInput] = useState("");
+
+  const [showStripeModal, setShowStripeModal] = useState(false);
 
   const nameInputRef = useRef<HTMLInputElement>(null);
   const bioTextareaRef = useRef<HTMLTextAreaElement>(null);
@@ -179,6 +182,7 @@ export default function ProfilePage() {
   }
 
   return (
+    <>
     <div>
       {/* ── HEADER ── */}
       <div
@@ -314,29 +318,39 @@ export default function ProfilePage() {
           )}
         </div>
 
-        {/* Stripe banner — owner only, shown when Stripe not set up */}
-        {isOwner && !profile.stripe_onboarding_complete && (
-          <div
-            className="mt-5 flex items-center justify-between gap-4 rounded-2xl px-5 py-4"
-            style={{ background: "rgba(99,102,241,0.08)", border: "1px solid rgba(99,102,241,0.2)" }}
-          >
-            <div>
-              <p className="text-sm font-semibold" style={{ color: "#f5f5f7" }}>
-                Sett opp betalinger
-              </p>
-              <p className="text-xs mt-0.5" style={{ color: "#86868b" }}>
-                Koble til Stripe for å motta betaling for beats
-              </p>
-            </div>
-            <button
-              className="flex shrink-0 items-center gap-2 rounded-xl px-4 py-2 text-sm font-semibold transition-opacity hover:opacity-80"
-              style={{ background: "#6366f1", color: "#fff" }}
-              onClick={() => toast("Stripe-integrasjon kommer snart!", "info")}
+        {/* Stripe banner — owner only */}
+        {isOwner && (
+          profile.stripe_onboarding_complete ? (
+            <div
+              className="mt-5 inline-flex items-center gap-2 rounded-full px-3 py-1.5"
+              style={{ background: "rgba(52,199,89,0.08)", border: "1px solid rgba(52,199,89,0.2)" }}
             >
-              <CreditCard size={14} />
-              Sett opp Stripe
-            </button>
-          </div>
+              <CheckCircle2 size={13} style={{ color: "#34c759" }} />
+              <span className="text-xs font-medium" style={{ color: "#34c759" }}>Stripe tilkoblet</span>
+            </div>
+          ) : (
+            <div
+              className="mt-5 flex items-center justify-between gap-4 rounded-2xl px-5 py-4"
+              style={{ background: "rgba(99,102,241,0.08)", border: "1px solid rgba(99,102,241,0.2)" }}
+            >
+              <div>
+                <p className="text-sm font-semibold" style={{ color: "#f5f5f7" }}>
+                  Sett opp betalinger
+                </p>
+                <p className="text-xs mt-0.5" style={{ color: "#86868b" }}>
+                  Koble til Stripe for å motta betaling for låter
+                </p>
+              </div>
+              <button
+                className="flex shrink-0 items-center gap-2 rounded-xl px-4 py-2 text-sm font-semibold transition-opacity hover:opacity-80"
+                style={{ background: "#6366f1", color: "#fff" }}
+                onClick={() => setShowStripeModal(true)}
+              >
+                <CreditCard size={14} />
+                Sett opp Stripe
+              </button>
+            </div>
+          )
         )}
 
         {/* Divider */}
@@ -469,5 +483,18 @@ export default function ProfilePage() {
         </section>
       </div>
     </div>
+
+    {showStripeModal && (
+      <StripeOnboardingModal
+        onClose={() => setShowStripeModal(false)}
+        onComplete={() => {
+          setShowStripeModal(false);
+          fetchProfileByUsername(usernameParam).then((p) => {
+            if (p) setProfile(p);
+          });
+        }}
+      />
+    )}
+    </>
   );
 }

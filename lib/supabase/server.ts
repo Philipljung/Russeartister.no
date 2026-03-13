@@ -26,3 +26,22 @@ export async function getSupabaseServerClient() {
     }
   );
 }
+
+/** Alias used by Route Handlers that import { createClient }. */
+export const createClient = getSupabaseServerClient;
+
+/**
+ * Service-role client — bypasses RLS.
+ * Use ONLY in trusted server contexts (webhooks, crons).
+ * Sync — no cookies needed.
+ */
+export function createServiceClient() {
+  console.log("[supabase] createServiceClient() — using service role key");
+  return createServerClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!,
+    {
+      cookies: { getAll: () => [], setAll: () => {} },
+    }
+  );
+}
