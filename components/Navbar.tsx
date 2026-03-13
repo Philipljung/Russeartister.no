@@ -23,8 +23,8 @@ export default function Navbar() {
     const supabase = getSupabaseClient();
 
     // Read session from local storage — instant, no network call.
-    supabase.auth.getSession().then((result) => {
-      const { data, error } = result;
+    void (async () => {
+      const { data, error } = await supabase.auth.getSession();
       console.log(
         "[Navbar] Initial session:",
         data.session ? `user=${data.session.user.email}` : "none",
@@ -32,7 +32,7 @@ export default function Navbar() {
       );
       setSession(data.session);
       setAuthReady(true);
-    });
+    })();
 
     // Subscribe to auth state changes (login, logout, token refresh).
     const {
