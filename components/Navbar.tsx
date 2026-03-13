@@ -5,7 +5,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { usePathname, useRouter } from "next/navigation";
 import { getSupabaseClient } from "@/lib/supabase/client";
-import type { Session } from "@supabase/supabase-js";
+import type { Session, AuthChangeEvent } from "@supabase/supabase-js";
 
 const navLinks = [
   { label: "Beats", href: "/beats", active: true },
@@ -37,7 +37,7 @@ export default function Navbar() {
     // Subscribe to auth state changes (login, logout, token refresh).
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange((event, newSession) => {
+    } = supabase.auth.onAuthStateChange((event: AuthChangeEvent, newSession) => {
       console.log("[Navbar] Auth state changed:", event, newSession?.user?.email ?? "null");
       setSession(newSession);
       setAuthReady(true);
