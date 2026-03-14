@@ -40,6 +40,7 @@ export default function BeatsPage() {
     }
 
     if (filters.genre) result = result.filter((b) => b.genre === filters.genre);
+    if (filters.vocal) result = result.filter((b) => b.vocal_type === filters.vocal);
     if (filters.minBpm > BPM_MIN) result = result.filter((b) => b.bpm >= filters.minBpm);
     if (filters.maxBpm < BPM_MAX) result = result.filter((b) => b.bpm <= filters.maxBpm);
     if (filters.maxPrice < PRICE_MAX) result = result.filter((b) => b.price <= filters.maxPrice);

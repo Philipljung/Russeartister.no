@@ -24,6 +24,7 @@ export type Beat = {
   price: number;
   exclusive_price: number | null;
   exclusively_sold: boolean;
+  vocal_type: "med_vokal" | "uten_vokal" | null;
   cover_url: string | null;
   audio_preview_url: string | null;
   project_file_url: string | null;

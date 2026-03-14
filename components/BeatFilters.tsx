@@ -11,6 +11,7 @@ export const PRICE_MAX = 30000;
 export type Filters = {
   query: string;
   genre: string;
+  vocal: "" | "med_vokal" | "uten_vokal";
   minBpm: number;
   maxBpm: number;
   maxPrice: number;
@@ -20,6 +21,7 @@ export type Filters = {
 export const DEFAULT_FILTERS: Filters = {
   query: "",
   genre: "",
+  vocal: "",
   minBpm: BPM_MIN,
   maxBpm: BPM_MAX,
   maxPrice: PRICE_MAX,
@@ -361,6 +363,7 @@ export default function BeatFilters({ filters, genres, onChange }: Props) {
 
   const activeFilterCount = [
     filters.genre !== "",
+    filters.vocal !== "",
     filters.minBpm > BPM_MIN,
     filters.maxBpm < BPM_MAX,
     filters.maxPrice < PRICE_MAX,
@@ -392,6 +395,27 @@ export default function BeatFilters({ filters, genres, onChange }: Props) {
           genres={genres}
           onChange={(v) => set("genre", v)}
         />
+      </div>
+
+      {/* Vocal */}
+      <div className="flex flex-col gap-2">
+        <span className="text-xs font-medium" style={{ color: "#86868b" }}>Vokal</span>
+        <div className="flex gap-1.5">
+          {(["med_vokal", "uten_vokal"] as const).map((v) => (
+            <button
+              key={v}
+              onClick={() => set("vocal", filters.vocal === v ? "" : v)}
+              className="rounded-xl px-3 py-1.5 text-xs transition-all"
+              style={{
+                background: filters.vocal === v ? "rgba(99,102,241,0.12)" : "#141414",
+                border: `1px solid ${filters.vocal === v ? "rgba(99,102,241,0.35)" : "#2a2a2a"}`,
+                color: filters.vocal === v ? "#818cf8" : "#86868b",
+              }}
+            >
+              {v === "med_vokal" ? "Med vokal" : "Uten vokal"}
+            </button>
+          ))}
+        </div>
       </div>
 
       {/* BPM */}

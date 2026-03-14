@@ -9,7 +9,7 @@ import { getSupabaseClient } from "@/lib/supabase/client";
 import type { Session, AuthChangeEvent } from "@supabase/supabase-js";
 
 const navLinks = [
-  { label: "Beats", href: "/beats", active: true },
+  { label: "Låter", href: "/beats", active: true },
   { label: "Samples & Presets", href: "/samples", active: true },
   { label: "Remakes", href: "/remakes", active: false },
 ];
@@ -75,9 +75,9 @@ export default function Navbar() {
         borderColor: "#1e1e1e",
       }}
     >
-      <div className="mx-auto flex h-14 max-w-7xl items-center justify-between px-4 md:px-6">
-        {/* Logo */}
-        <Link href="/beats" className="flex items-center transition-opacity hover:opacity-80">
+      <div className="mx-auto grid h-14 max-w-7xl grid-cols-3 items-center px-4 md:px-6">
+        {/* Logo — left col */}
+        <Link href="/beats" className="flex items-center transition-opacity hover:opacity-80 justify-self-start">
           <Image
             src="/ra-logo.png"
             alt="Russeartister.no"
@@ -88,8 +88,8 @@ export default function Navbar() {
           />
         </Link>
 
-        {/* Desktop nav links */}
-        <div className="hidden md:flex items-center gap-1">
+        {/* Desktop nav links — center col */}
+        <div className="hidden md:flex items-center justify-center gap-1">
           {navLinks.map((link) => {
             const isCurrentPage = pathname.startsWith(link.href);
             if (!link.active) {
@@ -120,10 +120,9 @@ export default function Navbar() {
           })}
         </div>
 
-        {/* Desktop auth */}
+        {/* Desktop auth — right col */}
         <div
-          className="hidden md:flex items-center gap-2"
-          style={{ minWidth: 160, justifyContent: "flex-end" }}
+          className="hidden md:flex items-center gap-2 justify-self-end"
         >
           {!authReady ? (
             <div style={{ width: 160, height: 32 }} />
@@ -186,9 +185,9 @@ export default function Navbar() {
           )}
         </div>
 
-        {/* Mobile hamburger */}
+        {/* Mobile hamburger — right col (center col hidden on mobile so hamburger spans cols 2+3) */}
         <button
-          className="md:hidden flex items-center justify-center rounded-lg p-2 transition-colors"
+          className="md:hidden col-start-3 flex items-center justify-end rounded-lg p-2 transition-colors justify-self-end"
           style={{ color: "#86868b" }}
           onClick={() => setMenuOpen((o) => !o)}
           aria-label={menuOpen ? "Lukk meny" : "Meny"}

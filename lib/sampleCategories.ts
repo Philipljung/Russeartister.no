@@ -2,10 +2,11 @@ export const SAMPLE_CATEGORIES = {
   Trommer: ["kick", "snare", "clap", "hihat", "808", "cymbal", "tom", "percussion", "drum-loop", "full-loop"],
   Melodisk: ["melody-loop", "bass-loop", "synth-loop", "guitar-loop", "piano-loop", "vocal-chop"],
   FX: ["one-shot", "fx-riser"],
+  Annet: ["annet"],
 } as const;
 
 export const PRESET_CATEGORIES = {
-  Presets: ["lead", "chord", "bass", "pad", "pluck"],
+  Presets: ["lead", "chord", "bass", "pad", "pluck", "annet"],
 } as const;
 
 export const ALL_SAMPLE_CATEGORIES = Object.values(SAMPLE_CATEGORIES).flat();
@@ -18,4 +19,5 @@ export const CATEGORY_LABELS: Record<string, string> = {
   "synth-loop": "Synth Loop", "guitar-loop": "Guitar Loop", "piano-loop": "Piano Loop",
   "vocal-chop": "Vocal Chop", "one-shot": "One-Shot", "fx-riser": "FX/Riser",
   lead: "Lead", chord: "Chord", bass: "Bass", pad: "Pad", pluck: "Pluck",
+  annet: "Annet",
 };

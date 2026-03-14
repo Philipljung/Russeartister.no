@@ -41,6 +41,7 @@ export default function LastOppPage() {
   const [tags, setTags] = useState<string[]>([]);
   const [tagInput, setTagInput] = useState("");
   const [price, setPrice] = useState("");
+  const [vocalType, setVocalType] = useState<"med_vokal" | "uten_vokal" | "">("");
   const [exclusiveEnabled, setExclusiveEnabled] = useState(false);
   const [exclusivePrice, setExclusivePrice] = useState("");
   const [isPublished, setIsPublished] = useState(true);
@@ -200,6 +201,7 @@ export default function LastOppPage() {
         tags,
         price: priceNum,
         exclusive_price: exclusivePriceNum,
+        vocal_type: vocalType || null,
         cover_url: coverUrl,
         audio_preview_url: audioUrl,
         project_file_url: projectFileUrl,
@@ -230,6 +232,17 @@ export default function LastOppPage() {
       <p className="mb-8 text-sm" style={{ color: "#86868b" }}>
         Fyll ut informasjon om beatet ditt.
       </p>
+
+      {/* Anti-scam warning */}
+      <div
+        className="mb-6 flex items-start gap-3 rounded-xl px-4 py-3"
+        style={{ background: "rgba(255,59,48,0.06)", border: "1px solid rgba(255,59,48,0.18)" }}
+      >
+        <AlertCircle size={16} style={{ color: "#ff3b30", flexShrink: 0, marginTop: 2 }} />
+        <p className="text-xs leading-relaxed" style={{ color: "#86868b" }}>
+          Last opp riktige filer og korrekt informasjon. Svindel, falsk innhold eller manipulering av kjøpere vil føre til umiddelbar utestengelse og at utbetalinger stoppes. Vi tar alle brudd svært alvorlig.
+        </p>
+      </div>
 
       {stripeReady === false && (
         <div
@@ -350,6 +363,29 @@ export default function LastOppPage() {
                 <option key={k} value={k}>{k}</option>
               ))}
             </select>
+          </div>
+        </div>
+
+        {/* Vokal */}
+        <div>
+          <Label>Vokal</Label>
+          <div className="flex gap-2">
+            {(["med_vokal", "uten_vokal"] as const).map((v) => (
+              <button
+                key={v}
+                type="button"
+                onClick={() => setVocalType(vocalType === v ? "" : v)}
+                className="rounded-xl px-4 py-2 text-sm font-medium transition-all"
+                style={{
+                  background: vocalType === v ? "rgba(99,102,241,0.12)" : "#141414",
+                  border: `1px solid ${vocalType === v ? "rgba(99,102,241,0.4)" : "#2a2a2a"}`,
+                  color: vocalType === v ? "#818cf8" : "#86868b",
+                  cursor: "pointer",
+                }}
+              >
+                {v === "med_vokal" ? "Med vokal" : "Uten vokal"}
+              </button>
+            ))}
           </div>
         </div>
 

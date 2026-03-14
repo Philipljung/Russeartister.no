@@ -195,6 +195,17 @@ export default function LastOppSamplePage() {
         Del samples og presets med andre produsenter.
       </p>
 
+      {/* Anti-scam warning */}
+      <div
+        className="mb-6 flex items-start gap-3 rounded-xl px-4 py-3"
+        style={{ background: "rgba(255,59,48,0.06)", border: "1px solid rgba(255,59,48,0.18)" }}
+      >
+        <AlertCircle size={16} style={{ color: "#ff3b30", flexShrink: 0, marginTop: 2 }} />
+        <p className="text-xs leading-relaxed" style={{ color: "#86868b" }}>
+          Last opp riktige filer og korrekt informasjon. Svindel, falsk innhold eller manipulering av kjøpere vil føre til umiddelbar utestengelse og at utbetalinger stoppes. Vi tar alle brudd svært alvorlig.
+        </p>
+      </div>
+
       {stripeReady === false && (
         <div
           className="mb-6 flex items-start gap-3 rounded-xl px-4 py-3"
