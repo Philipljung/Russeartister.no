@@ -52,7 +52,7 @@ export default function BeatCard({ beat, isSelected = false, onSelect }: Props) 
   return (
     <>
     <div
-      className="group flex items-center gap-4 rounded-xl px-4 py-3 transition-colors cursor-pointer"
+      className="group flex items-center gap-2 md:gap-4 rounded-xl px-2 md:px-4 py-3 transition-colors cursor-pointer"
       style={{
         background: isSelected ? "rgba(255,255,255,0.06)" : hovered ? "rgba(255,255,255,0.04)" : "transparent",
         borderBottom: "1px solid #1a1a1a",

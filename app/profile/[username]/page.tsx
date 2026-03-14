@@ -793,10 +793,10 @@ export default function ProfilePage() {
             {isOwner && (
               <Link
                 href="/lastopp-sample"
-                className="rounded-xl px-4 py-1.5 text-sm font-semibold transition-opacity hover:opacity-90"
+                className="rounded-xl px-3 md:px-4 py-1.5 text-xs md:text-sm font-semibold transition-opacity hover:opacity-90 whitespace-nowrap"
                 style={{ background: "#0071e3", color: "#fff" }}
               >
-                Last opp Sample eller Preset
+                <span className="hidden sm:inline">Last opp </span>Sample / Preset
               </Link>
             )}
           </div>

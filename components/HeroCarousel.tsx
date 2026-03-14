@@ -66,20 +66,20 @@ export default function HeroCarousel() {
       {slides.map((slide, i) => {
         const accent = ACCENT[i % 3];
         const inner = (
-          <div className="relative flex h-full flex-col justify-center px-8 md:px-14">
+          <div className="relative flex h-full flex-col justify-center px-5 md:px-14">
             {slide.tag && (
               <span
-                className="mb-3 inline-block self-start rounded-full px-3 py-0.5 text-xs font-semibold tracking-wide uppercase"
+                className="mb-2 inline-block self-start rounded-full px-2.5 py-0.5 text-xs font-semibold tracking-wide uppercase"
                 style={{ background: "rgba(255,255,255,0.08)", color: "rgba(255,255,255,0.5)" }}
               >
                 {slide.tag}
               </span>
             )}
-            <h2 className="max-w-lg text-2xl font-bold tracking-tight leading-snug md:text-3xl" style={{ color: "#f5f5f7" }}>
+            <h2 className="max-w-lg text-lg font-bold tracking-tight leading-snug md:text-3xl" style={{ color: "#f5f5f7" }}>
               {slide.headline}
             </h2>
             {slide.subtitle && (
-              <p className="mt-2 max-w-md text-sm leading-relaxed" style={{ color: "rgba(255,255,255,0.45)" }}>
+              <p className="mt-1.5 max-w-md text-xs md:text-sm leading-relaxed hidden sm:block" style={{ color: "rgba(255,255,255,0.45)" }}>
                 {slide.subtitle}
               </p>
             )}
@@ -158,7 +158,7 @@ export default function HeroCarousel() {
       </button>
 
       {/* Dot indicators */}
-      <div className="absolute bottom-4 left-8 md:left-14 flex items-center gap-2">
+      <div className="absolute bottom-4 left-5 md:left-14 flex items-center gap-2">
         {slides.map((_, i) => (
           <button
             key={i}

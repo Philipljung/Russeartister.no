@@ -34,7 +34,7 @@ function SampleCard({
 
   return (
     <div
-      className="flex items-center gap-4 rounded-xl px-4 py-3 transition-colors"
+      className="flex items-center gap-2 md:gap-4 rounded-xl px-2 md:px-4 py-3 transition-colors"
       style={{
         background: hovered ? "rgba(255,255,255,0.04)" : "transparent",
         borderBottom: "1px solid #1a1a1a",
@@ -230,7 +230,7 @@ export default function SamplesPage() {
           borderColor: "#1e1e1e",
         }}
       >
-        <div className="mx-auto max-w-7xl space-y-3 px-6 py-4">
+        <div className="mx-auto max-w-7xl space-y-3 px-4 md:px-6 py-4">
           {/* Search */}
           <div className="relative">
             <Search size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2" style={{ color: "#86868b" }} />
@@ -272,14 +272,14 @@ export default function SamplesPage() {
           </div>
 
           {/* Category chips + genre filter */}
-          <div className="flex flex-wrap items-center gap-2 pt-1">
+          <div className="flex items-center gap-2 pt-1 overflow-x-auto pb-1 scrollbar-hide" style={{ scrollbarWidth: "none" }}>
             {activeType === "sample" &&
               Object.entries(SAMPLE_CATEGORIES).map(([, cats]) =>
                 cats.map((cat) => (
                   <button
                     key={cat}
                     onClick={() => setActiveCategory(activeCategory === cat ? "" : cat)}
-                    className="rounded-xl px-3 py-1.5 text-xs transition-all"
+                    className="shrink-0 rounded-xl px-3 py-1.5 text-xs transition-all whitespace-nowrap"
                     style={{
                       background: activeCategory === cat ? "rgba(99,102,241,0.12)" : "transparent",
                       border: `1px solid ${activeCategory === cat ? "rgba(99,102,241,0.35)" : "#2a2a2a"}`,
@@ -307,8 +307,7 @@ export default function SamplesPage() {
                 </button>
               ))}
 
-            <div className="flex-1" />
-
+            <div className="shrink-0 ml-auto flex items-center gap-2">
             {genres.length > 0 && (
               <select
                 value={genre}
@@ -327,18 +326,19 @@ export default function SamplesPage() {
             {hasFilters && (
               <button
                 onClick={() => { setActiveCategory(""); setGenre(""); }}
-                className="flex items-center gap-1.5 rounded-xl px-3 py-1.5 text-xs"
+                className="flex items-center gap-1.5 rounded-xl px-3 py-1.5 text-xs whitespace-nowrap"
                 style={{ background: "rgba(255,255,255,0.06)", border: "1px solid #2a2a2a", color: "#86868b" }}
               >
                 <X size={12} /> Nullstill
               </button>
             )}
+            </div>
           </div>
         </div>
       </div>
 
       {/* Content */}
-      <div className="mx-auto max-w-7xl px-6 py-6">
+      <div className="mx-auto max-w-7xl px-4 md:px-6 py-6">
         <div className="mb-6 flex items-baseline justify-between">
           <h1 className="text-xl font-semibold tracking-tight" style={{ color: "#f5f5f7" }}>
             {activeType === "sample" ? "Samples" : "Presets"}
