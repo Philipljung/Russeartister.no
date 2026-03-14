@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { Play, Pause } from "lucide-react";
 import type { Beat } from "@/lib/supabase/types";
@@ -32,6 +32,14 @@ export default function BeatCard({ beat, isSelected = false, onSelect }: Props) 
 
   const isActive = currentBeat?.id === beat.id;
   const isCurrentlyPlaying = isActive && isPlaying;
+
+  // Autoplay when selected via keyboard
+  useEffect(() => {
+    if (isSelected && !isCurrentlyPlaying) {
+      toggleBeat(beat);
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isSelected]);
   const coverImg = beat.cover_url ?? beat.producer?.avatar_url ?? null;
   const coverBg = coverImg ? undefined : genreColor(beat.genre);
 
