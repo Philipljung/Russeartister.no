@@ -5,7 +5,7 @@ import { Search, X, Package, Sliders, Music, Play, Pause } from "lucide-react";
 import Link from "next/link";
 import Image from "next/image";
 import { fetchPublicSamples } from "@/lib/fetchSamples";
-import { SAMPLE_CATEGORIES, CATEGORY_LABELS } from "@/lib/sampleCategories";
+import { SAMPLE_CATEGORIES, PRESET_CATEGORIES, CATEGORY_LABELS } from "@/lib/sampleCategories";
 import type { Sample } from "@/lib/supabase/types";
 
 function genreColor(cat: string): string {
@@ -271,10 +271,10 @@ export default function SamplesPage() {
             ))}
           </div>
 
-          {/* Category chips — only visible under Samples tab */}
-          {activeType === "sample" && (
-            <div className="flex flex-wrap items-center gap-2 pt-1">
-              {Object.entries(SAMPLE_CATEGORIES).map(([, cats]) =>
+          {/* Category chips + genre filter */}
+          <div className="flex flex-wrap items-center gap-2 pt-1">
+            {activeType === "sample" &&
+              Object.entries(SAMPLE_CATEGORIES).map(([, cats]) =>
                 cats.map((cat) => (
                   <button
                     key={cat}
@@ -291,65 +291,49 @@ export default function SamplesPage() {
                 ))
               )}
 
-              <div className="flex-1" />
-
-              {/* Genre filter */}
-              {genres.length > 0 && (
-                <select
-                  value={genre}
-                  onChange={(e) => setGenre(e.target.value)}
+            {activeType === "preset" &&
+              Object.values(PRESET_CATEGORIES)[0].map((cat) => (
+                <button
+                  key={cat}
+                  onClick={() => setActiveCategory(activeCategory === cat ? "" : cat)}
+                  className="rounded-xl px-3 py-1.5 text-xs transition-all"
                   style={{
-                    background: "#141414", color: genre ? "#f5f5f7" : "#86868b",
-                    border: `1px solid ${genre ? "rgba(99,102,241,0.35)" : "#2a2a2a"}`,
-                    borderRadius: 12, padding: "7px 12px", fontSize: 13, outline: "none", cursor: "pointer",
+                    background: activeCategory === cat ? "rgba(99,102,241,0.12)" : "transparent",
+                    border: `1px solid ${activeCategory === cat ? "rgba(99,102,241,0.35)" : "#2a2a2a"}`,
+                    color: activeCategory === cat ? "#818cf8" : "#3a3a3a",
                   }}
                 >
-                  <option value="">Alle sjangre</option>
-                  {genres.map((g) => <option key={g} value={g}>{g}</option>)}
-                </select>
-              )}
-
-              {hasFilters && (
-                <button
-                  onClick={() => { setActiveCategory(""); setGenre(""); }}
-                  className="flex items-center gap-1.5 rounded-xl px-3 py-1.5 text-xs"
-                  style={{ background: "rgba(255,255,255,0.06)", border: "1px solid #2a2a2a", color: "#86868b" }}
-                >
-                  <X size={12} /> Nullstill
+                  {CATEGORY_LABELS[cat]}
                 </button>
-              )}
-            </div>
-          )}
+              ))}
 
-          {/* Genre filter for Presets tab */}
-          {activeType === "preset" && (
-            <div className="flex flex-wrap items-center gap-2">
-              <div className="flex-1" />
-              {genres.length > 0 && (
-                <select
-                  value={genre}
-                  onChange={(e) => setGenre(e.target.value)}
-                  style={{
-                    background: "#141414", color: genre ? "#f5f5f7" : "#86868b",
-                    border: `1px solid ${genre ? "rgba(99,102,241,0.35)" : "#2a2a2a"}`,
-                    borderRadius: 12, padding: "7px 12px", fontSize: 13, outline: "none", cursor: "pointer",
-                  }}
-                >
-                  <option value="">Alle sjangre</option>
-                  {genres.map((g) => <option key={g} value={g}>{g}</option>)}
-                </select>
-              )}
-              {hasFilters && (
-                <button
-                  onClick={() => setGenre("")}
-                  className="flex items-center gap-1.5 rounded-xl px-3 py-1.5 text-xs"
-                  style={{ background: "rgba(255,255,255,0.06)", border: "1px solid #2a2a2a", color: "#86868b" }}
-                >
-                  <X size={12} /> Nullstill
-                </button>
-              )}
-            </div>
-          )}
+            <div className="flex-1" />
+
+            {genres.length > 0 && (
+              <select
+                value={genre}
+                onChange={(e) => setGenre(e.target.value)}
+                style={{
+                  background: "#141414", color: genre ? "#f5f5f7" : "#86868b",
+                  border: `1px solid ${genre ? "rgba(99,102,241,0.35)" : "#2a2a2a"}`,
+                  borderRadius: 12, padding: "7px 12px", fontSize: 13, outline: "none", cursor: "pointer",
+                }}
+              >
+                <option value="">Alle sjangre</option>
+                {genres.map((g) => <option key={g} value={g}>{g}</option>)}
+              </select>
+            )}
+
+            {hasFilters && (
+              <button
+                onClick={() => { setActiveCategory(""); setGenre(""); }}
+                className="flex items-center gap-1.5 rounded-xl px-3 py-1.5 text-xs"
+                style={{ background: "rgba(255,255,255,0.06)", border: "1px solid #2a2a2a", color: "#86868b" }}
+              >
+                <X size={12} /> Nullstill
+              </button>
+            )}
+          </div>
         </div>
       </div>
 
@@ -357,7 +341,7 @@ export default function SamplesPage() {
       <div className="mx-auto max-w-7xl px-6 py-6">
         <div className="mb-6 flex items-baseline justify-between">
           <h1 className="text-xl font-semibold tracking-tight" style={{ color: "#f5f5f7" }}>
-            Samples &amp; Presets
+            {activeType === "sample" ? "Samples" : "Presets"}
           </h1>
           {!loading && (
             <p className="text-sm" style={{ color: "#86868b" }}>

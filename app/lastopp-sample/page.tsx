@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { X, Upload, Package, ImageIcon, AlertCircle, Music } from "lucide-react";
 import { getSupabaseClient } from "@/lib/supabase/client";
 import Link from "next/link";
-import { SAMPLE_CATEGORIES, CATEGORY_LABELS } from "@/lib/sampleCategories";
+import { SAMPLE_CATEGORIES, PRESET_CATEGORIES, CATEGORY_LABELS } from "@/lib/sampleCategories";
 
 const MUSICAL_KEYS = [
   "C maj","C# maj","D maj","Eb maj","E maj","F maj",
@@ -14,7 +14,6 @@ const MUSICAL_KEYS = [
   "F# min","G min","Ab min","A min","Bb min","B min",
 ];
 
-const PRESET_CATEGORY = "preset";
 
 type UploadFile = { file: File; previewUrl?: string } | null;
 
@@ -76,7 +75,7 @@ export default function LastOppSamplePage() {
   // Reset category when type changes
   function handleTypeChange(t: "sample" | "preset") {
     setItemType(t);
-    setCategory(t === "preset" ? PRESET_CATEGORY : "");
+    setCategory("");
   }
 
   function addTag() {
@@ -94,9 +93,7 @@ export default function LastOppSamplePage() {
     e.preventDefault();
     setError(null);
 
-    const resolvedCategory = itemType === "preset" ? PRESET_CATEGORY : category;
-
-    if (!title || !resolvedCategory) {
+    if (!title || !category) {
       setError("Fyll ut alle obligatoriske felt.");
       return;
     }
@@ -157,7 +154,7 @@ export default function LastOppSamplePage() {
           title: title.trim(),
           description: description.trim(),
           item_type: itemType,
-          category: resolvedCategory,
+          category,
           genre: genre.trim(),
           bpm: bpmNum,
           key: key || null,
@@ -187,7 +184,7 @@ export default function LastOppSamplePage() {
     }
   }
 
-  const categoriesForType = itemType === "sample" ? SAMPLE_CATEGORIES : null;
+  const categoriesForType = itemType === "sample" ? SAMPLE_CATEGORIES : PRESET_CATEGORIES;
 
   return (
     <div className="mx-auto max-w-2xl px-6 py-10">
@@ -279,36 +276,36 @@ export default function LastOppSamplePage() {
           </div>
         </div>
 
-        {/* Category (samples only) */}
-        {itemType === "sample" && (
-          <div>
-            <Label>Kategori *</Label>
-            <div className="flex flex-col gap-3">
-              {Object.entries(categoriesForType!).map(([group, cats]) => (
-                <div key={group}>
+        {/* Category */}
+        <div>
+          <Label>Kategori *</Label>
+          <div className="flex flex-col gap-3">
+            {Object.entries(categoriesForType).map(([group, cats]) => (
+              <div key={group}>
+                {itemType === "sample" && (
                   <p className="mb-1.5 text-xs" style={{ color: "#3a3a3a" }}>{group}</p>
-                  <div className="flex flex-wrap gap-1.5">
-                    {cats.map((cat) => (
-                      <button
-                        key={cat}
-                        type="button"
-                        onClick={() => setCategory(cat)}
-                        className="rounded-xl px-3 py-1.5 text-xs transition-all"
-                        style={{
-                          background: category === cat ? "rgba(99,102,241,0.15)" : "#141414",
-                          border: `1px solid ${category === cat ? "rgba(99,102,241,0.4)" : "#2a2a2a"}`,
-                          color: category === cat ? "#818cf8" : "#86868b",
-                        }}
-                      >
-                        {CATEGORY_LABELS[cat]}
-                      </button>
-                    ))}
-                  </div>
+                )}
+                <div className="flex flex-wrap gap-1.5">
+                  {(cats as readonly string[]).map((cat) => (
+                    <button
+                      key={cat}
+                      type="button"
+                      onClick={() => setCategory(cat)}
+                      className="rounded-xl px-3 py-1.5 text-xs transition-all"
+                      style={{
+                        background: category === cat ? "rgba(99,102,241,0.15)" : "#141414",
+                        border: `1px solid ${category === cat ? "rgba(99,102,241,0.4)" : "#2a2a2a"}`,
+                        color: category === cat ? "#818cf8" : "#86868b",
+                      }}
+                    >
+                      {CATEGORY_LABELS[cat]}
+                    </button>
+                  ))}
                 </div>
-              ))}
-            </div>
+              </div>
+            ))}
           </div>
-        )}
+        </div>
 
         {/* Genre + BPM + Key */}
         <div className="grid grid-cols-3 gap-3">
