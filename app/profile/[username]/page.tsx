@@ -9,11 +9,12 @@ import { getSupabaseClient } from "@/lib/supabase/client";
 import { fetchProfileByUsername } from "@/lib/fetchProfile";
 import { fetchBeatsByProducer } from "@/lib/fetchBeats";
 import { fetchSamplesByProducer } from "@/lib/fetchSamples";
+import { fetchRemakesByProducer } from "@/lib/fetchRemakes";
 import { usePlayer } from "@/lib/player-context";
 import { useToast } from "@/lib/toast-context";
 import StripeOnboardingModal from "@/components/StripeOnboardingModal";
 import { CATEGORY_LABELS } from "@/lib/sampleCategories";
-import type { Profile, Beat, Sample } from "@/lib/supabase/types";
+import type { Profile, Beat, Sample, Remake } from "@/lib/supabase/types";
 
 function genreColor(genre: string): string {
   const palette = ["#1a1040", "#001a2e", "#1a2e00", "#2e1a00", "#001e14", "#14001e", "#1e0a0a", "#00141e"];
@@ -31,6 +32,7 @@ export default function ProfilePage() {
   const [profile, setProfile] = useState<Profile | null>(null);
   const [beats, setBeats] = useState<Beat[]>([]);
   const [samples, setSamples] = useState<Sample[]>([]);
+  const [remakes, setRemakes] = useState<Remake[]>([]);
   const [isOwner, setIsOwner] = useState(false);
   const [loading, setLoading] = useState(true);
   const [notFound, setNotFound] = useState(false);
@@ -51,7 +53,7 @@ export default function ProfilePage() {
 
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
-  const [pendingDelete, setPendingDelete] = useState<{ type: "beat" | "sample"; id: string } | null>(null);
+  const [pendingDelete, setPendingDelete] = useState<{ type: "beat" | "sample" | "remake"; id: string } | null>(null);
 
   const nameInputRef = useRef<HTMLInputElement>(null);
   const bioTextareaRef = useRef<HTMLTextAreaElement>(null);
@@ -94,12 +96,14 @@ export default function ProfilePage() {
       setAvatarUrl(fetchedProfile.avatar_url);
       setIsOwner(owner);
 
-      const [fetchedBeats, fetchedSamples] = await Promise.all([
+      const [fetchedBeats, fetchedSamples, fetchedRemakes] = await Promise.all([
         fetchBeatsByProducer(fetchedProfile.id),
         fetchSamplesByProducer(fetchedProfile.id),
+        fetchRemakesByProducer(fetchedProfile.id),
       ]);
       setBeats(fetchedBeats);
       setSamples(fetchedSamples);
+      setRemakes(fetchedRemakes);
 
       setLoading(false);
     }
@@ -129,15 +133,20 @@ export default function ProfilePage() {
       const { error } = await supabase.from("beats").update({ deleted_at: new Date().toISOString() }).eq("id", id);
       if (error) toast("Kunne ikke slette. Prøv igjen.", "error");
       else { setBeats((prev) => prev.filter((b) => b.id !== id)); toast("Låt slettet.", "success"); }
-    } else {
+    } else if (type === "sample") {
       const { error } = await supabase.from("samples").update({ deleted_at: new Date().toISOString() }).eq("id", id);
       if (error) toast("Kunne ikke slette. Prøv igjen.", "error");
       else { setSamples((prev) => prev.filter((s) => s.id !== id)); toast("Sample slettet.", "success"); }
+    } else {
+      const { error } = await supabase.from("remakes").update({ deleted_at: new Date().toISOString() }).eq("id", id);
+      if (error) toast("Kunne ikke slette. Prøv igjen.", "error");
+      else { setRemakes((prev) => prev.filter((r) => r.id !== id)); toast("Remake slettet.", "success"); }
     }
   }
 
   function deleteBeat(beatId: string) { setPendingDelete({ type: "beat", id: beatId }); }
   function deleteSample(sampleId: string) { setPendingDelete({ type: "sample", id: sampleId }); }
+  function deleteRemake(remakeId: string) { setPendingDelete({ type: "remake", id: remakeId }); }
 
   async function saveName() {
     const trimmed = nameInput.trim();
@@ -845,6 +854,80 @@ export default function ProfilePage() {
                         className="flex items-center justify-center rounded-lg transition-colors hover:opacity-80"
                         style={{ width: 30, height: 30, color: "#ff3b30" }}
                         onClick={() => deleteSample(sample.id)}
+                      >
+                        <Trash2 size={14} />
+                      </button>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </section>
+
+        {/* Mine remakes */}
+        <section className="mb-16">
+          <div className="mb-4 flex items-center justify-between">
+            <h2 className="text-base font-semibold tracking-tight" style={{ color: "#f5f5f7" }}>
+              {isOwner ? "Mine remakes" : "Remakes"}
+            </h2>
+            {isOwner && (
+              <Link
+                href="/lastopp-remake"
+                className="rounded-xl px-3 md:px-4 py-1.5 text-xs md:text-sm font-semibold transition-opacity hover:opacity-90 whitespace-nowrap"
+                style={{ background: "#0071e3", color: "#fff" }}
+              >
+                Last opp remake
+              </Link>
+            )}
+          </div>
+
+          {remakes.length === 0 ? (
+            <div
+              className="flex flex-col items-center justify-center rounded-2xl py-16"
+              style={{ background: "rgba(255,255,255,0.02)", border: "1px solid #1e1e1e" }}
+            >
+              <p className="text-sm font-medium" style={{ color: "#3a3a3a" }}>Ingen remakes enda</p>
+            </div>
+          ) : (
+            <div>
+              {remakes.map((remake) => (
+                <div
+                  key={remake.id}
+                  className="flex items-center gap-2 md:gap-4 rounded-xl px-2 md:px-3 py-2.5"
+                  style={{ borderBottom: "1px solid #141414" }}
+                >
+                  <div
+                    className="shrink-0 rounded-md"
+                    style={{ width: 32, height: 32, background: genreColor(remake.genre) }}
+                  />
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate text-sm font-medium" style={{ color: "#f5f5f7" }}>{remake.title}</p>
+                    <p className="text-xs mt-0.5" style={{ color: "#86868b" }}>
+                      remake av {remake.original_song} &middot; {remake.bpm} BPM
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-1.5 md:gap-2 shrink-0">
+                    {isOwner && (
+                      <span
+                        className="hidden sm:inline text-xs px-2 py-0.5 rounded-full font-medium"
+                        style={{
+                          background: remake.is_published ? "rgba(52,199,89,0.1)" : "rgba(255,255,255,0.05)",
+                          color: remake.is_published ? "#34c759" : "#86868b",
+                        }}
+                      >
+                        {remake.is_published ? "Publisert" : "Utkast"}
+                      </span>
+                    )}
+                    <span className="text-sm font-semibold" style={{ color: "#f5f5f7", minWidth: 48, textAlign: "right" }}>
+                      kr {remake.price.toLocaleString("nb-NO")}
+                    </span>
+                    {isOwner && (
+                      <button
+                        title="Slett remake"
+                        className="flex items-center justify-center rounded-lg transition-colors hover:opacity-80"
+                        style={{ width: 30, height: 30, color: "#ff3b30" }}
+                        onClick={() => deleteRemake(remake.id)}
                       >
                         <Trash2 size={14} />
                       </button>

@@ -11,7 +11,7 @@ import type { Session, AuthChangeEvent } from "@supabase/supabase-js";
 const navLinks = [
   { label: "Låter", href: "/beats", active: true },
   { label: "Samples & Presets", href: "/samples", active: true },
-  { label: "Remakes", href: "/remakes", active: false },
+  { label: "Remakes", href: "/remakes", active: true },
 ];
 
 export default function Navbar() {

@@ -54,6 +54,26 @@ export type Sample = {
   producer?: Profile;
 };
 
+export type Remake = {
+  id: string;
+  producer_id: string;
+  title: string;
+  description: string;
+  original_song: string;
+  genre: string;
+  bpm: number;
+  key: string;
+  tags: string[];
+  price: number;
+  cover_url: string | null;
+  audio_preview_url: string | null;
+  file_url: string | null;
+  is_published: boolean;
+  deleted_at: string | null;
+  created_at: string;
+  producer?: Profile;
+};
+
 export type Purchase = {
   id: string;
   buyer_id: string | null;

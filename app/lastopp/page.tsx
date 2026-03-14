@@ -4,6 +4,8 @@ import { useState, useRef, KeyboardEvent, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { X, Upload, Music, FileArchive, ImageIcon, AlertCircle } from "lucide-react";
 import { getSupabaseClient } from "@/lib/supabase/client";
+import { fetchExistingGenres } from "@/lib/fetchRemakes";
+import GenreAutocomplete from "@/components/GenreAutocomplete";
 import Link from "next/link";
 
 const MUSICAL_KEYS = [
@@ -21,6 +23,7 @@ export default function LastOppPage() {
 
   useEffect(() => {
     const supabase = getSupabaseClient();
+    fetchExistingGenres().then(setExistingGenres);
     supabase.auth.getSession().then(async ({ data: { session } }: { data: { session: import("@supabase/supabase-js").Session | null } }) => {
       if (!session) { setStripeReady(false); return; }
       const { data } = await supabase
@@ -51,6 +54,7 @@ export default function LastOppPage() {
   const [audioPreview, setAudioPreview] = useState<UploadFile>(null);
   const [projectFile, setProjectFile] = useState<UploadFile>(null);
 
+  const [existingGenres, setExistingGenres] = useState<string[]>([]);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -328,13 +332,11 @@ export default function LastOppPage() {
         <div className="grid grid-cols-3 gap-3">
           <div>
             <Label>Sjanger *</Label>
-            <input
-              type="text"
-              placeholder="Drill"
+            <GenreAutocomplete
               value={genre}
-              onChange={(e) => setGenre(e.target.value)}
-              required
-              style={inputStyle}
+              onChange={setGenre}
+              existingGenres={existingGenres}
+              inputStyle={inputStyle}
             />
           </div>
           <div>
