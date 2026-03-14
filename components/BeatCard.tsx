@@ -10,6 +10,8 @@ import BeatCheckoutModal from "./BeatCheckoutModal";
 
 type Props = {
   beat: Beat;
+  isSelected?: boolean;
+  onSelect?: () => void;
 };
 
 function genreColor(genre: string): string {
@@ -22,7 +24,7 @@ function genreColor(genre: string): string {
   return palette[Math.abs(hash) % palette.length];
 }
 
-export default function BeatCard({ beat }: Props) {
+export default function BeatCard({ beat, isSelected = false, onSelect }: Props) {
   const [hovered, setHovered] = useState(false);
   const [checkoutOpen, setCheckoutOpen] = useState(false);
   const { currentBeat, isPlaying, toggleBeat } = usePlayer();
@@ -44,11 +46,14 @@ export default function BeatCard({ beat }: Props) {
     <div
       className="group flex items-center gap-4 rounded-xl px-4 py-3 transition-colors cursor-pointer"
       style={{
-        background: hovered ? "rgba(255,255,255,0.04)" : "transparent",
+        background: isSelected ? "rgba(255,255,255,0.06)" : hovered ? "rgba(255,255,255,0.04)" : "transparent",
         borderBottom: "1px solid #1a1a1a",
+        outline: isSelected ? "1px solid rgba(255,255,255,0.18)" : "none",
+        outlineOffset: -1,
       }}
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
+      onClick={onSelect}
     >
       {/* Play button */}
       <button
@@ -146,6 +151,7 @@ export default function BeatCard({ beat }: Props) {
           style={{
             background: hovered ? "#f5f5f7" : "rgba(255,255,255,0.08)",
             color: hovered ? "#080808" : "#f5f5f7",
+            cursor: "pointer",
           }}
           onClick={handleBuy}
         >

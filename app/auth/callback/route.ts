@@ -1,32 +1,35 @@
-import { NextResponse, type NextRequest } from "next/server";
-import { getSupabaseServerClient } from "@/lib/supabase/server";
+import { NextResponse } from "next/server";
+import { createServerClient } from "@supabase/ssr";
+import { cookies } from "next/headers";
 
-export async function GET(request: NextRequest) {
+export async function GET(request: Request) {
   const { searchParams, origin } = new URL(request.url);
   const code = searchParams.get("code");
-  const next = searchParams.get("next") ?? "/beats";
 
-  console.log("[auth/callback] code present:", !!code, "next:", next);
+  if (code) {
+    const cookieStore = await cookies();
+    const supabase = createServerClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+      {
+        cookies: {
+          getAll() { return cookieStore.getAll(); },
+          setAll(cookiesToSet) {
+            cookiesToSet.forEach(({ name, value, options }) =>
+              cookieStore.set(name, value, options)
+            );
+          },
+        },
+      }
+    );
 
-  if (!code) {
-    console.error("[auth/callback] No code in URL — redirecting to error");
-    return NextResponse.redirect(`${origin}/logg-inn?error=no_code`);
+    const { data, error } = await supabase.auth.exchangeCodeForSession(code);
+    if (!error && data.user) {
+      const username = data.user.user_metadata?.username as string | undefined;
+      if (username) return NextResponse.redirect(`${origin}/profile/${username}`);
+      return NextResponse.redirect(`${origin}/beats`);
+    }
   }
 
-  const supabase = await getSupabaseServerClient();
-  const { data, error } = await supabase.auth.exchangeCodeForSession(code);
-
-  if (error) {
-    console.error("[auth/callback] exchangeCodeForSession error:", error.message);
-    return NextResponse.redirect(`${origin}/logg-inn?error=auth`);
-  }
-
-  console.log("[auth/callback] Session created for user:", data.user?.email);
-
-  // Redirect to the user's profile using username from metadata
-  const username = data.user?.user_metadata?.username as string | undefined;
-  const destination = username ? `/profile/${username}` : next;
-
-  console.log("[auth/callback] Redirecting to:", destination);
-  return NextResponse.redirect(`${origin}${destination}`);
+  return NextResponse.redirect(`${origin}/logg-inn`);
 }

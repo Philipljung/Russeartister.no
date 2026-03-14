@@ -1,56 +1,54 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
+import Link from "next/link";
+import { fetchHeroSlides, type HeroSlide } from "@/lib/fetchCms";
 
-type Slide = {
-  id: number;
-  bg: string;
-  accent: string;
-  tag?: string;
-  headline: string;
-  sub?: string;
-};
-
-const SLIDES: Slide[] = [
+const FALLBACK: HeroSlide[] = [
   {
-    id: 1,
-    bg: "linear-gradient(135deg, #0f0a2a 0%, #1a0d3a 40%, #0d1a40 100%)",
-    accent: "radial-gradient(ellipse at 20% 60%, rgba(99,102,241,0.25) 0%, transparent 60%), radial-gradient(ellipse at 80% 30%, rgba(139,92,246,0.15) 0%, transparent 50%)",
-    tag: "Velkommen",
+    id: "1", display_order: 0, tag: "Velkommen",
     headline: "Norges største plattform for kjøp og salg av russelåter",
-    sub: "Kjøp sanger, samples, presets & remakes",
+    subtitle: "Kjøp sanger, samples, presets & remakes",
+    picture_url: null, cta_text: null, cta_url: null, is_clickable: false,
+    bg_gradient: "linear-gradient(135deg, #0f0a2a 0%, #1a0d3a 40%, #0d1a40 100%)",
   },
   {
-    id: 2,
-    bg: "linear-gradient(135deg, #001a0f 0%, #002a1a 40%, #001430 100%)",
-    accent: "radial-gradient(ellipse at 70% 40%, rgba(52,199,89,0.2) 0%, transparent 60%), radial-gradient(ellipse at 20% 70%, rgba(0,200,120,0.1) 0%, transparent 50%)",
-    tag: "Produsenter",
+    id: "2", display_order: 1, tag: "Produsenter",
     headline: "Selg låtene dine og tjen penger på musikken din",
-    sub: "Last opp, sett pris, og nå tusenvis av russ over hele landet",
+    subtitle: "Last opp, sett pris, og nå tusenvis av russ over hele landet",
+    picture_url: null, cta_text: null, cta_url: null, is_clickable: false,
+    bg_gradient: "linear-gradient(135deg, #001a0f 0%, #002a1a 40%, #001430 100%)",
   },
   {
-    id: 3,
-    bg: "linear-gradient(135deg, #1a0a00 0%, #2a1000 40%, #1a0a20 100%)",
-    accent: "radial-gradient(ellipse at 30% 50%, rgba(255,149,0,0.18) 0%, transparent 60%), radial-gradient(ellipse at 75% 25%, rgba(255,69,58,0.12) 0%, transparent 50%)",
-    tag: "Nytt",
+    id: "3", display_order: 2, tag: "Nytt",
     headline: "Bli med i Communityet!",
-    sub: "Bli med i en gruppe med over 2000 medlemmer!",
+    subtitle: "Bli med i en gruppe med over 2000 medlemmer!",
+    picture_url: null, cta_text: null, cta_url: null, is_clickable: false,
+    bg_gradient: "linear-gradient(135deg, #1a0a00 0%, #2a1000 40%, #1a0a20 100%)",
   },
 ];
+
+const ACCENT: Record<number, string> = {
+  0: "radial-gradient(ellipse at 20% 60%, rgba(99,102,241,0.25) 0%, transparent 60%), radial-gradient(ellipse at 80% 30%, rgba(139,92,246,0.15) 0%, transparent 50%)",
+  1: "radial-gradient(ellipse at 70% 40%, rgba(52,199,89,0.2) 0%, transparent 60%), radial-gradient(ellipse at 20% 70%, rgba(0,200,120,0.1) 0%, transparent 50%)",
+  2: "radial-gradient(ellipse at 30% 50%, rgba(255,149,0,0.18) 0%, transparent 60%), radial-gradient(ellipse at 75% 25%, rgba(255,69,58,0.12) 0%, transparent 50%)",
+};
 
 const INTERVAL = 10000;
 
 export default function HeroCarousel() {
+  const [slides, setSlides] = useState<HeroSlide[]>(FALLBACK);
   const [active, setActive] = useState(0);
   const [paused, setPaused] = useState(false);
 
-  const next = useCallback(() => {
-    setActive((i) => (i + 1) % SLIDES.length);
+  useEffect(() => {
+    fetchHeroSlides().then((data) => {
+      if (data.length > 0) setSlides(data);
+    });
   }, []);
 
-  const prev = useCallback(() => {
-    setActive((i) => (i - 1 + SLIDES.length) % SLIDES.length);
-  }, []);
+  const next = useCallback(() => setActive((i) => (i + 1) % slides.length), [slides.length]);
+  const prev = useCallback(() => setActive((i) => (i - 1 + slides.length) % slides.length), [slides.length]);
 
   useEffect(() => {
     if (paused) return;
@@ -65,31 +63,9 @@ export default function HeroCarousel() {
       onMouseEnter={() => setPaused(true)}
       onMouseLeave={() => setPaused(false)}
     >
-      {SLIDES.map((slide, i) => (
-        <div
-          key={slide.id}
-          className="absolute inset-0 transition-opacity duration-700"
-          style={{
-            opacity: i === active ? 1 : 0,
-            pointerEvents: i === active ? "auto" : "none",
-            background: slide.bg,
-          }}
-        >
-          {/* Accent layer */}
-          <div className="absolute inset-0" style={{ background: slide.accent }} />
-
-          {/* Subtle noise / grain texture */}
-          <div
-            className="absolute inset-0"
-            style={{
-              backgroundImage:
-                "url(\"data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E\")",
-              backgroundSize: "200px 200px",
-              opacity: 0.5,
-            }}
-          />
-
-          {/* Content */}
+      {slides.map((slide, i) => {
+        const accent = ACCENT[i % 3];
+        const inner = (
           <div className="relative flex h-full flex-col justify-center px-8 md:px-14">
             {slide.tag && (
               <span
@@ -99,23 +75,69 @@ export default function HeroCarousel() {
                 {slide.tag}
               </span>
             )}
-            <h2
-              className="max-w-lg text-2xl font-bold tracking-tight leading-snug md:text-3xl"
-              style={{ color: "#f5f5f7" }}
-            >
+            <h2 className="max-w-lg text-2xl font-bold tracking-tight leading-snug md:text-3xl" style={{ color: "#f5f5f7" }}>
               {slide.headline}
             </h2>
-            {slide.sub && (
-              <p
-                className="mt-2 max-w-md text-sm leading-relaxed"
-                style={{ color: "rgba(255,255,255,0.45)" }}
-              >
-                {slide.sub}
+            {slide.subtitle && (
+              <p className="mt-2 max-w-md text-sm leading-relaxed" style={{ color: "rgba(255,255,255,0.45)" }}>
+                {slide.subtitle}
               </p>
             )}
+            {slide.cta_text && slide.cta_url && !slide.is_clickable && (
+              <Link
+                href={slide.cta_url}
+                className="mt-4 self-start rounded-xl px-5 py-2 text-sm font-semibold transition-opacity hover:opacity-80"
+                style={{ background: "rgba(255,255,255,0.12)", color: "#f5f5f7" }}
+              >
+                {slide.cta_text}
+              </Link>
+            )}
           </div>
-        </div>
-      ))}
+        );
+
+        return (
+          <div
+            key={slide.id}
+            className="absolute inset-0 transition-opacity duration-700"
+            style={{
+              opacity: i === active ? 1 : 0,
+              pointerEvents: i === active ? "auto" : "none",
+              background: slide.picture_url ? undefined : slide.bg_gradient,
+              backgroundColor: slide.picture_url ? "#080808" : undefined,
+              backgroundImage: slide.picture_url
+                ? `url(${slide.picture_url})`
+                : undefined,
+              backgroundSize: slide.picture_url ? "cover" : undefined,
+              backgroundPosition: slide.picture_url ? "center" : undefined,
+            }}
+          >
+            {/* Accent / overlay */}
+            {!slide.picture_url && <div className="absolute inset-0" style={{ background: accent }} />}
+            {slide.picture_url && (
+              <div className="absolute inset-0" style={{ background: "rgba(0,0,0,0.5)" }} />
+            )}
+
+            {/* Grain texture */}
+            <div
+              className="absolute inset-0"
+              style={{
+                backgroundImage: "url(\"data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E\")",
+                backgroundSize: "200px 200px",
+                opacity: 0.5,
+              }}
+            />
+
+            {/* Content — wrap in Link if is_clickable + cta_url set */}
+            {slide.is_clickable && slide.cta_url ? (
+              <Link href={slide.cta_url} className="block h-full w-full" style={{ cursor: "pointer" }}>
+                {inner}
+              </Link>
+            ) : (
+              inner
+            )}
+          </div>
+        );
+      })}
 
       {/* Prev / Next arrows */}
       <button
@@ -137,7 +159,7 @@ export default function HeroCarousel() {
 
       {/* Dot indicators */}
       <div className="absolute bottom-4 left-8 md:left-14 flex items-center gap-2">
-        {SLIDES.map((_, i) => (
+        {slides.map((_, i) => (
           <button
             key={i}
             onClick={() => setActive(i)}
@@ -153,10 +175,7 @@ export default function HeroCarousel() {
       </div>
 
       {/* Progress bar */}
-      <div
-        className="absolute bottom-0 left-0 h-px w-full"
-        style={{ background: "rgba(255,255,255,0.06)" }}
-      >
+      <div className="absolute bottom-0 left-0 h-px w-full" style={{ background: "rgba(255,255,255,0.06)" }}>
         <div
           key={active}
           className="h-full"
@@ -168,10 +187,7 @@ export default function HeroCarousel() {
       </div>
 
       <style>{`
-        @keyframes progress {
-          from { width: 0%; }
-          to   { width: 100%; }
-        }
+        @keyframes progress { from { width: 0%; } to { width: 100%; } }
       `}</style>
     </div>
   );

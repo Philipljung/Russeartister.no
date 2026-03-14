@@ -136,6 +136,21 @@ export default function ProfilePage() {
     }
   }
 
+  async function deleteSample(sampleId: string) {
+    if (!confirm("Er du sikker på at du vil slette?")) return;
+    const supabase = getSupabaseClient();
+    const { error } = await supabase
+      .from("samples")
+      .update({ deleted_at: new Date().toISOString() })
+      .eq("id", sampleId);
+    if (error) {
+      toast("Kunne ikke slette. Prøv igjen.", "error");
+    } else {
+      setSamples((prev) => prev.filter((s) => s.id !== sampleId));
+      toast("Sample ble slettet.", "success");
+    }
+  }
+
   async function saveName() {
     const trimmed = nameInput.trim();
     if (!trimmed) {
@@ -295,13 +310,14 @@ export default function ProfilePage() {
         />
 
         {isOwner && (
-          <button
-            className="absolute right-6 top-5 rounded-lg p-2 transition-colors"
+          <Link
+            href="/innstillinger"
+            className="absolute right-6 top-5 rounded-lg p-2 transition-colors hover:opacity-80"
             style={{ background: "rgba(255,255,255,0.06)", color: "#86868b" }}
             title="Innstillinger"
           >
             <Settings size={18} />
-          </button>
+          </Link>
         )}
 
         {/* Avatar */}
@@ -384,23 +400,34 @@ export default function ProfilePage() {
         {/* Name row */}
         <div className="pt-14 pb-1 flex items-center gap-2 flex-wrap">
           {editingName && isOwner ? (
-            <input
-              ref={nameInputRef}
-              value={nameInput}
-              onChange={(e) => setNameInput(e.target.value)}
-              onBlur={saveName}
-              onKeyDown={(e) => {
-                if (e.key === "Enter") saveName();
-                if (e.key === "Escape") { setNameInput(displayName); setEditingName(false); }
-              }}
-              className="rounded-lg px-2 py-0.5 text-2xl font-bold tracking-tight outline-none"
-              style={{
-                background: "rgba(255,255,255,0.06)",
-                border: "1px solid rgba(99,102,241,0.5)",
-                color: "#f5f5f7",
-                width: Math.max(120, nameInput.length * 16),
-              }}
-            />
+            <>
+              <input
+                ref={nameInputRef}
+                value={nameInput}
+                onChange={(e) => setNameInput(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") { void saveName(); }
+                  if (e.key === "Escape") { setNameInput(displayName); setEditingName(false); }
+                }}
+                className="rounded-lg px-2 py-0.5 text-2xl font-bold tracking-tight outline-none"
+                style={{
+                  background: "rgba(255,255,255,0.06)",
+                  border: "1px solid rgba(99,102,241,0.5)",
+                  color: "#f5f5f7",
+                  width: Math.max(120, nameInput.length * 16),
+                }}
+              />
+              <button
+                onClick={() => void saveName()}
+                className="rounded-lg px-3 py-1 text-xs font-semibold"
+                style={{ background: "#6366f1", color: "#fff" }}
+              >Lagre</button>
+              <button
+                onClick={() => { setNameInput(displayName); setEditingName(false); }}
+                className="rounded-lg px-3 py-1 text-xs font-semibold"
+                style={{ background: "rgba(255,255,255,0.06)", color: "#86868b" }}
+              >Avbryt</button>
+            </>
           ) : (
             <h1 className="text-2xl font-bold tracking-tight" style={{ color: "#f5f5f7" }}>
               {displayName}
@@ -426,23 +453,36 @@ export default function ProfilePage() {
         {/* Bio */}
         <div className="mt-3 max-w-xl">
           {editingBio && isOwner ? (
-            <textarea
-              ref={bioTextareaRef}
-              value={bioInput}
-              onChange={(e) => setBioInput(e.target.value)}
-              onBlur={saveBio}
-              onKeyDown={(e) => {
-                if (e.key === "Escape") { setBioInput(bio); setEditingBio(false); }
-              }}
-              rows={3}
-              className="w-full resize-none rounded-lg px-3 py-2 text-sm outline-none"
-              style={{
-                background: "rgba(255,255,255,0.04)",
-                border: "1px solid rgba(99,102,241,0.5)",
-                color: "#f5f5f7",
-                lineHeight: 1.6,
-              }}
-            />
+            <div className="flex flex-col gap-2">
+              <textarea
+                ref={bioTextareaRef}
+                value={bioInput}
+                onChange={(e) => setBioInput(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Escape") { setBioInput(bio); setEditingBio(false); }
+                }}
+                rows={3}
+                className="w-full resize-none rounded-lg px-3 py-2 text-sm outline-none"
+                style={{
+                  background: "rgba(255,255,255,0.04)",
+                  border: "1px solid rgba(99,102,241,0.5)",
+                  color: "#f5f5f7",
+                  lineHeight: 1.6,
+                }}
+              />
+              <div className="flex gap-2">
+                <button
+                  onClick={() => void saveBio()}
+                  className="rounded-lg px-3 py-1 text-xs font-semibold"
+                  style={{ background: "#6366f1", color: "#fff" }}
+                >Lagre</button>
+                <button
+                  onClick={() => { setBioInput(bio); setEditingBio(false); }}
+                  className="rounded-lg px-3 py-1 text-xs font-semibold"
+                  style={{ background: "rgba(255,255,255,0.06)", color: "#86868b" }}
+                >Avbryt</button>
+              </div>
+            </div>
           ) : (
             <p
               className="text-sm leading-relaxed"
@@ -638,7 +678,7 @@ export default function ProfilePage() {
         <section className="mb-10">
           <div className="mb-4 flex items-center justify-between">
             <h2 className="text-base font-semibold tracking-tight" style={{ color: "#f5f5f7" }}>
-              {isOwner ? "Mine beats" : "Beats"}
+              {isOwner ? "Mine låter" : "Låter"}
             </h2>
             {isOwner && (
               <Link
@@ -646,7 +686,7 @@ export default function ProfilePage() {
                 className="rounded-xl px-4 py-1.5 text-sm font-semibold transition-opacity hover:opacity-90"
                 style={{ background: "#0071e3", color: "#fff" }}
               >
-                Last opp beat
+                Last opp låt
               </Link>
             )}
           </div>
@@ -657,7 +697,7 @@ export default function ProfilePage() {
               style={{ background: "rgba(255,255,255,0.02)", border: "1px solid #1e1e1e" }}
             >
               <p className="text-sm font-medium" style={{ color: "#3a3a3a" }}>
-                Ingen beats enda
+                Ingen låter enda
               </p>
             </div>
           ) : (
@@ -728,7 +768,7 @@ export default function ProfilePage() {
                       </span>
                       {isOwner && (
                         <button
-                          title="Slett beat"
+                          title="Slett låt"
                           className="flex items-center justify-center rounded-lg transition-colors hover:opacity-80"
                           style={{ width: 30, height: 30, color: "#ff3b30" }}
                           onClick={() => deleteBeat(beat.id)}
@@ -811,6 +851,16 @@ export default function ProfilePage() {
                     <span className="text-sm font-semibold" style={{ color: "#f5f5f7", minWidth: 48, textAlign: "right" }}>
                       {sample.price === 0 ? "Gratis" : `kr ${sample.price.toLocaleString("nb-NO")}`}
                     </span>
+                    {isOwner && (
+                      <button
+                        title="Slett sample"
+                        className="flex items-center justify-center rounded-lg transition-colors hover:opacity-80"
+                        style={{ width: 30, height: 30, color: "#ff3b30" }}
+                        onClick={() => deleteSample(sample.id)}
+                      >
+                        <Trash2 size={14} />
+                      </button>
+                    )}
                   </div>
                 </div>
               ))}

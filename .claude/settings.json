@@ -3,7 +3,8 @@
     "allow": [
       "Bash(git commit:*)",
       "Bash(git push:*)",
-      "Bash(npx vercel:*)"
+      "Bash(npx vercel:*)",
+      "Bash(wc -l /Users/philipljung/Documents/Programmering/Russeartister.no/app/profile/[username]/page.tsx)"
     ]
   }
 }

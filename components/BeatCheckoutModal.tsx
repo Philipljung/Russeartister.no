@@ -240,7 +240,7 @@ export default function BeatCheckoutModal({ beat, onClose }: Props) {
                   <p className="text-sm font-medium" style={{ color: "#f5f5f7" }}>{beat.bpm}</p>
                 </div>
                 <div>
-                  <p className="mb-0.5 text-xs" style={{ color: "#3a3a3a" }}>Toneart</p>
+                  <p className="mb-0.5 text-xs" style={{ color: "#3a3a3a" }}>Skala</p>
                   <p className="text-sm font-medium" style={{ color: "#f5f5f7" }}>{beat.key}</p>
                 </div>
                 <div>

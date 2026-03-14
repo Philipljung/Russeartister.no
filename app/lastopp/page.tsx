@@ -338,7 +338,7 @@ export default function LastOppPage() {
             />
           </div>
           <div>
-            <Label>Toneart *</Label>
+            <Label>Skala *</Label>
             <select
               value={key}
               onChange={(e) => setKey(e.target.value)}

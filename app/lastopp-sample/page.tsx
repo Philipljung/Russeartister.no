@@ -334,7 +334,7 @@ export default function LastOppSamplePage() {
                 />
               </div>
               <div>
-                <Label>Toneart</Label>
+                <Label>Skala</Label>
                 <select value={key} onChange={(e) => setKey(e.target.value)} style={{ ...inputStyle, cursor: "pointer" }}>
                   <option value="">Ingen</option>
                   {MUSICAL_KEYS.map((k) => <option key={k} value={k}>{k}</option>)}
