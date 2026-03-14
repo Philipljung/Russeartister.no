@@ -33,6 +33,7 @@ export default function BeatCheckoutModal({ beat, onClose }: Props) {
   // Exclusive licensing
   const [exclusiveEligible, setExclusiveEligible] = useState(false);
   const [exclusiveSelected, setExclusiveSelected] = useState(false);
+  const [saleCount, setSaleCount] = useState<number | null>(null);
 
   useEffect(() => {
     function checkMobile() {
@@ -43,13 +44,16 @@ export default function BeatCheckoutModal({ beat, onClose }: Props) {
     return () => window.removeEventListener("resize", checkMobile);
   }, []);
 
-  // Check exclusive eligibility: beat has exclusive_price set AND purchase count is 0
+  // Fetch purchase count (always) + check exclusive eligibility
   useEffect(() => {
-    if (!beat.exclusive_price || beat.exclusively_sold) return;
     getSupabaseClient()
       .rpc("beat_purchase_count", { beat_id: beat.id })
       .then(({ data }: { data: number | null }) => {
-        if (data === 0) setExclusiveEligible(true);
+        const count = data ?? 0;
+        setSaleCount(count);
+        if (beat.exclusive_price && !beat.exclusively_sold && count === 0) {
+          setExclusiveEligible(true);
+        }
       });
   }, [beat.id, beat.exclusive_price, beat.exclusively_sold]);
 
@@ -244,9 +248,15 @@ export default function BeatCheckoutModal({ beat, onClose }: Props) {
                   <p className="text-sm font-medium" style={{ color: "#f5f5f7" }}>{beat.key}</p>
                 </div>
                 <div>
-                  <p className="mb-0.5 text-xs" style={{ color: "#3a3a3a" }}>Format</p>
+                  <p className="mb-0.5 text-xs" style={{ color: "#3a3a3a" }}>Antall salg</p>
                   <p className="text-sm font-medium" style={{ color: "#f5f5f7" }}>
-                    {beat.project_file_url ? "WAV + MIDI" : "WAV"}
+                    {saleCount === null ? "—" : saleCount}
+                  </p>
+                </div>
+                <div className="col-span-2">
+                  <p className="mb-0.5 text-xs" style={{ color: "#3a3a3a" }}>Prosjektfil inkludert</p>
+                  <p className="text-sm font-medium" style={{ color: beat.project_file_url ? "#34c759" : "#86868b" }}>
+                    {beat.project_file_url ? "Ja" : "Nei"}
                   </p>
                 </div>
               </div>

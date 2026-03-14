@@ -2,7 +2,7 @@
 
 import { useState, useMemo, useEffect, useCallback } from "react";
 import BeatCard from "@/components/BeatCard";
-import BeatFilters, { DEFAULT_FILTERS, Filters, BPM_MIN, BPM_MAX, PRICE_MAX } from "@/components/BeatFilters";
+import BeatFilters, { DEFAULT_FILTERS, Filters, BPM_MIN, BPM_MAX, PRICE_MIN, PRICE_MAX } from "@/components/BeatFilters";
 import HeroCarousel from "@/components/HeroCarousel";
 import { fetchPublicBeats } from "@/lib/fetchBeats";
 import type { Beat } from "@/lib/supabase/types";
@@ -43,6 +43,7 @@ export default function BeatsPage() {
     if (filters.vocal) result = result.filter((b) => b.vocal_type === filters.vocal);
     if (filters.minBpm > BPM_MIN) result = result.filter((b) => b.bpm >= filters.minBpm);
     if (filters.maxBpm < BPM_MAX) result = result.filter((b) => b.bpm <= filters.maxBpm);
+    if (filters.minPrice > PRICE_MIN) result = result.filter((b) => b.price >= filters.minPrice);
     if (filters.maxPrice < PRICE_MAX) result = result.filter((b) => b.price <= filters.maxPrice);
 
     switch (filters.sortBy) {

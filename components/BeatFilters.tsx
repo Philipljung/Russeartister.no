@@ -5,7 +5,7 @@ import { Search, X, ChevronDown, Check, SlidersHorizontal } from "lucide-react";
 
 export const BPM_MIN = 60;
 export const BPM_MAX = 220;
-export const PRICE_MIN = 100;
+export const PRICE_MIN = 0;
 export const PRICE_MAX = 30000;
 
 export type Filters = {
@@ -14,6 +14,7 @@ export type Filters = {
   vocal: "" | "med_vokal" | "uten_vokal";
   minBpm: number;
   maxBpm: number;
+  minPrice: number;
   maxPrice: number;
   sortBy: string;
 };
@@ -24,6 +25,7 @@ export const DEFAULT_FILTERS: Filters = {
   vocal: "",
   minBpm: BPM_MIN,
   maxBpm: BPM_MAX,
+  minPrice: PRICE_MIN,
   maxPrice: PRICE_MAX,
   sortBy: "newest",
 };
@@ -133,6 +135,78 @@ function GenreDropdown({
             >
               <span className="flex-1 text-left">{g}</span>
               {value === g && <Check size={12} style={{ color: "#6366f1" }} />}
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ── Custom sort dropdown ───────────────────────────────────────────────────
+function SortDropdown({
+  value,
+  options,
+  onChange,
+}: {
+  value: string;
+  options: { value: string; label: string }[];
+  onChange: (v: string) => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    function onOutside(e: MouseEvent) {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+    }
+    document.addEventListener("mousedown", onOutside);
+    return () => document.removeEventListener("mousedown", onOutside);
+  }, []);
+
+  const selected = options.find((o) => o.value === value);
+
+  return (
+    <div ref={ref} className="relative shrink-0">
+      <button
+        onClick={() => setOpen((o) => !o)}
+        className="flex items-center gap-2 rounded-xl px-3.5 py-2 text-sm transition-all"
+        style={{
+          background: "#141414",
+          border: "1px solid #2a2a2a",
+          color: "#f5f5f7",
+          minWidth: 160,
+          width: "100%",
+        }}
+      >
+        <span className="flex-1 text-left">{selected?.label ?? "Sorter"}</span>
+        <ChevronDown
+          size={13}
+          style={{
+            color: "#86868b",
+            transform: open ? "rotate(180deg)" : "none",
+            transition: "transform 0.15s",
+            flexShrink: 0,
+          }}
+        />
+      </button>
+
+      {open && (
+        <div
+          className="absolute left-0 top-full mt-1.5 min-w-full overflow-hidden rounded-xl py-1 shadow-2xl"
+          style={{ background: "#1c1c1e", border: "1px solid #2a2a2a", zIndex: 100 }}
+        >
+          {options.map((o) => (
+            <button
+              key={o.value}
+              className="flex w-full items-center gap-2 px-3.5 py-2 text-sm transition-colors"
+              style={{ color: value === o.value ? "#f5f5f7" : "#86868b" }}
+              onMouseEnter={(e) => ((e.currentTarget as HTMLButtonElement).style.background = "rgba(255,255,255,0.05)")}
+              onMouseLeave={(e) => ((e.currentTarget as HTMLButtonElement).style.background = "transparent")}
+              onClick={() => { onChange(o.value); setOpen(false); }}
+            >
+              <span className="flex-1 text-left">{o.label}</span>
+              {value === o.value && <Check size={12} style={{ color: "#6366f1" }} />}
             </button>
           ))}
         </div>
@@ -366,6 +440,7 @@ export default function BeatFilters({ filters, genres, onChange }: Props) {
     filters.vocal !== "",
     filters.minBpm > BPM_MIN,
     filters.maxBpm < BPM_MAX,
+    filters.minPrice > PRICE_MIN,
     filters.maxPrice < PRICE_MAX,
   ].filter(Boolean).length;
 
@@ -381,7 +456,7 @@ export default function BeatFilters({ filters, genres, onChange }: Props) {
   }
 
   const bpmActive = filters.minBpm > BPM_MIN || filters.maxBpm < BPM_MAX;
-  const priceActive = filters.maxPrice < PRICE_MAX;
+  const priceActive = filters.minPrice > PRICE_MIN || filters.maxPrice < PRICE_MAX;
 
   const filterPanel = (
     <div className="flex flex-wrap items-end gap-5">
@@ -445,30 +520,32 @@ export default function BeatFilters({ filters, genres, onChange }: Props) {
         />
       </div>
 
-      {/* Price */}
-      <div className="flex flex-col gap-2" style={{ minWidth: 160 }}>
+      {/* Price range */}
+      <div className="flex flex-col gap-2" style={{ minWidth: 200 }}>
         <div className="flex items-center justify-between">
           <span
             className="text-xs font-medium"
             style={{ color: priceActive ? "#f5f5f7" : "#86868b" }}
           >
-            Maks pris
+            Pris
           </span>
           <span
             className="text-xs tabular-nums"
             style={{ color: priceActive ? "#f5f5f7" : "#3a3a3a" }}
           >
-            {filters.maxPrice >= PRICE_MAX
+            {filters.minPrice <= PRICE_MIN && filters.maxPrice >= PRICE_MAX
               ? "Alle"
-              : `kr ${filters.maxPrice.toLocaleString("nb-NO")}`}
+              : `kr ${filters.minPrice.toLocaleString("nb-NO")} — kr ${filters.maxPrice.toLocaleString("nb-NO")}`}
           </span>
         </div>
-        <SingleKnobSlider
+        <DualKnobSlider
           min={PRICE_MIN}
           max={PRICE_MAX}
           step={50}
-          value={filters.maxPrice}
-          onChange={(v) => set("maxPrice", v)}
+          minVal={filters.minPrice}
+          maxVal={filters.maxPrice}
+          onMinChange={(v) => set("minPrice", v)}
+          onMaxChange={(v) => set("maxPrice", v)}
         />
       </div>
 
@@ -479,26 +556,11 @@ export default function BeatFilters({ filters, genres, onChange }: Props) {
         <span className="text-xs font-medium" style={{ color: "#86868b" }}>
           Sorter
         </span>
-        <select
+        <SortDropdown
           value={filters.sortBy}
-          onChange={(e) => set("sortBy", e.target.value)}
-          style={{
-            background: "#141414",
-            color: "#f5f5f7",
-            border: "1px solid #2a2a2a",
-            borderRadius: 12,
-            padding: "8px 12px",
-            fontSize: 13,
-            outline: "none",
-            cursor: "pointer",
-          }}
-        >
-          {sortOptions.map((o) => (
-            <option key={o.value} value={o.value}>
-              {o.label}
-            </option>
-          ))}
-        </select>
+          options={sortOptions}
+          onChange={(v) => set("sortBy", v)}
+        />
       </div>
 
       {/* Reset */}

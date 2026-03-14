@@ -61,11 +61,11 @@ export default function BeatCard({ beat, isSelected = false, onSelect }: Props) 
       }}
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
-      onClick={onSelect}
+      onClick={() => { onSelect?.(); setCheckoutOpen(true); }}
     >
       {/* Play button */}
       <button
-        onClick={() => toggleBeat(beat)}
+        onClick={(e) => { e.stopPropagation(); toggleBeat(beat); }}
         className="flex shrink-0 items-center justify-center rounded-full transition-all"
         style={{
           width: 36,

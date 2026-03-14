@@ -51,6 +51,7 @@ export default function ProfilePage() {
 
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
+  const [pendingDelete, setPendingDelete] = useState<{ type: "beat" | "sample"; id: string } | null>(null);
 
   const nameInputRef = useRef<HTMLInputElement>(null);
   const bioTextareaRef = useRef<HTMLTextAreaElement>(null);
@@ -119,37 +120,24 @@ export default function ProfilePage() {
     }
   }, [editingBio]);
 
-  async function deleteBeat(beatId: string) {
-    if (!confirm("Er du sikker på at du vil slette?")) return;
-    console.log("[profile] Soft-deleting beat:", beatId);
+  async function confirmDelete() {
+    if (!pendingDelete) return;
+    const { type, id } = pendingDelete;
+    setPendingDelete(null);
     const supabase = getSupabaseClient();
-    const { error } = await supabase
-      .from("beats")
-      .update({ deleted_at: new Date().toISOString() })
-      .eq("id", beatId);
-    if (error) {
-      console.error("[profile] Failed to delete beat:", error.message);
-      toast("Kunne ikke slette. Prøv igjen.", "error");
+    if (type === "beat") {
+      const { error } = await supabase.from("beats").update({ deleted_at: new Date().toISOString() }).eq("id", id);
+      if (error) toast("Kunne ikke slette. Prøv igjen.", "error");
+      else { setBeats((prev) => prev.filter((b) => b.id !== id)); toast("Låt slettet.", "success"); }
     } else {
-      setBeats((prev) => prev.filter((b) => b.id !== beatId));
-      toast("Beat ble slettet.", "success");
+      const { error } = await supabase.from("samples").update({ deleted_at: new Date().toISOString() }).eq("id", id);
+      if (error) toast("Kunne ikke slette. Prøv igjen.", "error");
+      else { setSamples((prev) => prev.filter((s) => s.id !== id)); toast("Sample slettet.", "success"); }
     }
   }
 
-  async function deleteSample(sampleId: string) {
-    if (!confirm("Er du sikker på at du vil slette?")) return;
-    const supabase = getSupabaseClient();
-    const { error } = await supabase
-      .from("samples")
-      .update({ deleted_at: new Date().toISOString() })
-      .eq("id", sampleId);
-    if (error) {
-      toast("Kunne ikke slette. Prøv igjen.", "error");
-    } else {
-      setSamples((prev) => prev.filter((s) => s.id !== sampleId));
-      toast("Sample ble slettet.", "success");
-    }
-  }
+  function deleteBeat(beatId: string) { setPendingDelete({ type: "beat", id: beatId }); }
+  function deleteSample(sampleId: string) { setPendingDelete({ type: "sample", id: sampleId }); }
 
   async function saveName() {
     const trimmed = nameInput.trim();
@@ -880,6 +868,31 @@ export default function ProfilePage() {
           });
         }}
       />
+    )}
+
+    {/* Delete confirmation overlay */}
+    {pendingDelete && (
+      <div className="fixed bottom-6 left-1/2 z-50 -translate-x-1/2 flex items-center gap-3 rounded-2xl px-5 py-3 shadow-2xl"
+        style={{ background: "#1a1a1a", border: "1px solid #2a2a2a", whiteSpace: "nowrap" }}
+      >
+        <p className="text-sm" style={{ color: "#f5f5f7" }}>
+          Er du sikker på at du vil slette?
+        </p>
+        <button
+          onClick={() => void confirmDelete()}
+          className="rounded-lg px-3 py-1.5 text-xs font-semibold transition-opacity hover:opacity-80"
+          style={{ background: "#ff3b30", color: "#fff" }}
+        >
+          Slett
+        </button>
+        <button
+          onClick={() => setPendingDelete(null)}
+          className="rounded-lg px-3 py-1.5 text-xs font-medium transition-opacity hover:opacity-70"
+          style={{ background: "rgba(255,255,255,0.08)", color: "#86868b" }}
+        >
+          Avbryt
+        </button>
+      </div>
     )}
     </>
   );

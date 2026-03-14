@@ -8,7 +8,7 @@ export async function fetchProfileByUsername(username: string): Promise<Profile 
   const { data, error } = await supabase
     .from("profiles")
     .select("*")
-    .eq("username", username)
+    .ilike("username", username)
     .single();
 
   if (error) {
