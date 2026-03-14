@@ -35,6 +35,23 @@ export async function fetchHeroSlides(): Promise<HeroSlide[]> {
   return data ?? [];
 }
 
+export type LegalPage = {
+  slug: string;
+  title: string;
+  content: string;
+  updated_at: string;
+};
+
+export async function fetchLegalPage(slug: string): Promise<LegalPage | null> {
+  const supabase = getSupabaseClient();
+  const { data } = await supabase
+    .from("legal_pages")
+    .select("slug,title,content,updated_at")
+    .eq("slug", slug)
+    .single();
+  return data ?? null;
+}
+
 export async function fetchFooterData(): Promise<{ links: FooterLink[]; settings: SiteSettings }> {
   const supabase = getSupabaseClient();
   const [linksRes, settingsRes] = await Promise.all([
