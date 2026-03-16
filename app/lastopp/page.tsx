@@ -7,6 +7,7 @@ import { getSupabaseClient } from "@/lib/supabase/client";
 import { fetchExistingGenres } from "@/lib/fetchRemakes";
 import GenreAutocomplete from "@/components/GenreAutocomplete";
 import Link from "next/link";
+import { useToast } from "@/lib/toast-context";
 
 const MUSICAL_KEYS = [
   "C maj","C# maj","D maj","Eb maj","E maj","F maj",
@@ -19,6 +20,7 @@ type UploadFile = { file: File; previewUrl?: string } | null;
 
 export default function LastOppPage() {
   const router = useRouter();
+  const { toast } = useToast();
   const [stripeReady, setStripeReady] = useState<boolean | null>(null); // null = loading
 
   useEffect(() => {
@@ -105,6 +107,10 @@ export default function LastOppPage() {
       setError("Fyll ut alle obligatoriske felt.");
       return;
     }
+    if (!audioPreview?.file) {
+      setError("Du må laste opp lydforhåndsvisning.");
+      return;
+    }
     if (stripeReady && !price) {
       setError("Fyll ut alle obligatoriske felt.");
       return;
@@ -150,7 +156,11 @@ export default function LastOppPage() {
     }
 
     const userId = session.user.id;
-    const username = session.user.user_metadata?.username as string;
+    let username = session.user.user_metadata?.username as string | undefined;
+    if (!username) {
+      const { data: profile } = await supabase.from("profiles").select("username").eq("id", userId).single();
+      username = profile?.username;
+    }
     const timestamp = Date.now();
 
     // Helper: upload a file and return its public URL (or null on failure)
@@ -209,7 +219,7 @@ export default function LastOppPage() {
         cover_url: coverUrl,
         audio_preview_url: audioUrl,
         project_file_url: projectFileUrl,
-        is_published: isPublished,
+        is_published: true,
       })
       .select("id")
       .single();
@@ -222,7 +232,8 @@ export default function LastOppPage() {
     }
 
     console.log("[lastopp] Beat created with id:", beat.id, "— redirecting to profile");
-    router.push(`/profile/${username}`);
+    toast("Lastet opp!", "success");
+    router.push(username ? `/profile/${username}` : "/later");
   }
 
   return (
@@ -558,41 +569,6 @@ export default function LastOppPage() {
           />
         </div>
 
-        {/* Publiser toggle */}
-        <div className="flex items-center justify-between rounded-xl px-4 py-3"
-          style={{ background: "#141414", border: "1px solid #2a2a2a" }}
-        >
-          <div>
-            <p className="text-sm font-medium" style={{ color: "#f5f5f7" }}>
-              Publiser nå
-            </p>
-            <p className="text-xs mt-0.5" style={{ color: "#86868b" }}>
-              Slå av for å lagre som utkast
-            </p>
-          </div>
-          <button
-            type="button"
-            onClick={() => setIsPublished(!isPublished)}
-            className="relative rounded-full transition-colors"
-            style={{
-              width: 44,
-              height: 26,
-              background: isPublished ? "#0071e3" : "#2a2a2a",
-              flexShrink: 0,
-            }}
-          >
-            <div
-              className="absolute top-1 rounded-full transition-all"
-              style={{
-                width: 18,
-                height: 18,
-                background: "#f5f5f7",
-                left: isPublished ? 22 : 4,
-              }}
-            />
-          </button>
-        </div>
-
         {error && (
           <p className="text-sm" style={{ color: "#ff453a" }}>
             {error}
@@ -618,7 +594,7 @@ export default function LastOppPage() {
             ) : (
               <span className="flex items-center gap-2">
                 <Upload size={14} />
-                {isPublished ? "Publiser beat" : "Lagre utkast"}
+                Publiser beat
               </span>
             )}
           </button>

@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { usePathname } from "next/navigation";
 import { Play, Pause, X } from "lucide-react";
 import { usePlayer } from "@/lib/player-context";
 
@@ -22,11 +23,18 @@ function genreColor(genre: string): string {
 }
 
 export default function AudioPlayer() {
-  const { currentBeat, isPlaying, pausePlayer, stopPlayer, toggleBeat } = usePlayer();
+  const { currentBeat, isPlaying, pausePlayer, stopPlayer, clearPlayer, toggleBeat } = usePlayer();
+  const pathname = usePathname();
   const audioRef = useRef<HTMLAudioElement>(null);
   const progressRef = useRef<HTMLDivElement>(null);
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
+
+  // Only show on låter and profile pages; clear when leaving those routes
+  const showPlayer = pathname === "/later" || pathname.startsWith("/profile/");
+  useEffect(() => {
+    if (!showPlayer) clearPlayer();
+  }, [showPlayer, clearPlayer]);
 
   // Sync audio element with player context state
   useEffect(() => {
@@ -57,7 +65,7 @@ export default function AudioPlayer() {
     setCurrentTime(ratio * duration);
   }
 
-  if (!currentBeat) return null;
+  if (!currentBeat || !showPlayer) return null;
 
   const progress = duration > 0 ? currentTime / duration : 0;
   const coverImg = currentBeat.cover_url ?? currentBeat.producer?.avatar_url ?? null;
@@ -112,14 +120,14 @@ export default function AudioPlayer() {
         style={{
           width: 36,
           height: 36,
-          background: "#6366f1",
-          color: "#f5f5f7",
+          background: "#f5f5f7",
+          color: "#080808",
         }}
       >
         {isPlaying ? (
-          <Pause size={14} fill="#f5f5f7" />
+          <Pause size={14} fill="#080808" />
         ) : (
-          <Play size={14} fill="#f5f5f7" />
+          <Play size={14} fill="#080808" />
         )}
       </button>
 
@@ -145,7 +153,7 @@ export default function AudioPlayer() {
         >
           <div
             className="absolute left-0 top-0 h-full rounded-full"
-            style={{ background: "#6366f1", width: `${progress * 100}%` }}
+            style={{ background: "#f5f5f7", width: `${progress * 100}%` }}
           />
           <div
             className="absolute top-1/2 -translate-y-1/2 rounded-full transition-transform hover:scale-125"

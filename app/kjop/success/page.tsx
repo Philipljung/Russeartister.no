@@ -70,11 +70,11 @@ function SuccessContent() {
         <p className="text-lg font-semibold" style={{ color: "#f5f5f7" }}>Noe gikk galt</p>
         <p className="text-sm" style={{ color: "#86868b" }}>{error}</p>
         <Link
-          href="/beats"
+          href="/later"
           className="mt-2 rounded-xl px-5 py-2 text-sm font-medium"
           style={{ background: "rgba(255,255,255,0.06)", color: "#f5f5f7" }}
         >
-          Tilbake til beats
+          Tilbake til låter
         </Link>
       </div>
     );
@@ -156,7 +156,7 @@ function SuccessContent() {
             style={{ background: "#0071e3", color: "#fff" }}
           >
             <Download size={16} />
-            Last ned beat
+            Last ned
           </a>
         ) : (
           <div
@@ -170,16 +170,16 @@ function SuccessContent() {
         {/* Note about expiry */}
         {downloadUrl && (
           <p className="mt-3 text-center text-xs" style={{ color: "#3a3a3a" }}>
-            Nedlastningslenken er gyldig i 1 time. Logg inn for permanent tilgang via Mine nedlastninger.
+            Nedlastningslenken er gyldig i 1 time. Du kan også laste ned via Mine Nedlastninger.
           </p>
         )}
 
         <Link
-          href="/beats"
+          href="/later"
           className="mt-6 flex w-full items-center justify-center rounded-2xl py-3 text-sm font-medium transition-opacity hover:opacity-80"
           style={{ background: "rgba(255,255,255,0.04)", color: "#86868b" }}
         >
-          Tilbake til beats
+          Tilbake til låter
         </Link>
       </div>
     </div>

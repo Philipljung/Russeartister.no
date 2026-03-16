@@ -3,13 +3,66 @@
 import { useEffect, useCallback, useRef, useState } from "react";
 import { loadStripe } from "@stripe/stripe-js";
 import { EmbeddedCheckoutProvider, EmbeddedCheckout } from "@stripe/react-stripe-js";
-import { X, Music, Crown } from "lucide-react";
+import { X, Music, Crown, Download } from "lucide-react";
 import Link from "next/link";
 import Image from "next/image";
 import { getSupabaseClient } from "@/lib/supabase/client";
 import type { Beat } from "@/lib/supabase/types";
 
 const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY!);
+
+function FreeDownloadPanel({ beatId, onClose }: { beatId: string; onClose: () => void }) {
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  async function handleDownload() {
+    setLoading(true);
+    setError(null);
+    try {
+      const res = await fetch(`/api/beats/free-download?beatId=${beatId}`);
+      const data = await res.json();
+      if (data.url) {
+        window.open(data.url, "_blank");
+        onClose();
+      } else {
+        setError("Nedlasting feilet. Prøv igjen.");
+      }
+    } catch {
+      setError("Nedlasting feilet. Prøv igjen.");
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  return (
+    <div className="flex flex-col items-center justify-center h-full gap-5 py-8">
+      <div
+        className="flex items-center justify-center rounded-full"
+        style={{ width: 64, height: 64, background: "rgba(52,199,89,0.12)", border: "1px solid rgba(52,199,89,0.25)" }}
+      >
+        <Download size={28} style={{ color: "#34c759" }} />
+      </div>
+      <div className="text-center">
+        <p className="text-lg font-semibold mb-1" style={{ color: "#f5f5f7" }}>Gratis nedlasting</p>
+        <p className="text-sm" style={{ color: "#86868b" }}>Denne låten er gratis. Klikk for å laste ned.</p>
+      </div>
+      {error && <p className="text-sm" style={{ color: "#ff453a" }}>{error}</p>}
+      <button
+        onClick={handleDownload}
+        disabled={loading}
+        className="flex items-center gap-2 rounded-xl px-6 py-3 text-sm font-semibold transition-opacity disabled:opacity-50"
+        style={{ background: "#34c759", color: "#fff" }}
+      >
+        {loading ? (
+          <span className="inline-block h-4 w-4 animate-spin rounded-full border-2 border-transparent" style={{ borderTopColor: "rgba(255,255,255,0.8)" }} />
+        ) : (
+          <Download size={16} />
+        )}
+        Last ned gratis
+      </button>
+    </div>
+  );
+}
 
 function genreColor(genre: string): string {
   const palette = [
@@ -185,8 +238,8 @@ export default function BeatCheckoutModal({ beat, onClose }: Props) {
                 <p className="text-xs mt-0.5" style={{ color: "#86868b" }}>
                   {beat.producer?.display_name ?? "Ukjent produsent"} &middot; {beat.genre} &middot; {beat.bpm} BPM
                 </p>
-                <p className="text-sm font-bold mt-1" style={{ color: "#f5f5f7" }}>
-                  kr {beat.price.toLocaleString("nb-NO")}
+                <p className="text-sm font-bold mt-1" style={{ color: beat.price === 0 ? "#34c759" : "#f5f5f7" }}>
+                  {beat.price === 0 ? "Gratis" : `kr ${beat.price.toLocaleString("nb-NO")}`}
                 </p>
               </div>
             </div>
@@ -303,7 +356,7 @@ export default function BeatCheckoutModal({ beat, onClose }: Props) {
                         <span style={{ color: "#f5f5f7", fontWeight: 600 }}>
                           kr {beat.exclusive_price!.toLocaleString("nb-NO")}
                         </span>
-                        . Da eier du den alene — beatet fjernes fra salg og ingen andre kan noen gang kjøpe det.
+                        . Da eier du den alene, låten fjernes fra salg og ingen andre kan kjøpe den.
                       </p>
                       <button
                         onClick={() => setExclusiveSelected(!exclusiveSelected)}
@@ -326,8 +379,8 @@ export default function BeatCheckoutModal({ beat, onClose }: Props) {
                 <p className="text-xs mb-1" style={{ color: "#3a3a3a" }}>
                   {exclusiveSelected ? "Eksklusiv pris" : "Pris"}
                 </p>
-                <p className="text-3xl font-bold" style={{ color: exclusiveSelected ? "#eab308" : "#f5f5f7" }}>
-                  kr {(exclusiveSelected ? beat.exclusive_price! : beat.price).toLocaleString("nb-NO")}
+                <p className="text-3xl font-bold" style={{ color: exclusiveSelected ? "#eab308" : beat.price === 0 ? "#34c759" : "#f5f5f7" }}>
+                  {beat.price === 0 ? "Gratis" : `kr ${(exclusiveSelected ? beat.exclusive_price! : beat.price).toLocaleString("nb-NO")}`}
                 </p>
                 {exclusiveSelected && (
                   <p className="mt-0.5 text-xs" style={{ color: "#86868b" }}>
@@ -339,7 +392,7 @@ export default function BeatCheckoutModal({ beat, onClose }: Props) {
           )}
         </div>
 
-        {/* Stripe checkout panel */}
+        {/* Right panel: Stripe checkout OR free download */}
         <div
           className="flex flex-col overflow-y-auto"
           style={
@@ -348,16 +401,22 @@ export default function BeatCheckoutModal({ beat, onClose }: Props) {
               : { flex: 1, padding: "32px 24px" }
           }
         >
-          <h3 className="mb-4 md:mb-6 text-base md:text-lg font-semibold" style={{ color: "#f5f5f7" }}>
-            Betal
-          </h3>
-          <EmbeddedCheckoutProvider
-            key={String(exclusiveSelected)}
-            stripe={stripePromise}
-            options={{ fetchClientSecret }}
-          >
-            <EmbeddedCheckout />
-          </EmbeddedCheckoutProvider>
+          {beat.price === 0 ? (
+            <FreeDownloadPanel beatId={beat.id} onClose={onClose} />
+          ) : (
+            <>
+              <h3 className="mb-4 md:mb-6 text-base md:text-lg font-semibold" style={{ color: "#f5f5f7" }}>
+                Betal
+              </h3>
+              <EmbeddedCheckoutProvider
+                key={String(exclusiveSelected)}
+                stripe={stripePromise}
+                options={{ fetchClientSecret }}
+              >
+                <EmbeddedCheckout />
+              </EmbeddedCheckoutProvider>
+            </>
+          )}
         </div>
       </div>
     </div>

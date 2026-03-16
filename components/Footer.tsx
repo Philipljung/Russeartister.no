@@ -7,7 +7,7 @@ import { fetchFooterData, type FooterLink, type SiteSettings } from "@/lib/fetch
 export default function Footer() {
   const [links, setLinks] = useState<FooterLink[]>([]);
   const [settings, setSettings] = useState<SiteSettings>({
-    copyright_text: "© 2025 Russeartister.no. Alle rettigheter forbeholdt.",
+    copyright_text: "© 2026 Russeartister.no. Alle rettigheter forbeholdt.",
     footer_tagline: null,
   });
 

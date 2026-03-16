@@ -9,7 +9,7 @@ import { getSupabaseClient } from "@/lib/supabase/client";
 import type { Session, AuthChangeEvent } from "@supabase/supabase-js";
 
 const navLinks = [
-  { label: "Låter", href: "/beats", active: true },
+  { label: "Låter", href: "/later", active: true },
   { label: "Samples & Presets", href: "/samples", active: true },
   { label: "Remakes", href: "/remakes", active: true },
 ];
@@ -20,30 +20,37 @@ export default function Navbar() {
   const [session, setSession] = useState<Session | null>(null);
   const [authReady, setAuthReady] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
+  const [username, setUsername] = useState<string | undefined>(undefined);
+  const [displayName, setDisplayName] = useState<string | undefined>(undefined);
 
   useEffect(() => {
     const supabase = getSupabaseClient();
 
-    // Read session from local storage — instant, no network call.
+    async function loadSession(s: Session | null) {
+      setSession(s);
+      if (!s) { setUsername(undefined); setDisplayName(undefined); return; }
+
+      const { data } = await supabase
+        .from("profiles")
+        .select("username, display_name")
+        .eq("id", s.user.id)
+        .single();
+      setUsername(data?.username ?? (s.user.user_metadata?.username as string | undefined));
+      setDisplayName(data?.display_name ?? undefined);
+    }
+
     void (async () => {
-      const { data, error } = await supabase.auth.getSession();
-      console.log(
-        "[Navbar] Initial session:",
-        data.session ? `user=${data.session.user.email}` : "none",
-        error ? `error=${error.message}` : ""
-      );
-      setSession(data.session);
+      const { data } = await supabase.auth.getSession();
+      await loadSession(data.session);
       setAuthReady(true);
     })();
 
-    // Subscribe to auth state changes (login, logout, token refresh).
-    const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange((event: AuthChangeEvent, newSession: Session | null) => {
-      console.log("[Navbar] Auth state changed:", event, newSession?.user?.email ?? "null");
-      setSession(newSession);
-      setAuthReady(true);
-    });
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      (_event: AuthChangeEvent, newSession: Session | null) => {
+        void loadSession(newSession);
+        setAuthReady(true);
+      }
+    );
 
     return () => subscription.unsubscribe();
   }, []);
@@ -54,16 +61,12 @@ export default function Navbar() {
   }, [pathname]);
 
   async function handleSignOut() {
-    console.log("[Navbar] Signing out...");
     const supabase = getSupabaseClient();
     await supabase.auth.signOut();
-    console.log("[Navbar] Signed out");
     setMenuOpen(false);
-    router.push("/beats");
+    router.push("/later");
     router.refresh();
   }
-
-  const username = session?.user?.user_metadata?.username as string | undefined;
 
   return (
     <nav
@@ -77,7 +80,7 @@ export default function Navbar() {
     >
       <div className="mx-auto grid h-14 max-w-7xl grid-cols-3 items-center px-4 md:px-6">
         {/* Logo — left col */}
-        <Link href="/beats" className="flex items-center transition-opacity hover:opacity-80 justify-self-start">
+        <Link href="/later" className="flex items-center transition-opacity hover:opacity-80 justify-self-start">
           <Image
             src="/ra-logo.png"
             alt="Russeartister.no"
@@ -153,9 +156,9 @@ export default function Navbar() {
                     flexShrink: 0,
                   }}
                 >
-                  {username.slice(0, 1).toUpperCase()}
+                  {(displayName ?? username ?? "").slice(0, 1).toUpperCase()}
                 </div>
-                {username}
+                {displayName ?? username}
               </Link>
               <button
                 onClick={handleSignOut}
@@ -257,9 +260,9 @@ export default function Navbar() {
                           color: "rgba(255,255,255,0.6)",
                         }}
                       >
-                        {username.slice(0, 1).toUpperCase()}
+                        {(displayName ?? username ?? "").slice(0, 1).toUpperCase()}
                       </div>
-                      {username}
+                      {displayName ?? username}
                     </Link>
                     <Link
                       href="/nedlastninger"

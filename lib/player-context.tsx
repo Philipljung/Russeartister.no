@@ -9,6 +9,7 @@ type PlayerContextType = {
   toggleBeat: (beat: Beat) => void;
   pausePlayer: () => void;
   stopPlayer: () => void;
+  clearPlayer: () => void;
 };
 
 const PlayerContext = createContext<PlayerContextType | null>(null);
@@ -31,9 +32,10 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
 
   const pausePlayer = useCallback(() => setIsPlaying(false), []);
   const stopPlayer = useCallback(() => setIsPlaying(false), []);
+  const clearPlayer = useCallback(() => { setCurrentBeat(null); setIsPlaying(false); }, []);
 
   return (
-    <PlayerContext.Provider value={{ currentBeat, isPlaying, toggleBeat, pausePlayer, stopPlayer }}>
+    <PlayerContext.Provider value={{ currentBeat, isPlaying, toggleBeat, pausePlayer, stopPlayer, clearPlayer }}>
       {children}
     </PlayerContext.Provider>
   );

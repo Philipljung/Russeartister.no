@@ -4,23 +4,17 @@ import { useState, useRef, KeyboardEvent, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { X, Upload, Music, FileArchive, ImageIcon, AlertCircle } from "lucide-react";
 import { getSupabaseClient } from "@/lib/supabase/client";
-import { fetchExistingGenres } from "@/lib/fetchRemakes";
-import GenreAutocomplete from "@/components/GenreAutocomplete";
 import Link from "next/link";
+import { useToast } from "@/lib/toast-context";
 
-const MUSICAL_KEYS = [
-  "C maj","C# maj","D maj","Eb maj","E maj","F maj",
-  "F# maj","G maj","Ab maj","A maj","Bb maj","B maj",
-  "C min","C# min","D min","Eb min","E min","F min",
-  "F# min","G min","Ab min","A min","Bb min","B min",
-];
+const DAWS = ["Ableton Live", "FL Studio", "Logic Pro", "Pro Tools", "Cubase", "Reason", "GarageBand", "Studio One", "Bitwig", "Reaper", "Annen"];
 
 type UploadFile = { file: File; previewUrl?: string } | null;
 
 export default function LastOppRemakePage() {
   const router = useRouter();
+  const { toast } = useToast();
   const [stripeReady, setStripeReady] = useState<boolean | null>(null);
-  const [existingGenres, setExistingGenres] = useState<string[]>([]);
 
   useEffect(() => {
     const supabase = getSupabaseClient();
@@ -33,19 +27,26 @@ export default function LastOppRemakePage() {
         .single();
       setStripeReady(data?.stripe_onboarding_complete ?? false);
     });
-    fetchExistingGenres().then(setExistingGenres);
   }, []);
 
   const [title, setTitle] = useState("");
-  const [originalSong, setOriginalSong] = useState("");
+  const [daw, setDaw] = useState("");
+  const [selectedVsts, setSelectedVsts] = useState<string[]>([]);
+  const [vstInput, setVstInput] = useState("");
+  const [knownVsts, setKnownVsts] = useState<string[]>([]);
+
+  useEffect(() => {
+    const supabase = getSupabaseClient();
+    supabase.from("remakes").select("vsts").not("vsts", "is", null).then(({ data }: { data: { vsts: string[] | null }[] | null }) => {
+      if (!data) return;
+      const all: string[] = data.flatMap((r) => r.vsts ?? []);
+      setKnownVsts(Array.from(new Set(all)).sort());
+    });
+  }, []);
   const [description, setDescription] = useState("");
-  const [genre, setGenre] = useState("");
-  const [bpm, setBpm] = useState("");
-  const [key, setKey] = useState("");
   const [tags, setTags] = useState<string[]>([]);
   const [tagInput, setTagInput] = useState("");
   const [price, setPrice] = useState("");
-  const [isPublished, setIsPublished] = useState(true);
 
   const [cover, setCover] = useState<UploadFile>(null);
   const [audioPreview, setAudioPreview] = useState<UploadFile>(null);
@@ -69,27 +70,17 @@ export default function LastOppRemakePage() {
     if (e.key === "Backspace" && !tagInput && tags.length > 0) setTags(tags.slice(0, -1));
   }
 
-  function handleCoverChange(e: React.ChangeEvent<HTMLInputElement>) {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    setCover({ file, previewUrl: URL.createObjectURL(file) });
-  }
-
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError(null);
 
-    if (!title || !originalSong || !genre || !bpm || !key) {
-      setError("Fyll ut alle obligatoriske felt."); return;
-    }
-    if (stripeReady && !price) {
-      setError("Fyll ut alle obligatoriske felt."); return;
-    }
+    if (!title) { setError("Tittel er påkrevd."); return; }
+    if (!daw) { setError("Velg DAW."); return; }
+    if (!audioPreview?.file) { setError("Du må laste opp lydforhåndsvisning."); return; }
+    if (!projectFile?.file) { setError("Du må laste opp prosjektfilen."); return; }
+    if (stripeReady && !price) { setError("Fyll ut pris."); return; }
 
-    const bpmNum = parseInt(bpm);
     const priceNum = stripeReady ? parseInt(price) : 0;
-
-    if (bpmNum < 60 || bpmNum > 220) { setError("BPM må være mellom 60 og 220."); return; }
     if (stripeReady && priceNum < 100) { setError("Pris må være minst kr 100."); return; }
 
     setSubmitting(true);
@@ -98,7 +89,11 @@ export default function LastOppRemakePage() {
     if (!session) { setError("Du må være innlogget."); setSubmitting(false); return; }
 
     const userId = session.user.id;
-    const username = session.user.user_metadata?.username as string;
+    let username = session.user.user_metadata?.username as string | undefined;
+    if (!username) {
+      const { data: profile } = await supabase.from("profiles").select("username").eq("id", userId).single();
+      username = profile?.username;
+    }
     const timestamp = Date.now();
 
     async function uploadFile(bucket: string, file: File, suffix: string): Promise<string | null> {
@@ -110,32 +105,28 @@ export default function LastOppRemakePage() {
     }
 
     const coverUrl = cover?.file ? await uploadFile("beat-covers", cover.file, "cover") : null;
-    const audioUrl = audioPreview?.file ? await uploadFile("beat-previews", audioPreview.file, "preview") : null;
+    const audioUrl = await uploadFile("beat-previews", audioPreview.file, "preview");
 
     let fileUrl: string | null = null;
-    if (projectFile?.file) {
-      const ext = projectFile.file.name.split(".").pop() ?? "bin";
-      const path = `${userId}/${timestamp}_remake.${ext}`;
-      const { error } = await supabase.storage.from("beat-files").upload(path, projectFile.file, { upsert: false });
-      if (!error) fileUrl = path;
-    }
+    const ext = projectFile.file.name.split(".").pop() ?? "bin";
+    const path = `${userId}/${timestamp}_remake.${ext}`;
+    const { error: fileErr } = await supabase.storage.from("beat-files").upload(path, projectFile.file, { upsert: false });
+    if (!fileErr) fileUrl = path;
 
     const { data: remake, error: insertError } = await supabase
       .from("remakes")
       .insert({
         producer_id: userId,
         title: title.trim(),
-        original_song: originalSong.trim(),
         description: description.trim(),
-        genre: genre.trim(),
-        bpm: bpmNum,
-        key,
+        daw: daw || null,
+        vsts: selectedVsts.length > 0 ? selectedVsts : null,
         tags,
         price: priceNum,
         cover_url: coverUrl,
         audio_preview_url: audioUrl,
         file_url: fileUrl,
-        is_published: isPublished,
+        is_published: true,
       })
       .select("id")
       .single();
@@ -147,7 +138,8 @@ export default function LastOppRemakePage() {
     }
 
     console.log("[lastopp-remake] Created remake:", remake.id);
-    router.push(`/profile/${username}`);
+    toast("Lastet opp!", "success");
+    router.push(username ? `/profile/${username}` : "/remakes");
   }
 
   return (
@@ -158,17 +150,6 @@ export default function LastOppRemakePage() {
       <p className="mb-8 text-sm" style={{ color: "#86868b" }}>
         Del din remake med Russeartister.no-fellesskapet.
       </p>
-
-      {/* Anti-scam warning */}
-      <div
-        className="mb-6 flex items-start gap-3 rounded-xl px-4 py-3"
-        style={{ background: "rgba(255,59,48,0.06)", border: "1px solid rgba(255,59,48,0.18)" }}
-      >
-        <AlertCircle size={16} style={{ color: "#ff3b30", flexShrink: 0, marginTop: 2 }} />
-        <p className="text-xs leading-relaxed" style={{ color: "#86868b" }}>
-          Last opp riktige filer og korrekt informasjon. Svindel, falsk innhold eller manipulering av kjøpere vil føre til umiddelbar utestengelse og at utbetalinger stoppes.
-        </p>
-      </div>
 
       {stripeReady === false && (
         <div
@@ -189,7 +170,7 @@ export default function LastOppRemakePage() {
 
       <form onSubmit={handleSubmit} className="flex flex-col gap-6">
 
-        {/* Cover + tittel */}
+        {/* Cover + tittel + DAW */}
         <div className="flex gap-5 items-start">
           <button
             type="button"
@@ -211,7 +192,7 @@ export default function LastOppRemakePage() {
               </>
             )}
           </button>
-          <input ref={coverInputRef} type="file" accept="image/*" className="hidden" onChange={handleCoverChange} />
+          <input ref={coverInputRef} type="file" accept="image/*" className="hidden" onChange={(e) => { const f = e.target.files?.[0]; if (f) setCover({ file: f, previewUrl: URL.createObjectURL(f) }); }} />
 
           <div className="flex-1 flex flex-col gap-3">
             <div>
@@ -219,29 +200,76 @@ export default function LastOppRemakePage() {
               <input type="text" placeholder="SUMMER NIGHTS" value={title} onChange={(e) => setTitle(e.target.value)} required style={inputStyle} />
             </div>
             <div>
-              <Label>Original sang *</Label>
-              <input type="text" placeholder="Waiting For Love - Avicii" value={originalSong} onChange={(e) => setOriginalSong(e.target.value)} required style={inputStyle} />
+              <Label>DAW *</Label>
+              <select value={daw} onChange={(e) => setDaw(e.target.value)} style={{ ...inputStyle, cursor: "pointer" }}>
+                <option value="">Velg DAW...</option>
+                {DAWS.map((d) => <option key={d} value={d}>{d}</option>)}
+              </select>
             </div>
           </div>
         </div>
 
-        {/* Genre + BPM + Key */}
-        <div className="grid grid-cols-3 gap-3">
-          <div>
-            <Label>Sjanger *</Label>
-            <GenreAutocomplete value={genre} onChange={setGenre} existingGenres={existingGenres} inputStyle={inputStyle} />
+        {/* VSTs / Plugins brukt */}
+        <div>
+          <Label>VST / Plugins brukt (valgfritt)</Label>
+          <div
+            className="flex flex-wrap items-center gap-2 rounded-xl px-3 py-2.5 min-h-[44px]"
+            style={{ background: "#141414", border: "1px solid #2a2a2a" }}
+            onClick={() => document.getElementById("vst-input-remake")?.focus()}
+          >
+            {selectedVsts.map((v) => (
+              <span key={v} className="flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs" style={{ background: "rgba(99,102,241,0.15)", color: "#818cf8", border: "1px solid rgba(99,102,241,0.3)" }}>
+                {v}
+                <button type="button" onClick={(e) => { e.stopPropagation(); setSelectedVsts(selectedVsts.filter((x) => x !== v)); }} style={{ color: "#818cf8" }}>
+                  <X size={10} />
+                </button>
+              </span>
+            ))}
+            <input
+              id="vst-input-remake"
+              type="text"
+              placeholder={selectedVsts.length === 0 ? "Serum, Sylenth1, Massive..." : ""}
+              value={vstInput}
+              onChange={(e) => setVstInput(e.target.value)}
+              onKeyDown={(e: KeyboardEvent<HTMLInputElement>) => {
+                if (e.key === "Enter" || e.key === ",") {
+                  e.preventDefault();
+                  const v = vstInput.trim();
+                  if (v && !selectedVsts.includes(v)) setSelectedVsts([...selectedVsts, v]);
+                  setVstInput("");
+                }
+                if (e.key === "Backspace" && !vstInput && selectedVsts.length > 0) {
+                  setSelectedVsts(selectedVsts.slice(0, -1));
+                }
+              }}
+              onBlur={() => {
+                const v = vstInput.trim();
+                if (v && !selectedVsts.includes(v)) setSelectedVsts([...selectedVsts, v]);
+                setVstInput("");
+              }}
+              style={{ background: "transparent", border: "none", outline: "none", color: "#f5f5f7", fontSize: 13, minWidth: 120 }}
+            />
           </div>
-          <div>
-            <Label>BPM *</Label>
-            <input type="number" placeholder="128" value={bpm} onChange={(e) => setBpm(e.target.value)} min={60} max={220} required style={inputStyle} />
-          </div>
-          <div>
-            <Label>Skala *</Label>
-            <select value={key} onChange={(e) => setKey(e.target.value)} required style={{ ...inputStyle, cursor: "pointer" }}>
-              <option value="">Velg...</option>
-              {MUSICAL_KEYS.map((k) => <option key={k} value={k}>{k}</option>)}
-            </select>
-          </div>
+          <p className="mt-1 text-xs" style={{ color: "#3a3a3a" }}>Trykk Enter eller komma for å legge til</p>
+          {/* Suggestions from previous remakes */}
+          {knownVsts.filter((v) => !selectedVsts.includes(v) && (vstInput === "" || v.toLowerCase().includes(vstInput.toLowerCase()))).length > 0 && (
+            <div className="mt-2 flex flex-wrap gap-1.5">
+              {knownVsts
+                .filter((v) => !selectedVsts.includes(v) && (vstInput === "" || v.toLowerCase().includes(vstInput.toLowerCase())))
+                .slice(0, 12)
+                .map((v) => (
+                  <button
+                    key={v}
+                    type="button"
+                    onClick={() => { setSelectedVsts([...selectedVsts, v]); setVstInput(""); }}
+                    className="rounded-full px-2.5 py-0.5 text-xs transition-all"
+                    style={{ background: "transparent", border: "1px solid #2a2a2a", color: "#3a3a3a" }}
+                  >
+                    + {v}
+                  </button>
+                ))}
+            </div>
+          )}
         </div>
 
         {/* Tags */}
@@ -302,7 +330,7 @@ export default function LastOppRemakePage() {
         <div className="rounded-2xl p-5 flex flex-col gap-4" style={{ background: "#0f0f0f", border: "1px solid #1e1e1e" }}>
           <p className="text-sm font-medium" style={{ color: "#86868b" }}>Filer</p>
           <FileRow
-            label="Lydforhåndsvisning"
+            label="Lydforhåndsvisning *"
             hint="MP3 eller WAV, maks 30 MB"
             accept="audio/*"
             icon={<Music size={15} style={{ color: "#86868b" }} />}
@@ -311,7 +339,7 @@ export default function LastOppRemakePage() {
             onChange={(e) => { const f = e.target.files?.[0]; if (f) setAudioPreview({ file: f }); }}
           />
           <FileRow
-            label="Prosjektfil (.zip)"
+            label="Prosjektfil (.zip) *"
             hint="Hele prosjektet i én zip-fil"
             accept=".zip,.als,.flp,.logic,.ptx"
             icon={<FileArchive size={15} style={{ color: "#86868b" }} />}
@@ -319,22 +347,17 @@ export default function LastOppRemakePage() {
             inputRef={projectInputRef}
             onChange={(e) => { const f = e.target.files?.[0]; if (f) setProjectFile({ file: f }); }}
           />
-        </div>
 
-        {/* Publiser toggle */}
-        <div className="flex items-center justify-between rounded-xl px-4 py-3" style={{ background: "#141414", border: "1px solid #2a2a2a" }}>
-          <div>
-            <p className="text-sm font-medium" style={{ color: "#f5f5f7" }}>Publiser nå</p>
-            <p className="text-xs mt-0.5" style={{ color: "#86868b" }}>Slå av for å lagre som utkast</p>
-          </div>
-          <button
-            type="button"
-            onClick={() => setIsPublished(!isPublished)}
-            className="relative rounded-full transition-colors"
-            style={{ width: 44, height: 26, background: isPublished ? "#0071e3" : "#2a2a2a", flexShrink: 0 }}
+          {/* Anti-scam warning */}
+          <div
+            className="flex items-start gap-3 rounded-xl px-4 py-3 mt-1"
+            style={{ background: "rgba(255,59,48,0.06)", border: "1px solid rgba(255,59,48,0.18)" }}
           >
-            <div className="absolute top-1 rounded-full transition-all" style={{ width: 18, height: 18, background: "#f5f5f7", left: isPublished ? 22 : 4 }} />
-          </button>
+            <AlertCircle size={15} style={{ color: "#ff3b30", flexShrink: 0, marginTop: 1 }} />
+            <p className="text-xs leading-relaxed" style={{ color: "#86868b" }}>
+              Last opp riktige filer og korrekt informasjon. Svindel, falsk innhold eller manipulering av kjøpere vil føre til umiddelbar utestengelse og at utbetalinger stoppes.
+            </p>
+          </div>
         </div>
 
         {error && <p className="text-sm" style={{ color: "#ff453a" }}>{error}</p>}
@@ -354,7 +377,7 @@ export default function LastOppRemakePage() {
             ) : (
               <span className="flex items-center gap-2">
                 <Upload size={14} />
-                {isPublished ? "Publiser remake" : "Lagre utkast"}
+                Publiser remake
               </span>
             )}
           </button>

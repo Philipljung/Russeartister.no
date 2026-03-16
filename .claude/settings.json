@@ -4,7 +4,9 @@
       "Bash(git commit:*)",
       "Bash(git push:*)",
       "Bash(npx vercel:*)",
-      "Bash(wc -l /Users/philipljung/Documents/Programmering/Russeartister.no/app/profile/[username]/page.tsx)"
+      "Bash(wc -l /Users/philipljung/Documents/Programmering/Russeartister.no/app/profile/[username]/page.tsx)",
+      "Bash(ls /Users/philipljung/Documents/Programmering/Russeartister.no/app/favicon*)",
+      "Bash(ls /Users/philipljung/Documents/Programmering/Russeartister.no/public/favicon*)"
     ]
   }
 }

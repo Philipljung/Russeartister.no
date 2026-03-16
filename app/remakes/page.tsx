@@ -4,6 +4,7 @@ import { useState, useEffect, useMemo, useRef, useCallback } from "react";
 import { Search, X } from "lucide-react";
 import { fetchPublicRemakes } from "@/lib/fetchRemakes";
 import RemakeCard from "@/components/RemakeCard";
+import RemakeCheckoutModal from "@/components/RemakeCheckoutModal";
 import type { Remake } from "@/lib/supabase/types";
 
 export default function RemakesPage() {
@@ -11,6 +12,10 @@ export default function RemakesPage() {
   const [loading, setLoading] = useState(true);
   const [query, setQuery] = useState("");
   const [debouncedQuery, setDebouncedQuery] = useState("");
+  const [activeDaw, setActiveDaw] = useState("");
+  const [activeVst, setActiveVst] = useState("");
+  const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [checkoutRemake, setCheckoutRemake] = useState<Remake | null>(null);
 
   // Audio playback
   const audioRef = useRef<HTMLAudioElement | null>(null);
@@ -48,27 +53,63 @@ export default function RemakesPage() {
     return () => clearTimeout(id);
   }, [query]);
 
+  const daws = useMemo(() => {
+    const all = remakes.map((r) => r.daw).filter(Boolean) as string[];
+    return Array.from(new Set(all)).sort();
+  }, [remakes]);
+
+  const vsts = useMemo(() => {
+    const all = remakes.flatMap((r) => r.vsts ?? []);
+    return Array.from(new Set(all)).sort();
+  }, [remakes]);
+
   const filtered = useMemo(() => {
-    if (!debouncedQuery) return remakes;
-    const q = debouncedQuery.toLowerCase();
-    return remakes.filter(
-      (r) =>
-        r.title.toLowerCase().includes(q) ||
-        r.original_song.toLowerCase().includes(q) ||
-        r.genre.toLowerCase().includes(q) ||
-        r.tags.some((t) => t.toLowerCase().includes(q)) ||
-        r.producer?.display_name?.toLowerCase().includes(q)
-    );
-  }, [remakes, debouncedQuery]);
+    let result = [...remakes];
+    if (debouncedQuery) {
+      const q = debouncedQuery.toLowerCase();
+      result = result.filter(
+        (r) =>
+          r.title.toLowerCase().includes(q) ||
+          (r.daw?.toLowerCase().includes(q) ?? false) ||
+          r.tags.some((t) => t.toLowerCase().includes(q)) ||
+          r.producer?.display_name?.toLowerCase().includes(q)
+      );
+    }
+    if (activeDaw) result = result.filter((r) => r.daw === activeDaw);
+    if (activeVst) result = result.filter((r) => r.vsts?.includes(activeVst));
+    return result;
+  }, [remakes, debouncedQuery, activeDaw, activeVst]);
+
+  // Keyboard navigation
+  const handleKeyDown = useCallback((e: KeyboardEvent) => {
+    if (!["ArrowUp", "ArrowDown"].includes(e.key)) return;
+    if (filtered.length === 0) return;
+    e.preventDefault();
+    setSelectedId((prev) => {
+      const idx = filtered.findIndex((r) => r.id === prev);
+      if (e.key === "ArrowDown") {
+        const next = filtered[Math.min(idx + 1, filtered.length - 1)];
+        toggleRemake(next);
+        return next.id;
+      }
+      const next = filtered[Math.max(idx - 1, 0)];
+      toggleRemake(next);
+      return next.id;
+    });
+  }, [filtered, toggleRemake]);
+
+  useEffect(() => {
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [handleKeyDown]);
 
   function handleBuy(remake: Remake) {
-    // TODO: wire up checkout modal (same pattern as BeatCheckoutModal)
-    alert(`Kjøp av "${remake.title}" kommer snart!`);
+    setCheckoutRemake(remake);
   }
 
   return (
     <>
-      {/* Sticky search bar */}
+      {/* Sticky search + DAW filter bar */}
       <div
         className="sticky top-14 z-40 border-b"
         style={{
@@ -78,12 +119,12 @@ export default function RemakesPage() {
           borderColor: "#1e1e1e",
         }}
       >
-        <div className="mx-auto max-w-7xl px-4 md:px-6 py-4">
+        <div className="mx-auto max-w-7xl px-4 md:px-6 py-4 space-y-3">
           <div className="relative">
             <Search size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2" style={{ color: "#86868b" }} />
             <input
               type="text"
-              placeholder="Søk etter remakes, original sang, sjanger..."
+              placeholder="Søk etter remakes, producer, tags..."
               value={query}
               onChange={(e) => setQuery(e.target.value)}
               style={{
@@ -98,6 +139,65 @@ export default function RemakesPage() {
               </button>
             )}
           </div>
+
+          {/* DAW chips */}
+          {daws.length > 0 && (
+            <div className="flex items-center gap-2 overflow-x-auto pb-1" style={{ scrollbarWidth: "none" }}>
+              {daws.map((d) => (
+                <button
+                  key={d}
+                  onClick={() => setActiveDaw(activeDaw === d ? "" : d)}
+                  className="shrink-0 rounded-xl px-3 py-1.5 text-xs transition-all whitespace-nowrap"
+                  style={{
+                    background: activeDaw === d ? "rgba(99,102,241,0.12)" : "transparent",
+                    border: `1px solid ${activeDaw === d ? "rgba(99,102,241,0.35)" : "#2a2a2a"}`,
+                    color: activeDaw === d ? "#818cf8" : "#3a3a3a",
+                  }}
+                >
+                  {d}
+                </button>
+              ))}
+              {activeDaw && (
+                <button
+                  onClick={() => setActiveDaw("")}
+                  className="shrink-0 flex items-center gap-1.5 rounded-xl px-3 py-1.5 text-xs ml-auto"
+                  style={{ background: "rgba(255,255,255,0.06)", border: "1px solid #2a2a2a", color: "#86868b" }}
+                >
+                  <X size={12} /> Nullstill
+                </button>
+              )}
+            </div>
+          )}
+
+          {/* VST chips */}
+          {vsts.length > 0 && (
+            <div className="flex items-center gap-2 overflow-x-auto pb-1" style={{ scrollbarWidth: "none" }}>
+              <span className="shrink-0 text-xs" style={{ color: "#3a3a3a" }}>VST</span>
+              {vsts.map((v) => (
+                <button
+                  key={v}
+                  onClick={() => setActiveVst(activeVst === v ? "" : v)}
+                  className="shrink-0 rounded-xl px-3 py-1.5 text-xs transition-all whitespace-nowrap"
+                  style={{
+                    background: activeVst === v ? "rgba(16,185,129,0.12)" : "transparent",
+                    border: `1px solid ${activeVst === v ? "rgba(16,185,129,0.35)" : "#2a2a2a"}`,
+                    color: activeVst === v ? "#34d399" : "#3a3a3a",
+                  }}
+                >
+                  {v}
+                </button>
+              ))}
+              {activeVst && (
+                <button
+                  onClick={() => setActiveVst("")}
+                  className="shrink-0 flex items-center gap-1.5 rounded-xl px-3 py-1.5 text-xs ml-auto"
+                  style={{ background: "rgba(255,255,255,0.06)", border: "1px solid #2a2a2a", color: "#86868b" }}
+                >
+                  <X size={12} /> Nullstill
+                </button>
+              )}
+            </div>
+          )}
         </div>
       </div>
 
@@ -117,8 +217,8 @@ export default function RemakesPage() {
           </div>
         ) : filtered.length === 0 ? (
           <div className="mt-20 text-center" style={{ color: "#3a3a3a" }}>
-            <p className="text-lg font-medium">{query ? "Ingen remakes funnet" : "Ingen remakes enda"}</p>
-            {query && <p className="mt-1 text-sm">Prøv et annet søk</p>}
+            <p className="text-lg font-medium">{query || activeDaw || activeVst ? "Ingen remakes funnet" : "Ingen remakes enda"}</p>
+            {(query || activeDaw || activeVst) && <p className="mt-1 text-sm">Prøv et annet søk</p>}
           </div>
         ) : (
           <>
@@ -129,8 +229,8 @@ export default function RemakesPage() {
             >
               <div style={{ width: 36 }} />
               <div style={{ width: 40 }} />
-              <div className="flex-1">Tittel / Original</div>
-              <div className="hidden sm:block" style={{ width: 72 }}>BPM / Skala</div>
+              <div className="flex-1">Tittel</div>
+              <div className="hidden sm:block" style={{ width: 120 }}>DAW</div>
               <div className="hidden lg:block" style={{ width: 200 }}>Tags</div>
               <div style={{ width: 64, textAlign: "right" }}>Pris</div>
               <div style={{ width: 60 }} />
@@ -143,6 +243,7 @@ export default function RemakesPage() {
                   remake={remake}
                   isActive={playingId === remake.id}
                   isPlaying={playingId === remake.id && audioPlaying}
+                  isSelected={selectedId === remake.id}
                   onToggle={toggleRemake}
                   onBuy={handleBuy}
                 />
@@ -151,6 +252,10 @@ export default function RemakesPage() {
           </>
         )}
       </div>
+
+      {checkoutRemake && (
+        <RemakeCheckoutModal remake={checkoutRemake} onClose={() => setCheckoutRemake(null)} />
+      )}
     </>
   );
 }

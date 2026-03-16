@@ -1,5 +1,5 @@
 import { redirect } from "next/navigation";
 
-export default function BeatsRedirect() {
+export default function LaaterRedirect() {
   redirect("/later");
 }

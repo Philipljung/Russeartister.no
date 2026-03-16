@@ -45,8 +45,15 @@ export default function BeatCard({ beat, isSelected = false, onSelect }: Props) 
 
   function handleBuy(e: React.MouseEvent) {
     e.stopPropagation();
-    console.log("[BeatCard] Opening checkout modal for beat:", beat.id, beat.title);
     setCheckoutOpen(true);
+  }
+
+  async function handleFreeDownload(e: React.MouseEvent) {
+    e.stopPropagation();
+    const res = await fetch(`/api/beats/free-download?beatId=${beat.id}`);
+    const data = await res.json();
+    if (data.url) window.open(data.url, "_blank");
+    else toast("Nedlasting feilet. Prøv igjen.");
   }
 
   return (
@@ -61,7 +68,7 @@ export default function BeatCard({ beat, isSelected = false, onSelect }: Props) 
       }}
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
-      onClick={() => { onSelect?.(); setCheckoutOpen(true); }}
+      onClick={() => setCheckoutOpen(true)}
     >
       {/* Play button */}
       <button
@@ -150,20 +157,21 @@ export default function BeatCard({ beat, isSelected = false, onSelect }: Props) 
       <div className="flex shrink-0 items-center gap-2">
         <span
           className="text-sm font-semibold"
-          style={{ color: "#f5f5f7", minWidth: 64, textAlign: "right" }}
+          style={{ color: "#f5f5f7", width: 80, textAlign: "right", flexShrink: 0 }}
         >
-          kr {beat.price.toLocaleString("nb-NO")}
+          {beat.price === 0 ? "Gratis" : `kr ${beat.price.toLocaleString("nb-NO")}`}
         </span>
         <button
-          className="rounded-lg px-4 py-1.5 text-xs font-semibold transition-all"
+          className="rounded-lg py-1.5 text-xs font-semibold transition-all"
           style={{
             background: hovered ? "#f5f5f7" : "rgba(255,255,255,0.08)",
             color: hovered ? "#080808" : "#f5f5f7",
             cursor: "pointer",
+            width: 76,
           }}
-          onClick={handleBuy}
+          onClick={beat.price === 0 ? handleFreeDownload : handleBuy}
         >
-          Kjøp
+          {beat.price === 0 ? "Last ned" : "Kjøp"}
         </button>
       </div>
     </div>

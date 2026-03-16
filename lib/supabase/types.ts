@@ -38,8 +38,10 @@ export type Sample = {
   producer_id: string;
   title: string;
   description: string;
-  item_type: "sample" | "preset";
+  item_type: "sample" | "preset" | "sample-pack" | "preset-pack";
   category: string;
+  vst: string | null;
+  pack_files: string[] | null;
   genre: string;
   bpm: number | null;
   key: string;
@@ -59,10 +61,12 @@ export type Remake = {
   producer_id: string;
   title: string;
   description: string;
-  original_song: string;
-  genre: string;
-  bpm: number;
-  key: string;
+  original_song: string | null;
+  genre: string | null;
+  bpm: number | null;
+  key: string | null;
+  daw: string | null;
+  vsts: string[] | null;
   tags: string[];
   price: number;
   cover_url: string | null;
@@ -77,8 +81,18 @@ export type Remake = {
 export type Purchase = {
   id: string;
   buyer_id: string | null;
-  beat_id: string;
+  beat_id: string | null;
+  remake_id: string | null;
+  sample_id: string | null;
+  item_type: "beat" | "remake" | "sample";
+  order_number: string | null;
+  customer_email: string | null;
   amount_paid: number;
   stripe_payment_intent_id: string;
+  payout_released_at: string | null;
+  complaint_filed_at: string | null;
   created_at: string;
+  beat?: { id: string; title: string; cover_url: string | null; genre: string; bpm: number; project_file_url: string | null; producer: { display_name: string } | null };
+  remake?: { id: string; title: string; cover_url: string | null; genre: string; bpm: number; file_url: string | null; producer: { display_name: string } | null };
+  sample?: { id: string; title: string; cover_url: string | null; item_type: string; file_url: string | null; producer: { display_name: string } | null };
 };

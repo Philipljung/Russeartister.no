@@ -1,10 +1,10 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { useParams } from "next/navigation";
-import { Pencil, Settings, Play, Pause, Package, Trash2, CreditCard, CheckCircle2 } from "lucide-react";
+import { Pencil, Settings, Play, Pause, Package, Trash2, CreditCard, CheckCircle2, Share2 } from "lucide-react";
 import { getSupabaseClient } from "@/lib/supabase/client";
 import { fetchProfileByUsername } from "@/lib/fetchProfile";
 import { fetchBeatsByProducer } from "@/lib/fetchBeats";
@@ -54,6 +54,30 @@ export default function ProfilePage() {
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
   const [pendingDelete, setPendingDelete] = useState<{ type: "beat" | "sample" | "remake"; id: string } | null>(null);
+
+  // Local audio for samples & remakes (separate from global beat player)
+  const localAudioRef = useRef<HTMLAudioElement | null>(null);
+  const [localPlayingId, setLocalPlayingId] = useState<string | null>(null);
+  const [localPlaying, setLocalPlaying] = useState(false);
+
+  const toggleLocal = useCallback((url: string, id: string) => {
+    if (localPlayingId === id) {
+      if (localAudioRef.current) {
+        if (localPlaying) { localAudioRef.current.pause(); setLocalPlaying(false); }
+        else { void localAudioRef.current.play(); setLocalPlaying(true); }
+      }
+      return;
+    }
+    localAudioRef.current?.pause();
+    const audio = new Audio(url);
+    audio.onended = () => { setLocalPlayingId(null); setLocalPlaying(false); };
+    localAudioRef.current = audio;
+    setLocalPlayingId(id);
+    void audio.play();
+    setLocalPlaying(true);
+  }, [localPlayingId, localPlaying]);
+
+  useEffect(() => { return () => { localAudioRef.current?.pause(); }; }, []);
 
   const nameInputRef = useRef<HTMLInputElement>(null);
   const bioTextareaRef = useRef<HTMLTextAreaElement>(null);
@@ -147,6 +171,16 @@ export default function ProfilePage() {
   function deleteBeat(beatId: string) { setPendingDelete({ type: "beat", id: beatId }); }
   function deleteSample(sampleId: string) { setPendingDelete({ type: "sample", id: sampleId }); }
   function deleteRemake(remakeId: string) { setPendingDelete({ type: "remake", id: remakeId }); }
+
+  async function shareProfile() {
+    const url = `${window.location.origin}/profile/${profile!.username}`;
+    if (navigator.share) {
+      await navigator.share({ title: displayName, url }).catch(() => {});
+    } else {
+      await navigator.clipboard.writeText(url);
+      toast("Lenke kopiert!", "success");
+    }
+  }
 
   async function saveName() {
     const trimmed = nameInput.trim();
@@ -306,16 +340,26 @@ export default function ProfilePage() {
           }}
         />
 
-        {isOwner && (
-          <Link
-            href="/innstillinger"
-            className="absolute right-6 top-5 rounded-lg p-2 transition-colors hover:opacity-80"
+        <div className="absolute right-6 top-5 flex items-center gap-2">
+          <button
+            onClick={shareProfile}
+            className="rounded-lg p-2 transition-opacity hover:opacity-80"
             style={{ background: "rgba(255,255,255,0.06)", color: "#86868b" }}
-            title="Innstillinger"
+            title="Del profil"
           >
-            <Settings size={18} />
-          </Link>
-        )}
+            <Share2 size={18} />
+          </button>
+          {isOwner && (
+            <Link
+              href="/innstillinger"
+              className="rounded-lg p-2 transition-opacity hover:opacity-80"
+              style={{ background: "rgba(255,255,255,0.06)", color: "#86868b" }}
+              title="Innstillinger"
+            >
+              <Settings size={18} />
+            </Link>
+          )}
+        </div>
 
         {/* Avatar */}
         <div className="absolute bottom-0 left-0 translate-y-1/2 px-6 md:px-10">
@@ -816,12 +860,22 @@ export default function ProfilePage() {
                   className="flex items-center gap-2 md:gap-4 rounded-xl px-2 md:px-3 py-2.5"
                   style={{ borderBottom: "1px solid #141414" }}
                 >
-                  <div
+                  <button
+                    onClick={() => sample.audio_preview_url && toggleLocal(sample.audio_preview_url, sample.id)}
                     className="shrink-0 flex items-center justify-center rounded-full"
-                    style={{ width: 32, height: 32, background: "rgba(255,255,255,0.06)", color: "#86868b" }}
+                    style={{
+                      width: 32, height: 32,
+                      background: localPlayingId === sample.id ? "#6366f1" : "rgba(255,255,255,0.06)",
+                      color: sample.audio_preview_url ? "#f5f5f7" : "#3a3a3a",
+                      cursor: sample.audio_preview_url ? "pointer" : "default",
+                    }}
                   >
-                    <Package size={13} />
-                  </div>
+                    {localPlayingId === sample.id && localPlaying
+                      ? <Pause size={12} fill="#f5f5f7" />
+                      : sample.audio_preview_url
+                        ? <Play size={12} fill="#f5f5f7" />
+                        : <Package size={12} />}
+                  </button>
 
                   <div className="min-w-0 flex-1">
                     <p className="truncate text-sm font-medium" style={{ color: "#f5f5f7" }}>
@@ -897,10 +951,20 @@ export default function ProfilePage() {
                   className="flex items-center gap-2 md:gap-4 rounded-xl px-2 md:px-3 py-2.5"
                   style={{ borderBottom: "1px solid #141414" }}
                 >
-                  <div
-                    className="shrink-0 rounded-md"
-                    style={{ width: 32, height: 32, background: genreColor(remake.genre) }}
-                  />
+                  <button
+                    onClick={() => remake.audio_preview_url && toggleLocal(remake.audio_preview_url, remake.id)}
+                    className="shrink-0 flex items-center justify-center rounded-full"
+                    style={{
+                      width: 32, height: 32,
+                      background: localPlayingId === remake.id ? "#6366f1" : "rgba(255,255,255,0.06)",
+                      color: remake.audio_preview_url ? "#f5f5f7" : "#3a3a3a",
+                      cursor: remake.audio_preview_url ? "pointer" : "default",
+                    }}
+                  >
+                    {localPlayingId === remake.id && localPlaying
+                      ? <Pause size={12} fill="#f5f5f7" />
+                      : <Play size={12} fill="#f5f5f7" />}
+                  </button>
                   <div className="min-w-0 flex-1">
                     <p className="truncate text-sm font-medium" style={{ color: "#f5f5f7" }}>{remake.title}</p>
                     <p className="text-xs mt-0.5" style={{ color: "#86868b" }}>

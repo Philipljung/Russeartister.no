@@ -5,10 +5,10 @@ import Link from "next/link";
 import { Play, Pause } from "lucide-react";
 import type { Remake } from "@/lib/supabase/types";
 
-function genreColor(genre: string): string {
+function genreColor(seed: string): string {
   const palette = ["#1a1040","#001a2e","#1a2e00","#2e1a00","#001e14","#14001e","#1e0a0a","#00141e"];
   let hash = 0;
-  for (let i = 0; i < genre.length; i++) hash = genre.charCodeAt(i) + ((hash << 5) - hash);
+  for (let i = 0; i < seed.length; i++) hash = seed.charCodeAt(i) + ((hash << 5) - hash);
   return palette[Math.abs(hash) % palette.length];
 }
 
@@ -16,22 +16,25 @@ type Props = {
   remake: Remake;
   isActive: boolean;
   isPlaying: boolean;
+  isSelected?: boolean;
   onToggle: (remake: Remake) => void;
   onBuy: (remake: Remake) => void;
 };
 
-export default function RemakeCard({ remake, isActive, isPlaying, onToggle, onBuy }: Props) {
+export default function RemakeCard({ remake, isActive, isPlaying, isSelected = false, onToggle, onBuy }: Props) {
   const [hovered, setHovered] = useState(false);
   const coverImg = remake.cover_url ?? remake.producer?.avatar_url ?? null;
-  const coverBg = genreColor(remake.genre);
+  const coverBg = genreColor(remake.title);
   const canPlay = !!remake.audio_preview_url;
 
   return (
     <div
       className="group flex items-center gap-2 md:gap-4 rounded-xl px-2 md:px-4 py-3 transition-colors cursor-pointer"
       style={{
-        background: hovered ? "rgba(255,255,255,0.04)" : "transparent",
+        background: isSelected ? "rgba(255,255,255,0.06)" : hovered ? "rgba(255,255,255,0.04)" : "transparent",
         borderBottom: "1px solid #1a1a1a",
+        outline: isSelected ? "1px solid rgba(255,255,255,0.18)" : "none",
+        outlineOffset: -1,
       }}
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
@@ -67,30 +70,28 @@ export default function RemakeCard({ remake, isActive, isPlaying, onToggle, onBu
         }}
       />
 
-      {/* Title + meta */}
+      {/* Title + VSTs */}
       <div className="min-w-0 flex-1">
         <p className="truncate text-sm font-semibold tracking-wide" style={{ color: "#f5f5f7" }}>
           {remake.title}
         </p>
-        <p className="text-xs mt-0.5 truncate" style={{ color: "#86868b" }}>
-          <Link
-            href={`/profile/${remake.producer?.username ?? ""}`}
-            onClick={(e) => e.stopPropagation()}
-            className="hover:underline"
-            style={{ color: "#86868b" }}
-          >
-            {remake.producer?.display_name ?? "Ukjent"}
-          </Link>
-          {" "}&middot;{" "}
-          <span style={{ color: "#4a4a4a" }}>remake av</span>
-          {" "}{remake.original_song}
-        </p>
+        {remake.vsts && remake.vsts.length > 0 && (
+          <p className="text-xs mt-0.5 truncate" style={{ color: "#4a4a4a" }}>
+            {remake.vsts.slice(0, 4).join(" · ")}
+          </p>
+        )}
       </div>
 
-      {/* BPM + Key */}
-      <div className="hidden shrink-0 text-right sm:block" style={{ width: 72 }}>
-        <p className="text-xs font-medium" style={{ color: "#86868b" }}>{remake.bpm} BPM</p>
-        <p className="text-xs mt-0.5" style={{ color: "#3a3a3a" }}>{remake.key}</p>
+      {/* DAW badge */}
+      <div className="hidden shrink-0 sm:block" style={{ width: 120, overflow: "hidden" }}>
+        {remake.daw && (
+          <span
+            className="rounded-full px-2.5 py-0.5 text-xs whitespace-nowrap"
+            style={{ background: "rgba(255,255,255,0.06)", color: "#86868b" }}
+          >
+            {remake.daw}
+          </span>
+        )}
       </div>
 
       {/* Tags */}
@@ -109,7 +110,7 @@ export default function RemakeCard({ remake, isActive, isPlaying, onToggle, onBu
       {/* Price + buy */}
       <div className="flex shrink-0 items-center gap-2">
         <span className="text-sm font-semibold" style={{ color: "#f5f5f7", minWidth: 64, textAlign: "right" }}>
-          kr {remake.price.toLocaleString("nb-NO")}
+          {remake.price === 0 ? "Gratis" : `kr ${remake.price.toLocaleString("nb-NO")}`}
         </span>
         <button
           className="rounded-lg px-4 py-1.5 text-xs font-semibold transition-all"
@@ -120,7 +121,7 @@ export default function RemakeCard({ remake, isActive, isPlaying, onToggle, onBu
           }}
           onClick={(e) => { e.stopPropagation(); onBuy(remake); }}
         >
-          Kjøp
+          {remake.price === 0 ? "Last ned" : "Kjøp"}
         </button>
       </div>
     </div>
