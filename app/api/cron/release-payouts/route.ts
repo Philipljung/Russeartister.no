@@ -67,9 +67,9 @@ export async function GET(request: NextRequest) {
     const payoutOre = nokToOre(payoutNok);
 
     const itemTitle =
-      (purchase.beat as { title: string } | null)?.title ??
-      (purchase.remake as { title: string } | null)?.title ??
-      (purchase.sample as { title: string } | null)?.title ??
+      (purchase.beat as unknown as { title: string }[] | null)?.[0]?.title ??
+      (purchase.remake as unknown as { title: string }[] | null)?.[0]?.title ??
+      (purchase.sample as unknown as { title: string }[] | null)?.[0]?.title ??
       "Ukjent";
 
     try {
