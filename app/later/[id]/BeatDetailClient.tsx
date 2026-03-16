@@ -16,6 +16,13 @@ function genreColor(genre: string): string {
   return palette[Math.abs(hash) % palette.length];
 }
 
+function getFileExt(url: string | null): string | null {
+  if (!url) return null;
+  const filename = url.split("/").pop()?.split("?")[0] ?? "";
+  const ext = filename.split(".").pop()?.toLowerCase();
+  return ext && ext.length <= 6 ? ext : null;
+}
+
 export default function BeatDetailClient({
   beat,
   recommended,
@@ -26,6 +33,7 @@ export default function BeatDetailClient({
   const { currentBeat, isPlaying, toggleBeat } = usePlayer();
   const { toast } = useToast();
   const [checkoutOpen, setCheckoutOpen] = useState(false);
+  const [exclusiveMode, setExclusiveMode] = useState(false);
 
   const isActive = currentBeat?.id === beat.id;
   const isCurrentlyPlaying = isActive && isPlaying;
@@ -33,6 +41,14 @@ export default function BeatDetailClient({
   const producer = beat.producer;
   const coverImg = beat.cover_url ?? producer?.avatar_url ?? null;
   const coverBg = coverImg ? undefined : genreColor(beat.genre);
+
+  const projectFileExt = getFileExt(beat.project_file_url);
+  const hasProjectFile = !!beat.project_file_url;
+
+  function openCheckout(exclusive = false) {
+    setExclusiveMode(exclusive);
+    setCheckoutOpen(true);
+  }
 
   async function handleShare() {
     await navigator.clipboard.writeText(`${window.location.origin}/later/${beat.id}`);
@@ -46,11 +62,16 @@ export default function BeatDetailClient({
     else toast("Nedlasting feilet. Prøv igjen.");
   }
 
-  const props: { label: string; value: string }[] = [
+  const props: { label: string; value: string; highlight?: boolean }[] = [
     { label: "Sjanger", value: beat.genre },
     { label: "BPM", value: String(beat.bpm) },
     ...(beat.key ? [{ label: "Skala", value: beat.key }] : []),
     ...(beat.vocal_type ? [{ label: "Vokal", value: beat.vocal_type === "med_vokal" ? "Med vokal" : "Uten vokal" }] : []),
+    {
+      label: "Prosjektfil",
+      value: hasProjectFile ? `Ja${projectFileExt ? ` (${projectFileExt})` : ""}` : "Nei",
+      highlight: hasProjectFile,
+    },
   ];
 
   return (
@@ -98,9 +119,7 @@ export default function BeatDetailClient({
             <button
               onClick={() => toggleBeat(beat)}
               className="absolute inset-0 flex items-center justify-center rounded-xl transition-all"
-              style={{
-                background: isCurrentlyPlaying ? "rgba(0,0,0,0.55)" : "rgba(0,0,0,0.35)",
-              }}
+              style={{ background: isCurrentlyPlaying ? "rgba(0,0,0,0.55)" : "rgba(0,0,0,0.35)" }}
             >
               {isCurrentlyPlaying
                 ? <Pause size={20} fill="#f5f5f7" color="#f5f5f7" />
@@ -109,7 +128,7 @@ export default function BeatDetailClient({
           </div>
 
           {/* Title + producer */}
-          <div className="flex-1 min-w-0 pt-1">
+          <div className="flex-1 min-w-0 pt-1 pr-16">
             <h1
               className="leading-tight mb-2"
               style={{ color: "#f5f5f7", fontWeight: 800, fontSize: 24 }}
@@ -128,17 +147,14 @@ export default function BeatDetailClient({
 
         {/* Description */}
         {beat.description && (
-          <p
-            className="mt-6 text-sm leading-relaxed"
-            style={{ color: "#86868b" }}
-          >
+          <p className="mt-6 text-sm leading-relaxed" style={{ color: "#86868b" }}>
             {beat.description}
           </p>
         )}
 
         {/* Props — pill row */}
         <div className="flex flex-wrap gap-2 mt-6">
-          {props.map(({ label, value }) => (
+          {props.map(({ label, value, highlight }) => (
             <div
               key={label}
               className="flex items-center gap-2 rounded-full px-3 py-1.5"
@@ -146,7 +162,12 @@ export default function BeatDetailClient({
             >
               <span className="text-xs" style={{ color: "#3a3a3a" }}>{label}</span>
               <div style={{ width: 1, height: 10, background: "#2a2a2a" }} />
-              <span className="text-xs font-semibold" style={{ color: "#f5f5f7" }}>{value}</span>
+              <span
+                className="text-xs font-semibold"
+                style={{ color: highlight ? "#34d399" : "#f5f5f7" }}
+              >
+                {value}
+              </span>
             </div>
           ))}
         </div>
@@ -166,8 +187,11 @@ export default function BeatDetailClient({
           </div>
         )}
 
-        {/* Bottom row: price + buy */}
-        <div className="flex items-center justify-between mt-8 pt-6" style={{ borderTop: "1px solid rgba(255,255,255,0.06)" }}>
+        {/* Bottom row: price + buy + exclusive */}
+        <div
+          className="flex items-center justify-between mt-8 pt-6"
+          style={{ borderTop: "1px solid rgba(255,255,255,0.06)" }}
+        >
           <div className="flex flex-col gap-0.5">
             <span className="text-xs" style={{ color: "#3a3a3a" }}>Pris</span>
             <span className="text-xl font-bold" style={{ color: "#f5f5f7" }}>
@@ -177,15 +201,19 @@ export default function BeatDetailClient({
           <div className="flex items-center gap-2">
             {beat.exclusive_price && !beat.exclusively_sold && (
               <button
-                onClick={() => setCheckoutOpen(true)}
+                onClick={() => openCheckout(true)}
                 className="rounded-full px-4 py-2 text-sm font-semibold transition-opacity hover:opacity-80"
-                style={{ background: "rgba(255,255,255,0.08)", color: "#86868b" }}
+                style={{
+                  background: "rgba(234,179,8,0.1)",
+                  color: "#eab308",
+                  border: "1px solid rgba(234,179,8,0.25)",
+                }}
               >
                 Eksklusiv · kr {beat.exclusive_price.toLocaleString("nb-NO")}
               </button>
             )}
             <button
-              onClick={beat.price === 0 ? handleFreeDownload : () => setCheckoutOpen(true)}
+              onClick={beat.price === 0 ? handleFreeDownload : () => openCheckout(false)}
               className="rounded-full px-6 py-2 text-sm font-semibold transition-opacity hover:opacity-90"
               style={{ background: "#f5f5f7", color: "#080808" }}
             >
@@ -210,7 +238,11 @@ export default function BeatDetailClient({
       )}
 
       {checkoutOpen && (
-        <BeatCheckoutModal beat={beat} onClose={() => setCheckoutOpen(false)} />
+        <BeatCheckoutModal
+          beat={beat}
+          onClose={() => setCheckoutOpen(false)}
+          initialExclusive={exclusiveMode}
+        />
       )}
     </div>
   );

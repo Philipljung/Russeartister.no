@@ -77,15 +77,16 @@ function genreColor(genre: string): string {
 type Props = {
   beat: Beat;
   onClose: () => void;
+  initialExclusive?: boolean;
 };
 
-export default function BeatCheckoutModal({ beat, onClose }: Props) {
+export default function BeatCheckoutModal({ beat, onClose, initialExclusive = false }: Props) {
   const overlayRef = useRef<HTMLDivElement>(null);
   const [isMobile, setIsMobile] = useState(false);
 
   // Exclusive licensing
   const [exclusiveEligible, setExclusiveEligible] = useState(false);
-  const [exclusiveSelected, setExclusiveSelected] = useState(false);
+  const [exclusiveSelected, setExclusiveSelected] = useState(initialExclusive);
   const [saleCount, setSaleCount] = useState<number | null>(null);
 
   useEffect(() => {
