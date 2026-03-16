@@ -76,7 +76,7 @@ export default function BeatCard({ beat, isSelected = false, onSelect }: Props) 
       }}
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
-      onClick={() => { onSelect?.(); router.push(`/later/${beat.id}`); }}
+      onClick={() => router.push(`/later/${beat.id}`)}
     >
       {/* Play button */}
       <button
