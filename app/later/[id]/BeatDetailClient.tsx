@@ -26,9 +26,11 @@ function getFileExt(url: string | null): string | null {
 export default function BeatDetailClient({
   beat,
   recommended,
+  exclusiveAvailable,
 }: {
   beat: Beat;
   recommended: Beat[];
+  exclusiveAvailable: boolean;
 }) {
   const { currentBeat, isPlaying, toggleBeat } = usePlayer();
   const { toast } = useToast();
@@ -199,7 +201,7 @@ export default function BeatDetailClient({
             </span>
           </div>
           <div className="flex items-center gap-2">
-            {beat.exclusive_price && !beat.exclusively_sold && (
+            {exclusiveAvailable && (
               <button
                 onClick={() => openCheckout(true)}
                 className="rounded-full px-4 py-2 text-sm font-semibold transition-opacity hover:opacity-80"

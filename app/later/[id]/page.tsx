@@ -93,7 +93,19 @@ export default async function BeatDetailPage({
   const beat = await fetchBeat(id);
   if (!beat) notFound();
 
-  const recommended = await fetchRecommended(beat);
+  const supabase = await getSupabaseServerClient();
+  const { data: purchaseCount } = await supabase
+    .rpc("beat_purchase_count", { beat_id: beat.id });
 
-  return <BeatDetailClient beat={beat} recommended={recommended} />;
+  const recommended = await fetchRecommended(beat);
+  const exclusiveAvailable =
+    !!beat.exclusive_price && !beat.exclusively_sold && (purchaseCount ?? 0) === 0;
+
+  return (
+    <BeatDetailClient
+      beat={beat}
+      recommended={recommended}
+      exclusiveAvailable={exclusiveAvailable}
+    />
+  );
 }
