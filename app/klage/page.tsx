@@ -19,8 +19,8 @@ export default function KlagePage() {
   useEffect(() => {
     const order = searchParams.get("order");
     if (order) setOrderNumber(order);
-    getSupabaseClient().auth.getUser().then(({ data }) => {
-      setAuthed(!!data.user);
+    getSupabaseClient().auth.getUser().then((res) => {
+      setAuthed(!!res.data.user);
     });
   }, [searchParams]);
 
