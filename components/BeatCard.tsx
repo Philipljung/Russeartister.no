@@ -94,7 +94,7 @@ export default function BeatCard({ beat, isSelected = false, onSelect }: Props) 
 
       {/* Cover */}
       <Link
-        href={`/profile/${beat.producer?.username ?? ""}`}
+        href={`/later/${beat.id}`}
         onClick={(e) => e.stopPropagation()}
         className="shrink-0 rounded-lg transition-opacity hover:opacity-80"
         style={{
