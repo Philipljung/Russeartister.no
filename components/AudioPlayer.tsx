@@ -31,7 +31,7 @@ export default function AudioPlayer() {
   const [duration, setDuration] = useState(0);
 
   // Only show on låter and profile pages; clear when leaving those routes
-  const showPlayer = pathname === "/later" || pathname.startsWith("/profile/");
+  const showPlayer = pathname.startsWith("/later") || pathname.startsWith("/profile/");
   useEffect(() => {
     if (!showPlayer) clearPlayer();
   }, [showPlayer, clearPlayer]);

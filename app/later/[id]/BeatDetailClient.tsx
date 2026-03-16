@@ -16,18 +16,6 @@ function genreColor(genre: string): string {
   return palette[Math.abs(hash) % palette.length];
 }
 
-function Prop({ label, value }: { label: string; value: string }) {
-  return (
-    <div
-      className="flex flex-col rounded-xl px-3 py-2.5"
-      style={{ background: "#1a1a1a", border: "1px solid #2a2a2a", minWidth: 80 }}
-    >
-      <span className="text-xs mb-0.5" style={{ color: "#3a3a3a" }}>{label}</span>
-      <span className="text-sm font-semibold" style={{ color: "#f5f5f7" }}>{value}</span>
-    </div>
-  );
-}
-
 export default function BeatDetailClient({
   beat,
   recommended,
@@ -58,39 +46,45 @@ export default function BeatDetailClient({
     else toast("Nedlasting feilet. Prøv igjen.");
   }
 
+  const props: { label: string; value: string }[] = [
+    { label: "Sjanger", value: beat.genre },
+    { label: "BPM", value: String(beat.bpm) },
+    ...(beat.key ? [{ label: "Skala", value: beat.key }] : []),
+    ...(beat.vocal_type ? [{ label: "Vokal", value: beat.vocal_type === "med_vokal" ? "Med vokal" : "Uten vokal" }] : []),
+  ];
+
   return (
     <div className="mx-auto max-w-2xl px-4 md:px-6 py-8">
 
-      {/* Top nav */}
-      <div className="flex items-center justify-between mb-5">
-        <Link
-          href="/later"
-          className="inline-flex items-center gap-1 text-sm transition-opacity hover:opacity-70"
-          style={{ color: "#86868b" }}
-        >
-          <ChevronLeft size={15} />
-          Låter
-        </Link>
-        <button
-          onClick={handleShare}
-          className="flex items-center gap-1.5 rounded-xl px-3 py-2 text-sm transition-opacity hover:opacity-70"
-          style={{ color: "#86868b", background: "#141414", border: "1px solid #2a2a2a" }}
-        >
-          <Share2 size={13} />
-          Del
-        </button>
-      </div>
+      {/* Back */}
+      <Link
+        href="/later"
+        className="mb-6 inline-flex items-center gap-1 text-sm transition-opacity hover:opacity-60"
+        style={{ color: "#86868b" }}
+      >
+        <ChevronLeft size={14} />
+        Låter
+      </Link>
 
       {/* Main card */}
       <div
-        className="rounded-2xl p-5 md:p-6 mb-4"
-        style={{ background: "#141414", border: "1px solid #2a2a2a" }}
+        className="rounded-2xl p-8 mb-4 relative"
+        style={{ background: "linear-gradient(135deg, #1e1e1e, #121212)" }}
       >
-        {/* Top row: cover + info + buy */}
-        <div className="flex gap-4 items-start">
+        {/* Del — top right */}
+        <button
+          onClick={handleShare}
+          className="absolute top-6 right-6 flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs transition-opacity hover:opacity-70"
+          style={{ color: "#86868b", background: "rgba(255,255,255,0.06)" }}
+        >
+          <Share2 size={12} />
+          Del
+        </button>
 
+        {/* Cover + title row */}
+        <div className="flex gap-5 items-start">
           {/* Cover with play overlay */}
-          <div className="relative shrink-0" style={{ width: 100, height: 100 }}>
+          <div className="relative shrink-0" style={{ width: 112, height: 112 }}>
             <div
               className="rounded-xl w-full h-full"
               style={{
@@ -98,23 +92,28 @@ export default function BeatDetailClient({
                 backgroundSize: "cover",
                 backgroundPosition: "center",
                 backgroundColor: coverBg ?? "#2a2a2a",
-                boxShadow: "0 4px 16px rgba(0,0,0,0.5)",
+                boxShadow: "0 8px 24px rgba(0,0,0,0.6)",
               }}
             />
             <button
               onClick={() => toggleBeat(beat)}
               className="absolute inset-0 flex items-center justify-center rounded-xl transition-all"
-              style={{ background: isCurrentlyPlaying ? "rgba(99,102,241,0.7)" : "rgba(0,0,0,0.45)" }}
+              style={{
+                background: isCurrentlyPlaying ? "rgba(0,0,0,0.55)" : "rgba(0,0,0,0.35)",
+              }}
             >
               {isCurrentlyPlaying
-                ? <Pause size={22} fill="#f5f5f7" color="#f5f5f7" />
-                : <Play size={22} fill="#f5f5f7" color="#f5f5f7" />}
+                ? <Pause size={20} fill="#f5f5f7" color="#f5f5f7" />
+                : <Play size={20} fill="#f5f5f7" color="#f5f5f7" />}
             </button>
           </div>
 
-          {/* Info */}
-          <div className="flex-1 min-w-0">
-            <h1 className="text-xl font-bold tracking-tight leading-tight mb-1" style={{ color: "#f5f5f7" }}>
+          {/* Title + producer */}
+          <div className="flex-1 min-w-0 pt-1">
+            <h1
+              className="leading-tight mb-2"
+              style={{ color: "#f5f5f7", fontWeight: 800, fontSize: 24 }}
+            >
               {beat.title}
             </h1>
             <Link
@@ -124,55 +123,33 @@ export default function BeatDetailClient({
             >
               {producer?.display_name ?? "Ukjent"}
             </Link>
-            <div className="mt-2">
-              <span
-                className="rounded-full px-2.5 py-0.5 text-xs font-medium"
-                style={{ background: "rgba(255,255,255,0.08)", color: "#f5f5f7" }}
-              >
-                {beat.genre}
-              </span>
-            </div>
           </div>
-
-          {/* Price + buy */}
-          <div className="flex flex-col items-end gap-2 shrink-0">
-            <span className="text-xl font-bold" style={{ color: "#f5f5f7" }}>
-              {beat.price === 0 ? "Gratis" : `kr ${beat.price.toLocaleString("nb-NO")}`}
-            </span>
-            <button
-              onClick={beat.price === 0 ? handleFreeDownload : () => setCheckoutOpen(true)}
-              className="rounded-xl px-5 py-2 text-sm font-semibold transition-all hover:opacity-90"
-              style={{ background: "#f5f5f7", color: "#080808" }}
-            >
-              {beat.price === 0 ? "Last ned" : "Kjøp"}
-            </button>
-            {beat.exclusive_price && !beat.exclusively_sold && (
-              <button
-                onClick={() => setCheckoutOpen(true)}
-                className="rounded-xl px-3 py-1.5 text-xs font-semibold transition-all hover:opacity-90"
-                style={{ background: "rgba(99,102,241,0.12)", color: "#818cf8", border: "1px solid rgba(99,102,241,0.25)" }}
-              >
-                Eksklusiv · kr {beat.exclusive_price.toLocaleString("nb-NO")}
-              </button>
-            )}
-          </div>
-        </div>
-
-        {/* Props row */}
-        <div className="flex flex-wrap gap-2 mt-5">
-          <Prop label="BPM" value={String(beat.bpm)} />
-          {beat.key && <Prop label="Skala" value={beat.key} />}
-          {beat.vocal_type && (
-            <Prop label="Vokal" value={beat.vocal_type === "med_vokal" ? "Med vokal" : "Uten vokal"} />
-          )}
         </div>
 
         {/* Description */}
         {beat.description && (
-          <p className="mt-4 text-sm leading-relaxed" style={{ color: "#86868b" }}>
+          <p
+            className="mt-6 text-sm leading-relaxed"
+            style={{ color: "#86868b" }}
+          >
             {beat.description}
           </p>
         )}
+
+        {/* Props — pill row */}
+        <div className="flex flex-wrap gap-2 mt-6">
+          {props.map(({ label, value }) => (
+            <div
+              key={label}
+              className="flex items-center gap-2 rounded-full px-3 py-1.5"
+              style={{ background: "rgba(255,255,255,0.06)" }}
+            >
+              <span className="text-xs" style={{ color: "#3a3a3a" }}>{label}</span>
+              <div style={{ width: 1, height: 10, background: "#2a2a2a" }} />
+              <span className="text-xs font-semibold" style={{ color: "#f5f5f7" }}>{value}</span>
+            </div>
+          ))}
+        </div>
 
         {/* Tags */}
         {beat.tags.length > 0 && (
@@ -181,18 +158,46 @@ export default function BeatDetailClient({
               <span
                 key={tag}
                 className="rounded-full px-2.5 py-0.5 text-xs"
-                style={{ background: "rgba(255,255,255,0.05)", color: "#86868b" }}
+                style={{ background: "rgba(255,255,255,0.04)", color: "#3a3a3a" }}
               >
                 {tag}
               </span>
             ))}
           </div>
         )}
+
+        {/* Bottom row: price + buy */}
+        <div className="flex items-center justify-between mt-8 pt-6" style={{ borderTop: "1px solid rgba(255,255,255,0.06)" }}>
+          <div className="flex flex-col gap-0.5">
+            <span className="text-xs" style={{ color: "#3a3a3a" }}>Pris</span>
+            <span className="text-xl font-bold" style={{ color: "#f5f5f7" }}>
+              {beat.price === 0 ? "Gratis" : `kr ${beat.price.toLocaleString("nb-NO")}`}
+            </span>
+          </div>
+          <div className="flex items-center gap-2">
+            {beat.exclusive_price && !beat.exclusively_sold && (
+              <button
+                onClick={() => setCheckoutOpen(true)}
+                className="rounded-full px-4 py-2 text-sm font-semibold transition-opacity hover:opacity-80"
+                style={{ background: "rgba(255,255,255,0.08)", color: "#86868b" }}
+              >
+                Eksklusiv · kr {beat.exclusive_price.toLocaleString("nb-NO")}
+              </button>
+            )}
+            <button
+              onClick={beat.price === 0 ? handleFreeDownload : () => setCheckoutOpen(true)}
+              className="rounded-full px-6 py-2 text-sm font-semibold transition-opacity hover:opacity-90"
+              style={{ background: "#f5f5f7", color: "#080808" }}
+            >
+              {beat.price === 0 ? "Last ned" : "Kjøp"}
+            </button>
+          </div>
+        </div>
       </div>
 
       {/* Recommendations */}
       {recommended.length > 0 && (
-        <div className="mt-6">
+        <div className="mt-8">
           <p className="text-xs font-medium uppercase tracking-wider mb-3" style={{ color: "#3a3a3a" }}>
             Lignende låter
           </p>
