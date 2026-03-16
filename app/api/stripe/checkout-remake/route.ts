@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { stripe, APPLICATION_FEE_PERCENT, nokToOre } from "@/lib/stripe";
+import { stripe, nokToOre } from "@/lib/stripe";
 import { createClient } from "@/lib/supabase/server";
 
 export async function POST(request: NextRequest) {
@@ -37,7 +37,6 @@ export async function POST(request: NextRequest) {
     }
 
     const amountOre = nokToOre(remake.price);
-    const feeOre = Math.round(amountOre * APPLICATION_FEE_PERCENT);
 
     const { data: { session: authSession } } = await supabase.auth.getSession();
     const buyerId = authSession?.user?.id ?? null;
@@ -62,10 +61,6 @@ export async function POST(request: NextRequest) {
         },
       ],
       mode: "payment",
-      payment_intent_data: {
-        application_fee_amount: feeOre,
-        transfer_data: { destination: producer.stripe_account_id },
-      },
       metadata: {
         remake_id: remakeId,
         remake_title: remake.title,

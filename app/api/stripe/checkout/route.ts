@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { stripe, APPLICATION_FEE_PERCENT, nokToOre } from "@/lib/stripe";
+import { stripe, nokToOre } from "@/lib/stripe";
 import { createClient } from "@/lib/supabase/server";
 
 export async function POST(request: NextRequest) {
@@ -62,7 +62,6 @@ export async function POST(request: NextRequest) {
 
     const priceToUse = exclusive ? beat.exclusive_price! : beat.price;
     const amountOre = nokToOre(priceToUse);
-    const feeOre = Math.round(amountOre * APPLICATION_FEE_PERCENT);
 
     console.log(
       "[checkout] Creating Checkout Session for beat:",
@@ -70,8 +69,6 @@ export async function POST(request: NextRequest) {
       exclusive ? "(EXCLUSIVE)" : "",
       "price:",
       amountOre,
-      "øre, fee:",
-      feeOre,
       "øre"
     );
 
@@ -105,12 +102,6 @@ export async function POST(request: NextRequest) {
         },
       ],
       mode: "payment",
-      payment_intent_data: {
-        application_fee_amount: feeOre,
-        transfer_data: {
-          destination: producer.stripe_account_id,
-        },
-      },
       metadata: {
         beat_id: beatId,
         beat_title: beat.title,
