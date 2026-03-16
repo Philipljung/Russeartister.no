@@ -132,7 +132,7 @@ export function buildProducerSaleEmail({
       </table>
     </div>
 
-    <p style="color:#86868b;font-size:13px;">Utbetalingen frigis automatisk 24 timer etter kjøpet, forutsatt at ingen klage er mottatt.</p>
+    <p style="color:#86868b;font-size:13px;">Utbetalingen frigis innen 48 timer etter kjøpet, forutsatt at ingen klage er mottatt.</p>
   </div>
 </body>
 </html>`,
