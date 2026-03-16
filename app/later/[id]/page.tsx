@@ -24,6 +24,7 @@ async function fetchRecommended(beat: Beat): Promise<Beat[]> {
     .select("*, producer:profiles(*)")
     .eq("is_published", true)
     .eq("exclusively_sold", false)
+    .is("deleted_at", null)
     .neq("id", beat.id)
     .limit(40);
 

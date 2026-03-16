@@ -27,7 +27,7 @@ export async function GET(request: Request) {
     if (!error && data.user) {
       const username = data.user.user_metadata?.username as string | undefined;
       if (username) return NextResponse.redirect(`${origin}/profile/${username}`);
-      return NextResponse.redirect(`${origin}/beats`);
+      return NextResponse.redirect(`${origin}/later`);
     }
   }
 

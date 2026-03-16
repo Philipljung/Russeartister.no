@@ -2,7 +2,8 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
-import { Play, Pause } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { Play, Pause, Share2 } from "lucide-react";
 import type { Beat } from "@/lib/supabase/types";
 import { usePlayer } from "@/lib/player-context";
 import { useToast } from "@/lib/toast-context";
@@ -29,17 +30,18 @@ export default function BeatCard({ beat, isSelected = false, onSelect }: Props) 
   const [checkoutOpen, setCheckoutOpen] = useState(false);
   const { currentBeat, isPlaying, toggleBeat } = usePlayer();
   const { toast } = useToast();
+  const router = useRouter();
 
   const isActive = currentBeat?.id === beat.id;
   const isCurrentlyPlaying = isActive && isPlaying;
 
-  // Autoplay when selected via keyboard
   useEffect(() => {
     if (isSelected && !isCurrentlyPlaying) {
       toggleBeat(beat);
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isSelected]);
+
   const coverImg = beat.cover_url ?? beat.producer?.avatar_url ?? null;
   const coverBg = coverImg ? undefined : genreColor(beat.genre);
 
@@ -56,6 +58,12 @@ export default function BeatCard({ beat, isSelected = false, onSelect }: Props) 
     else toast("Nedlasting feilet. Prøv igjen.");
   }
 
+  async function handleShare(e: React.MouseEvent) {
+    e.stopPropagation();
+    await navigator.clipboard.writeText(`${window.location.origin}/later/${beat.id}`);
+    toast("Lenke kopiert!");
+  }
+
   return (
     <>
     <div
@@ -68,11 +76,11 @@ export default function BeatCard({ beat, isSelected = false, onSelect }: Props) 
       }}
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
-      onClick={() => setCheckoutOpen(true)}
+      onClick={() => { onSelect?.(); router.push(`/later/${beat.id}`); }}
     >
       {/* Play button */}
       <button
-        onClick={(e) => { e.stopPropagation(); toggleBeat(beat); }}
+        onClick={(e) => { e.stopPropagation(); onSelect?.(); toggleBeat(beat); }}
         className="flex shrink-0 items-center justify-center rounded-full transition-all"
         style={{
           width: 36,
@@ -93,10 +101,8 @@ export default function BeatCard({ beat, isSelected = false, onSelect }: Props) 
       </button>
 
       {/* Cover */}
-      <Link
-        href={`/later/${beat.id}`}
-        onClick={(e) => e.stopPropagation()}
-        className="shrink-0 rounded-lg transition-opacity hover:opacity-80"
+      <div
+        className="shrink-0 rounded-lg"
         style={{
           width: 40,
           height: 40,
@@ -105,7 +111,6 @@ export default function BeatCard({ beat, isSelected = false, onSelect }: Props) 
           backgroundSize: "cover",
           backgroundPosition: "center",
           boxShadow: "0 2px 8px rgba(0,0,0,0.4)",
-          display: "block",
         }}
       />
 
@@ -153,7 +158,7 @@ export default function BeatCard({ beat, isSelected = false, onSelect }: Props) 
         ))}
       </div>
 
-      {/* Price + buy */}
+      {/* Price + buy + share */}
       <div className="flex shrink-0 items-center gap-2">
         <span
           className="text-sm font-semibold"
@@ -172,6 +177,19 @@ export default function BeatCard({ beat, isSelected = false, onSelect }: Props) 
           onClick={beat.price === 0 ? handleFreeDownload : handleBuy}
         >
           {beat.price === 0 ? "Last ned" : "Kjøp"}
+        </button>
+        <button
+          onClick={handleShare}
+          className="flex items-center justify-center rounded-lg transition-all hover:opacity-70"
+          style={{
+            width: 30,
+            height: 30,
+            color: "#3a3a3a",
+            background: "transparent",
+          }}
+          title="Kopier lenke"
+        >
+          <Share2 size={13} />
         </button>
       </div>
     </div>
