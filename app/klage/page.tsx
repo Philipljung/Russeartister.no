@@ -1,11 +1,11 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { Suspense, useEffect, useRef, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { AlertCircle, CheckCircle, Upload, X } from "lucide-react";
 import { getSupabaseClient } from "@/lib/supabase/client";
 
-export default function KlagePage() {
+function KlageForm() {
   const searchParams = useSearchParams();
   const [orderNumber, setOrderNumber] = useState("");
   const [description, setDescription] = useState("");
@@ -88,7 +88,6 @@ export default function KlagePage() {
       )}
 
       <form onSubmit={handleSubmit} className="flex flex-col gap-5">
-        {/* Order number */}
         <div>
           <label className="mb-1.5 block text-xs font-medium" style={{ color: "#86868b" }}>
             Ordrenummer *
@@ -99,18 +98,13 @@ export default function KlagePage() {
             onChange={(e) => setOrderNumber(e.target.value)}
             placeholder="RA-XXXXX"
             className="w-full rounded-xl px-4 py-3 text-sm outline-none transition-colors"
-            style={{
-              background: "#141414",
-              border: "1px solid #2a2a2a",
-              color: "#f5f5f7",
-            }}
+            style={{ background: "#141414", border: "1px solid #2a2a2a", color: "#f5f5f7" }}
           />
           <p className="mt-1 text-xs" style={{ color: "#3a3a3a" }}>
             Finner du i kvitteringse-posten eller under Mine nedlastninger.
           </p>
         </div>
 
-        {/* Description */}
         <div>
           <label className="mb-1.5 block text-xs font-medium" style={{ color: "#86868b" }}>
             Beskriv problemet *
@@ -121,15 +115,10 @@ export default function KlagePage() {
             rows={5}
             placeholder="Hva gikk galt? Hva forventet du å motta, og hva mottok du?"
             className="w-full resize-none rounded-xl px-4 py-3 text-sm outline-none transition-colors"
-            style={{
-              background: "#141414",
-              border: "1px solid #2a2a2a",
-              color: "#f5f5f7",
-            }}
+            style={{ background: "#141414", border: "1px solid #2a2a2a", color: "#f5f5f7" }}
           />
         </div>
 
-        {/* File attachment */}
         <div>
           <label className="mb-1.5 block text-xs font-medium" style={{ color: "#86868b" }}>
             Legg ved filen du mottok *
@@ -154,11 +143,7 @@ export default function KlagePage() {
               type="button"
               onClick={() => fileRef.current?.click()}
               className="flex w-full items-center justify-center gap-2 rounded-xl px-4 py-3 text-sm transition-opacity hover:opacity-80"
-              style={{
-                background: "#141414",
-                border: "1px dashed #2a2a2a",
-                color: "#86868b",
-              }}
+              style={{ background: "#141414", border: "1px dashed #2a2a2a", color: "#86868b" }}
             >
               <Upload size={14} />
               Velg fil
@@ -195,5 +180,13 @@ export default function KlagePage() {
         </button>
       </form>
     </div>
+  );
+}
+
+export default function KlagePage() {
+  return (
+    <Suspense>
+      <KlageForm />
+    </Suspense>
   );
 }
