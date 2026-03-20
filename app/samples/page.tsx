@@ -43,6 +43,14 @@ function SampleCard({
   const canPlay = !!sample.audio_preview_url;
   const isPreset = sample.item_type === "preset";
 
+  async function handleFreeDownload(e: React.MouseEvent) {
+    e.stopPropagation();
+    const res = await fetch(`/api/free-download?type=sample&id=${sample.id}`);
+    const data = await res.json();
+    if (data.url) window.location.href = data.url;
+    else toast("Nedlasting feilet. Prøv igjen.");
+  }
+
   return (
     <div
       className="flex items-center gap-2 md:gap-4 rounded-xl px-2 md:px-4 py-3 transition-colors cursor-pointer"
@@ -145,7 +153,7 @@ function SampleCard({
             color: hovered ? "#080808" : "#f5f5f7",
             width: 76,
           }}
-          onClick={(e) => { e.stopPropagation(); onBuy(sample); }}
+          onClick={sample.price === 0 ? handleFreeDownload : (e) => { e.stopPropagation(); onBuy(sample); }}
         >
           {sample.price === 0 ? "Last ned" : "Kjøp"}
         </button>

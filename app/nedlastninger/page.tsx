@@ -67,8 +67,9 @@ export default function NedlastningerPage() {
     try {
       const res = await fetch(`/api/downloads/${purchase.id}`);
       if (!res.ok) throw new Error("Feil");
-      // The route redirects to the signed URL — follow redirect by opening in same tab
-      window.location.href = res.url;
+      const { url } = await res.json();
+      if (!url) throw new Error("Ingen URL");
+      window.location.href = url;
     } catch {
       alert("Noe gikk galt. Prøv igjen.");
     } finally {

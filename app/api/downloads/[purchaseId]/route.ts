@@ -86,10 +86,10 @@ export async function GET(
         console.error("[downloads] Failed to create signed URL:", signError?.message);
         return NextResponse.json({ error: "Kunne ikke generere nedlastningslenke" }, { status: 500 });
       }
-      return NextResponse.redirect(signed.signedUrl);
+      return NextResponse.json({ url: signed.signedUrl });
     }
-    // Fallback: public URL from another bucket (e.g. sample-previews) — redirect directly
-    return NextResponse.redirect(fileRawPath);
+    // Fallback: public URL from another bucket (e.g. sample-previews) — return directly
+    return NextResponse.json({ url: fileRawPath });
   }
 
   // Raw path → sign from beat-files
@@ -103,5 +103,5 @@ export async function GET(
     return NextResponse.json({ error: "Kunne ikke generere nedlastningslenke" }, { status: 500 });
   }
 
-  return NextResponse.redirect(signed.signedUrl);
+  return NextResponse.json({ url: signed.signedUrl });
 }

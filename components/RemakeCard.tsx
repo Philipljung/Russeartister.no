@@ -28,6 +28,14 @@ export default function RemakeCard({ remake, isActive, isPlaying, isSelected = f
   const router = useRouter();
   const { toast } = useToast();
   const coverImg = remake.cover_url ?? remake.producer?.avatar_url ?? null;
+
+  async function handleFreeDownload(e: React.MouseEvent) {
+    e.stopPropagation();
+    const res = await fetch(`/api/free-download?type=remake&id=${remake.id}`);
+    const data = await res.json();
+    if (data.url) window.location.href = data.url;
+    else toast("Nedlasting feilet. Prøv igjen.");
+  }
   const coverBg = genreColor(remake.title);
   const canPlay = !!remake.audio_preview_url;
 
@@ -123,7 +131,7 @@ export default function RemakeCard({ remake, isActive, isPlaying, isSelected = f
             color: hovered ? "#080808" : "#f5f5f7",
             cursor: "pointer",
           }}
-          onClick={(e) => { e.stopPropagation(); onBuy(remake); }}
+          onClick={remake.price === 0 ? handleFreeDownload : (e) => { e.stopPropagation(); onBuy(remake); }}
         >
           {remake.price === 0 ? "Last ned" : "Kjøp"}
         </button>
