@@ -77,7 +77,7 @@ export default function BeatDetailClient({
   ];
 
   return (
-    <div className="mx-auto max-w-2xl px-4 md:px-6 py-8">
+    <div className="mx-auto max-w-4xl px-4 md:px-6 py-8">
 
       {/* Back */}
       <Link
@@ -162,7 +162,7 @@ export default function BeatDetailClient({
               className="flex items-center gap-2 rounded-full px-3 py-1.5"
               style={{ background: "rgba(255,255,255,0.06)" }}
             >
-              <span className="text-xs" style={{ color: "#3a3a3a" }}>{label}</span>
+              <span className="text-xs" style={{ color: "#86868b" }}>{label}</span>
               <div style={{ width: 1, height: 10, background: "#2a2a2a" }} />
               <span
                 className="text-xs font-semibold"

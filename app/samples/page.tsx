@@ -1,12 +1,14 @@
 "use client";
 
 import { useState, useEffect, useMemo, useRef, useCallback } from "react";
-import { Search, X, Package, Sliders, Play, Pause, FolderArchive, ChevronDown, ChevronUp } from "lucide-react";
+import { Search, X, Package, Sliders, Play, Pause, FolderArchive, ChevronDown, ChevronUp, Share2 } from "lucide-react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { fetchPublicSamples } from "@/lib/fetchSamples";
 import { SAMPLE_CATEGORIES, PRESET_CATEGORIES, CATEGORY_LABELS } from "@/lib/sampleCategories";
 import type { Sample } from "@/lib/supabase/types";
 import SampleCheckoutModal from "@/components/SampleCheckoutModal";
+import { useToast } from "@/lib/toast-context";
 
 type ActiveType = "sample" | "preset" | "sample-pack" | "preset-pack";
 
@@ -34,6 +36,8 @@ function SampleCard({
   onBuy: (sample: Sample) => void;
 }) {
   const [hovered, setHovered] = useState(false);
+  const router = useRouter();
+  const { toast } = useToast();
   const coverImg = sample.cover_url ?? sample.producer?.avatar_url ?? null;
   const coverBg = genreColor(sample.category);
   const canPlay = !!sample.audio_preview_url;
@@ -41,20 +45,20 @@ function SampleCard({
 
   return (
     <div
-      className="flex items-center gap-2 md:gap-4 rounded-xl px-2 md:px-4 py-3 transition-colors"
+      className="flex items-center gap-2 md:gap-4 rounded-xl px-2 md:px-4 py-3 transition-colors cursor-pointer"
       style={{
         background: isSelected ? "rgba(255,255,255,0.06)" : hovered ? "rgba(255,255,255,0.04)" : "transparent",
         borderBottom: "1px solid #1a1a1a",
         outline: isSelected ? "1px solid rgba(255,255,255,0.18)" : "none",
         outlineOffset: -1,
-        cursor: "default",
       }}
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
+      onClick={() => router.push(`/samples/${sample.id}`)}
     >
       {/* Play/pause button */}
       <button
-        onClick={() => canPlay && onToggle(sample)}
+        onClick={(e) => { e.stopPropagation(); if (canPlay) onToggle(sample); }}
         className="shrink-0 flex items-center justify-center rounded-full transition-colors"
         style={{
           width: 36, height: 36,
@@ -74,6 +78,7 @@ function SampleCard({
       {/* Cover */}
       <Link
         href={`/profile/${sample.producer?.username ?? ""}`}
+        onClick={(e) => e.stopPropagation()}
         className="shrink-0 rounded-lg transition-opacity hover:opacity-80"
         style={{
           width: 40, height: 40,
@@ -91,7 +96,7 @@ function SampleCard({
           {sample.title}
         </p>
         <p className="text-xs mt-0.5 truncate" style={{ color: "#86868b" }}>
-          <Link href={`/profile/${sample.producer?.username ?? ""}`} className="hover:underline" style={{ color: "#86868b" }}>
+          <Link href={`/profile/${sample.producer?.username ?? ""}`} onClick={(e) => e.stopPropagation()} className="hover:underline" style={{ color: "#86868b" }}>
             {sample.producer?.display_name ?? "Ukjent"}
           </Link>
           {!isPreset && sample.bpm ? ` · ${sample.bpm} BPM` : ""}
@@ -128,7 +133,7 @@ function SampleCard({
         </div>
       )}
 
-      {/* Price + buy */}
+      {/* Price + buy + share */}
       <div className="flex shrink-0 items-center gap-2">
         <span className="text-sm font-semibold" style={{ color: "#f5f5f7", width: 80, textAlign: "right", flexShrink: 0 }}>
           {sample.price === 0 ? "Gratis" : `kr ${sample.price.toLocaleString("nb-NO")}`}
@@ -140,9 +145,26 @@ function SampleCard({
             color: hovered ? "#080808" : "#f5f5f7",
             width: 76,
           }}
-          onClick={() => onBuy(sample)}
+          onClick={(e) => { e.stopPropagation(); onBuy(sample); }}
         >
           {sample.price === 0 ? "Last ned" : "Kjøp"}
+        </button>
+        <button
+          className="flex items-center justify-center rounded-lg transition-all"
+          style={{
+            width: 30, height: 30,
+            background: "rgba(255,255,255,0.06)",
+            color: "#86868b",
+            cursor: "pointer",
+          }}
+          title="Kopier lenke"
+          onClick={async (e) => {
+            e.stopPropagation();
+            await navigator.clipboard.writeText(window.location.origin + "/samples/" + sample.id);
+            toast("Lenke kopiert!");
+          }}
+        >
+          <Share2 size={12} />
         </button>
       </div>
     </div>

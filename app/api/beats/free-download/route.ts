@@ -12,15 +12,15 @@ export async function GET(req: NextRequest) {
 
   const { data: beat } = await supabase
     .from("beats")
-    .select("price, file_url, title")
+    .select("price, project_file_url, title")
     .eq("id", beatId)
     .single();
 
   if (!beat) return NextResponse.json({ error: "Beat not found" }, { status: 404 });
   if (beat.price !== 0) return NextResponse.json({ error: "Beat is not free" }, { status: 403 });
 
-  // Extract storage path from the stored file_url / path
-  const rawPath: string = beat.file_url ?? "";
+  // Extract storage path from the stored project_file_url / path
+  const rawPath: string = beat.project_file_url ?? "";
   // file_url stores just the path (e.g. "userId/timestamp_remake.zip"), not a full URL
   const filePath = rawPath.startsWith("http")
     ? rawPath.split("/beat-files/")[1]?.split("?")[0]

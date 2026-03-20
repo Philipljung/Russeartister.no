@@ -2,8 +2,10 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { Play, Pause } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { Play, Pause, Share2 } from "lucide-react";
 import type { Remake } from "@/lib/supabase/types";
+import { useToast } from "@/lib/toast-context";
 
 function genreColor(seed: string): string {
   const palette = ["#1a1040","#001a2e","#1a2e00","#2e1a00","#001e14","#14001e","#1e0a0a","#00141e"];
@@ -23,6 +25,8 @@ type Props = {
 
 export default function RemakeCard({ remake, isActive, isPlaying, isSelected = false, onToggle, onBuy }: Props) {
   const [hovered, setHovered] = useState(false);
+  const router = useRouter();
+  const { toast } = useToast();
   const coverImg = remake.cover_url ?? remake.producer?.avatar_url ?? null;
   const coverBg = genreColor(remake.title);
   const canPlay = !!remake.audio_preview_url;
@@ -38,7 +42,7 @@ export default function RemakeCard({ remake, isActive, isPlaying, isSelected = f
       }}
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
-      onClick={() => onBuy(remake)}
+      onClick={() => router.push(`/remakes/${remake.id}`)}
     >
       {/* Play button */}
       <button
@@ -107,7 +111,7 @@ export default function RemakeCard({ remake, isActive, isPlaying, isSelected = f
         ))}
       </div>
 
-      {/* Price + buy */}
+      {/* Price + buy + share */}
       <div className="flex shrink-0 items-center gap-2">
         <span className="text-sm font-semibold" style={{ color: "#f5f5f7", minWidth: 64, textAlign: "right" }}>
           {remake.price === 0 ? "Gratis" : `kr ${remake.price.toLocaleString("nb-NO")}`}
@@ -122,6 +126,23 @@ export default function RemakeCard({ remake, isActive, isPlaying, isSelected = f
           onClick={(e) => { e.stopPropagation(); onBuy(remake); }}
         >
           {remake.price === 0 ? "Last ned" : "Kjøp"}
+        </button>
+        <button
+          className="flex items-center justify-center rounded-lg transition-all"
+          style={{
+            width: 30, height: 30,
+            background: "rgba(255,255,255,0.06)",
+            color: "#86868b",
+            cursor: "pointer",
+          }}
+          title="Kopier lenke"
+          onClick={async (e) => {
+            e.stopPropagation();
+            await navigator.clipboard.writeText(window.location.origin + "/remakes/" + remake.id);
+            toast("Lenke kopiert!");
+          }}
+        >
+          <Share2 size={12} />
         </button>
       </div>
     </div>

@@ -168,8 +168,8 @@ export default function InnstillingerPage() {
         </div>
         <p className="mb-4 text-xs" style={{ color: "#86868b" }}>
           Sletting av konto er permanent og kan ikke angres. Kontakt oss på{" "}
-          <a href="mailto:hei@russeartister.no" className="underline" style={{ color: "#86868b" }}>
-            hei@russeartister.no
+          <a href="mailto:russeartister@gmail.com" className="underline" style={{ color: "#86868b" }}>
+            russeartister@gmail.com
           </a>{" "}
           for å slette kontoen din.
         </p>
