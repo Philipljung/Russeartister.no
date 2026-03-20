@@ -195,6 +195,16 @@ function PackCard({
 }) {
   const [hovered, setHovered] = useState(false);
   const [expanded, setExpanded] = useState(false);
+  const { toast } = useToast();
+  const router = useRouter();
+
+  async function handleFreeDownload(e: React.MouseEvent) {
+    e.stopPropagation();
+    const res = await fetch(`/api/free-download?type=sample&id=${sample.id}`);
+    const data = await res.json();
+    if (data.url) window.location.href = data.url;
+    else toast("Nedlasting feilet. Prøv igjen.");
+  }
   const coverImg = sample.cover_url ?? sample.producer?.avatar_url ?? null;
   const coverBg = genreColor(sample.category);
   const canPlay = !!sample.audio_preview_url;
@@ -208,12 +218,13 @@ function PackCard({
       onMouseLeave={() => setHovered(false)}
     >
       <div
-        className="flex items-center gap-2 md:gap-4 px-2 md:px-4 py-3"
+        className="flex items-center gap-2 md:gap-4 px-2 md:px-4 py-3 cursor-pointer"
         style={{ background: hovered ? "rgba(255,255,255,0.03)" : "transparent" }}
+        onClick={() => router.push(`/samples/${sample.id}`)}
       >
         {/* Play button */}
         <button
-          onClick={() => canPlay && onToggle(sample)}
+          onClick={(e) => { e.stopPropagation(); if (canPlay) onToggle(sample); }}
           className="shrink-0 flex items-center justify-center rounded-full transition-colors"
           style={{
             width: 36, height: 36,
@@ -271,7 +282,7 @@ function PackCard({
         {/* Expand files */}
         {sample.pack_files && sample.pack_files.length > 0 && (
           <button
-            onClick={() => setExpanded(!expanded)}
+            onClick={(e) => { e.stopPropagation(); setExpanded(!expanded); }}
             className="hidden sm:flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs transition-all shrink-0"
             style={{ background: "rgba(255,255,255,0.05)", color: "#86868b", border: "1px solid #2a2a2a" }}
           >
@@ -280,7 +291,7 @@ function PackCard({
           </button>
         )}
 
-        {/* Price + buy */}
+        {/* Price + buy + share */}
         <div className="flex shrink-0 items-center gap-2">
           <span className="text-sm font-semibold" style={{ color: "#f5f5f7", width: 80, textAlign: "right", flexShrink: 0 }}>
             {sample.price === 0 ? "Gratis" : `kr ${sample.price.toLocaleString("nb-NO")}`}
@@ -292,9 +303,26 @@ function PackCard({
               color: hovered ? "#080808" : "#f5f5f7",
               width: 76,
             }}
-            onClick={() => onBuy(sample)}
+            onClick={sample.price === 0 ? handleFreeDownload : (e) => { e.stopPropagation(); onBuy(sample); }}
           >
             {sample.price === 0 ? "Last ned" : "Kjøp"}
+          </button>
+          <button
+            className="flex items-center justify-center rounded-lg transition-all"
+            style={{
+              width: 30, height: 30,
+              background: "rgba(255,255,255,0.06)",
+              color: "#86868b",
+              cursor: "pointer",
+            }}
+            title="Kopier lenke"
+            onClick={async (e) => {
+              e.stopPropagation();
+              await navigator.clipboard.writeText(window.location.origin + "/samples/" + sample.id);
+              toast("Lenke kopiert!");
+            }}
+          >
+            <Share2 size={12} />
           </button>
         </div>
       </div>

@@ -70,6 +70,33 @@ export default function LastOppRemakePage() {
     if (e.key === "Backspace" && !tagInput && tags.length > 0) setTags(tags.slice(0, -1));
   }
 
+  const MAX_PROJECT_FILE_BYTES = 500 * 1024 * 1024;
+
+  function handleProjectChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const f = e.target.files?.[0];
+    if (!f) return;
+    if (f.size > MAX_PROJECT_FILE_BYTES) {
+      setError(`Prosjektfilen er for stor (${(f.size / 1024 / 1024).toFixed(0)} MB). Maks 500 MB.`);
+      if (projectInputRef.current) projectInputRef.current.value = '';
+      return;
+    }
+    setError(null);
+    setProjectFile({ file: f });
+  }
+
+  function handleAudioChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const f = e.target.files?.[0];
+    if (!f) return;
+    const name = f.name.toLowerCase();
+    if (!name.endsWith('.wav') && !name.endsWith('.mp3')) {
+      setError('Lydforhåndsvisning må være WAV eller MP3.');
+      if (audioInputRef.current) audioInputRef.current.value = '';
+      return;
+    }
+    setError(null);
+    setAudioPreview({ file: f });
+  }
+
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError(null);
@@ -332,20 +359,20 @@ export default function LastOppRemakePage() {
           <FileRow
             label="Lydforhåndsvisning *"
             hint="MP3 eller WAV, maks 30 MB"
-            accept="audio/*"
+            accept=".wav,.mp3,audio/wav,audio/mpeg"
             icon={<Music size={15} style={{ color: "#86868b" }} />}
             file={audioPreview?.file ?? null}
             inputRef={audioInputRef}
-            onChange={(e) => { const f = e.target.files?.[0]; if (f) setAudioPreview({ file: f }); }}
+            onChange={handleAudioChange}
           />
           <FileRow
-            label="Prosjektfil (.zip) *"
-            hint="Hele prosjektet i én zip-fil"
-            accept=".zip,.als,.flp,.logic,.ptx"
+            label="Prosjektfil *"
+            hint="Alle filtyper — maks 500 MB"
+            accept="*"
             icon={<FileArchive size={15} style={{ color: "#86868b" }} />}
             file={projectFile?.file ?? null}
             inputRef={projectInputRef}
-            onChange={(e) => { const f = e.target.files?.[0]; if (f) setProjectFile({ file: f }); }}
+            onChange={handleProjectChange}
           />
 
           {/* Anti-scam warning */}

@@ -89,14 +89,31 @@ export default function LastOppPage() {
     setCover({ file, previewUrl });
   }
 
-  function handleAudioChange(e: React.ChangeEvent<HTMLInputElement>) {
-    const file = e.target.files?.[0];
-    if (file) setAudioPreview({ file });
-  }
+  const MAX_PROJECT_FILE_BYTES = 500 * 1024 * 1024; // 500 MB
 
   function handleProjectChange(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
-    if (file) setProjectFile({ file });
+    if (!file) return;
+    if (file.size > MAX_PROJECT_FILE_BYTES) {
+      setError(`Prosjektfilen er for stor (${(file.size / 1024 / 1024).toFixed(0)} MB). Maks 500 MB.`);
+      if (projectInputRef.current) projectInputRef.current.value = "";
+      return;
+    }
+    setError(null);
+    setProjectFile({ file });
+  }
+
+  function handleAudioChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const name = file.name.toLowerCase();
+    if (!name.endsWith(".wav") && !name.endsWith(".mp3")) {
+      setError("Lydforhåndsvisning må være WAV eller MP3.");
+      if (audioInputRef.current) audioInputRef.current.value = "";
+      return;
+    }
+    setError(null);
+    setAudioPreview({ file });
   }
 
   async function handleSubmit(e: React.FormEvent) {
@@ -108,7 +125,7 @@ export default function LastOppPage() {
       return;
     }
     if (!audioPreview?.file) {
-      setError("Du må laste opp lydforhåndsvisning.");
+      setError("Du må laste opp en lydforhåndsvisning.");
       return;
     }
     if (stripeReady && !price) {
@@ -549,9 +566,9 @@ export default function LastOppPage() {
           </p>
 
           <FileRow
-            label="Lydforhåndsvisning"
+            label="Lydforhåndsvisning *"
             hint="MP3 eller WAV, maks 30 MB"
-            accept="audio/*"
+            accept=".wav,.mp3,audio/wav,audio/mpeg"
             icon={<Music size={15} style={{ color: "#86868b" }} />}
             file={audioPreview?.file ?? null}
             inputRef={audioInputRef}
@@ -560,7 +577,7 @@ export default function LastOppPage() {
 
           <FileRow
             label="Prosjektfil"
-            hint=".als, .flp, .logic, .zip, ..."
+            hint="Alle filtyper — maks 500 MB"
             accept="*"
             icon={<FileArchive size={15} style={{ color: "#86868b" }} />}
             file={projectFile?.file ?? null}

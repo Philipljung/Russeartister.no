@@ -1,6 +1,7 @@
 # MEMORY.md
 
 ## Project
+- [purchasing_logic.md](purchasing_logic.md) — Complete purchasing flow: Stripe webhook, free downloads, Mine Nedlastninger, file storage, upload requirements, payout cron, DB schema
 - [project_stack.md](project_stack.md) — Tech stack, Supabase project, key files
 - [project_status.md](project_status.md) — What's built, what's missing, next steps
 - [project_orders_plan.md](project_orders_plan.md) — Full technical plan for the custom-beat Orders/escrow system (Stripe, DB schema, contracts, cron jobs, pages, API routes)

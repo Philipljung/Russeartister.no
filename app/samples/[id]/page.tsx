@@ -24,6 +24,7 @@ async function fetchRecommended(sample: Sample): Promise<Sample[]> {
     .from("samples")
     .select("*, producer:profiles(*)")
     .eq("is_published", true)
+    .eq("item_type", sample.item_type)
     .is("deleted_at", null)
     .neq("id", sample.id)
     .limit(40);

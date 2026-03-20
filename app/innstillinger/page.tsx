@@ -164,7 +164,7 @@ export default function InnstillingerPage() {
       >
         <div className="mb-4 flex items-center gap-2">
           <Trash2 size={16} style={{ color: "#ff3b30" }} />
-          <h2 className="text-sm font-semibold" style={{ color: "#ff3b30" }}>Farlig sone</h2>
+          <h2 className="text-sm font-semibold" style={{ color: "#ff3b30" }}>Slett konto</h2>
         </div>
         <p className="mb-4 text-xs" style={{ color: "#86868b" }}>
           Sletting av konto er permanent og kan ikke angres. Kontakt oss på{" "}

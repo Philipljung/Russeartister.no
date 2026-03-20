@@ -67,9 +67,21 @@ export default function NedlastningerPage() {
     try {
       const res = await fetch(`/api/downloads/${purchase.id}`);
       if (!res.ok) throw new Error("Feil");
-      const { url } = await res.json();
-      if (!url) throw new Error("Ingen URL");
-      window.location.href = url;
+      const { url, audioUrl } = await res.json();
+      if (!url && !audioUrl) throw new Error("Ingen URL");
+
+      function triggerDownload(href: string) {
+        const a = document.createElement("a");
+        a.href = href;
+        a.target = "_blank";
+        a.rel = "noopener noreferrer";
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+      }
+
+      if (url) triggerDownload(url);
+      if (audioUrl) setTimeout(() => triggerDownload(audioUrl), 800);
     } catch {
       alert("Noe gikk galt. Prøv igjen.");
     } finally {

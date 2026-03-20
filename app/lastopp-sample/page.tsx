@@ -88,6 +88,7 @@ export default function LastOppSamplePage() {
 
   const [cover, setCover] = useState<UploadFile>(null);
   const [sampleFile, setSampleFile] = useState<UploadFile>(null);
+  const [audioPreview, setAudioPreview] = useState<UploadFile>(null);
   const [packFiles, setPackFiles] = useState<string[]>([]);
   const [parsingZip, setParsing] = useState(false);
 
@@ -96,6 +97,7 @@ export default function LastOppSamplePage() {
 
   const coverInputRef = useRef<HTMLInputElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const audioPreviewInputRef = useRef<HTMLInputElement>(null);
 
   const isPack = itemType === "sample-pack" || itemType === "preset-pack";
   const isPreset = itemType === "preset" || itemType === "preset-pack";
@@ -106,6 +108,7 @@ export default function LastOppSamplePage() {
     setCategory("");
     setVst("");
     setSampleFile(null);
+    setAudioPreview(null);
     setPackFiles([]);
   }
 
@@ -122,6 +125,19 @@ export default function LastOppSamplePage() {
     } finally {
       setParsing(false);
     }
+  }
+
+  function handleAudioPreviewChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const f = e.target.files?.[0];
+    if (!f) return;
+    const name = f.name.toLowerCase();
+    if (!name.endsWith('.wav') && !name.endsWith('.mp3')) {
+      setError('Lydforhåndsvisning må være WAV eller MP3.');
+      if (audioPreviewInputRef.current) audioPreviewInputRef.current.value = '';
+      return;
+    }
+    setError(null);
+    setAudioPreview({ file: f });
   }
 
   function addTag() {
@@ -142,7 +158,14 @@ export default function LastOppSamplePage() {
     if (!title) { setError("Tittel er påkrevd."); return; }
     if (!isPack && !category) { setError("Velg kategori."); return; }
     if (isPreset && !vst) { setError("Velg VST."); return; }
-    if (!sampleFile?.file) { setError(`Du må laste opp ${isPack ? "zip-filen" : isPreset ? "presetfilen" : "sampelfilen"}.`); return; }
+    if (!sampleFile?.file) { setError(`Du må laste opp ${isPack ? "zip-filen" : isPreset ? "presetfilen" : "samplefilen"}.`); return; }
+    if (isSample && sampleFile?.file) {
+      const name = sampleFile.file.name.toLowerCase();
+      if (!name.endsWith('.wav') && !name.endsWith('.mp3')) {
+        setError('Samplefilen må være WAV eller MP3.');
+        return;
+      }
+    }
     if (stripeReady && !price) { setError("Fyll ut pris."); return; }
 
     const priceNum = stripeReady ? parseInt(price) : 0;
@@ -189,10 +212,11 @@ export default function LastOppSamplePage() {
       const coverUrl = cover?.file ? await uploadFile("beat-covers", cover.file, "cover") : null;
       const fileUrl = await uploadPrivateFile(sampleFile.file, "file");
 
-      // For samples (WAV/MP3), also upload to public sample-previews so the player can stream it
       let audioPreviewUrl: string | null = null;
       if (isSample && sampleFile.file) {
         audioPreviewUrl = await uploadFile("sample-previews", sampleFile.file, "preview");
+      } else if (!isSample && audioPreview?.file) {
+        audioPreviewUrl = await uploadFile("sample-previews", audioPreview.file, "preview");
       }
 
       const { data: sample, error: insertError } = await supabase
@@ -443,10 +467,23 @@ export default function LastOppSamplePage() {
 
           {/* Main file: zip for packs, preset file or sample file */}
           <div>
+            {/* Optional audio preview for presets and packs */}
+            {!isSample && (
+              <FileRow
+                label="Lydforhåndsvisning"
+                hint="WAV eller MP3 — valgfritt"
+                accept=".wav,.mp3,audio/wav,audio/mpeg"
+                icon={<Music size={15} style={{ color: "#86868b" }} />}
+                file={audioPreview?.file ?? null}
+                inputRef={audioPreviewInputRef}
+                onChange={handleAudioPreviewChange}
+                onClear={() => { if (audioPreviewInputRef.current) audioPreviewInputRef.current.value = ''; setAudioPreview(null); }}
+              />
+            )}
             <FileRow
-              label={isPack ? "Pack (.zip) *" : isPreset ? "Presetfil *" : "Sampelfil *"}
-              hint={isPack ? ".zip — filer vises automatisk" : isPreset ? ".nki, .fxp, .vital, .zip..." : "WAV eller MP3"}
-              accept={isPack ? ".zip,application/zip" : isPreset ? ".nki,.fxp,.xpf,.vital,.zip,.vstpreset,.aupreset,*" : "audio/*"}
+              label={isPack ? "Pack *" : isPreset ? "Presetfil *" : "Samplefil *"}
+              hint={isPack ? "Alle filtyper — maks 500 MB" : isPreset ? "Alle filtyper" : "WAV eller MP3"}
+              accept={isSample ? ".wav,.mp3,audio/wav,audio/mpeg" : "*"}
               icon={<Package size={15} style={{ color: "#86868b" }} />}
               file={sampleFile?.file ?? null}
               inputRef={fileInputRef}
@@ -454,12 +491,12 @@ export default function LastOppSamplePage() {
               onClear={() => { if (fileInputRef.current) fileInputRef.current.value = ""; setSampleFile(null); setPackFiles([]); }}
             />
 
-            {/* Zip file list */}
-            {isPack && (
+            {/* File list — shown only if a zip was uploaded and parsed successfully */}
+            {isPack && packFiles.length > 0 && (
               <div className="mt-3 rounded-xl px-4 py-3" style={{ background: "#141414", border: "1px solid #1e1e1e" }}>
                 {parsingZip ? (
-                  <p className="text-xs" style={{ color: "#86868b" }}>Leser zip-filen...</p>
-                ) : packFiles.length > 0 ? (
+                  <p className="text-xs" style={{ color: "#86868b" }}>Leser filen...</p>
+                ) : (
                   <>
                     <p className="text-xs font-medium mb-2" style={{ color: "#86868b" }}>{packFiles.length} filer funnet</p>
                     <div className="flex flex-col gap-1 max-h-48 overflow-y-auto">
@@ -468,8 +505,6 @@ export default function LastOppSamplePage() {
                       ))}
                     </div>
                   </>
-                ) : (
-                  <p className="text-xs" style={{ color: "#3a3a3a" }}>Last opp en .zip fil for å se innholdet</p>
                 )}
               </div>
             )}

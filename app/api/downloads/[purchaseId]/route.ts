@@ -32,20 +32,26 @@ export async function GET(
     .maybeSingle();
 
   if (error || !purchase) {
+    console.error("[downloads] Purchase not found or auth mismatch:", purchaseId, error?.message);
     return NextResponse.json({ error: "Kjøp ikke funnet" }, { status: 404 });
   }
 
+  console.log("[downloads] Purchase:", { id: purchase.id, item_type: purchase.item_type, beat_id: purchase.beat_id, sample_id: purchase.sample_id, remake_id: purchase.remake_id });
+
   let fileRawPath: string | null = null;
   let filename = "fil";
+  let beatAudioUrl: string | null = null;
 
   if (purchase.item_type === "beat" && purchase.beat_id) {
     const { data: beat } = await service
       .from("beats")
-      .select("project_file_url, title")
+      .select("project_file_url, audio_preview_url, title")
       .eq("id", purchase.beat_id)
       .single();
     fileRawPath = beat?.project_file_url ?? null;
     filename = beat?.title ?? "beat";
+    beatAudioUrl = beat?.audio_preview_url ?? null;
+    console.log("[downloads] Beat project path:", fileRawPath, "audio:", beatAudioUrl);
   } else if (purchase.item_type === "remake" && purchase.remake_id) {
     const { data: remake } = await service
       .from("remakes")
@@ -54,6 +60,7 @@ export async function GET(
       .single();
     fileRawPath = remake?.file_url ?? null;
     filename = remake?.title ?? "prosjekt";
+    console.log("[downloads] Remake file path:", fileRawPath);
   } else if (purchase.item_type === "sample" && purchase.sample_id) {
     const { data: sample } = await service
       .from("samples")
@@ -62,9 +69,17 @@ export async function GET(
       .single();
     fileRawPath = sample?.file_url ?? null;
     filename = sample?.title ?? "sample";
+    console.log("[downloads] Sample file path:", fileRawPath);
+  } else {
+    console.error("[downloads] Unhandled item_type or missing id:", purchase.item_type, "beat_id:", purchase.beat_id, "sample_id:", purchase.sample_id);
   }
 
   if (!fileRawPath) {
+    if (beatAudioUrl) {
+      // Beat with only audio preview (no project file)
+      return NextResponse.json({ url: beatAudioUrl, audioUrl: null });
+    }
+    console.error("[downloads] fileRawPath is null for purchase:", purchase.id, "item_type:", purchase.item_type);
     return NextResponse.json({ error: "Fil ikke funnet" }, { status: 404 });
   }
 
@@ -86,10 +101,10 @@ export async function GET(
         console.error("[downloads] Failed to create signed URL:", signError?.message);
         return NextResponse.json({ error: "Kunne ikke generere nedlastningslenke" }, { status: 500 });
       }
-      return NextResponse.json({ url: signed.signedUrl });
+      return NextResponse.json({ url: signed.signedUrl, audioUrl: beatAudioUrl ?? null });
     }
     // Fallback: public URL from another bucket (e.g. sample-previews) — return directly
-    return NextResponse.json({ url: fileRawPath });
+    return NextResponse.json({ url: fileRawPath, audioUrl: beatAudioUrl ?? null });
   }
 
   // Raw path → sign from beat-files
@@ -103,5 +118,5 @@ export async function GET(
     return NextResponse.json({ error: "Kunne ikke generere nedlastningslenke" }, { status: 500 });
   }
 
-  return NextResponse.json({ url: signed.signedUrl });
+  return NextResponse.json({ url: signed.signedUrl, audioUrl: beatAudioUrl ?? null });
 }

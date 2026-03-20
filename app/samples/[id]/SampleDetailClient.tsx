@@ -3,7 +3,7 @@
 import { useState, useRef } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Play, Pause, Share2, ChevronLeft, Sliders } from "lucide-react";
+import { Play, Pause, Share2, ChevronLeft, Sliders, FolderArchive, FileAudio } from "lucide-react";
 import type { Sample } from "@/lib/supabase/types";
 import { useToast } from "@/lib/toast-context";
 import { CATEGORY_LABELS } from "@/lib/sampleCategories";
@@ -37,6 +37,7 @@ function RecommendedSampleCard({
   const coverBg = genreColor(sample.category);
   const canPlay = !!sample.audio_preview_url;
   const isPreset = sample.item_type === "preset";
+  const isPack = sample.item_type === "sample-pack" || sample.item_type === "preset-pack";
 
   return (
     <div
@@ -65,12 +66,14 @@ function RecommendedSampleCard({
           ? <Pause size={13} fill="currentColor" />
           : !canPlay && isPreset
             ? <Sliders size={13} />
-            : <Play size={13} fill="currentColor" />}
+            : !canPlay && isPack
+              ? <FolderArchive size={13} />
+              : <Play size={13} fill="currentColor" />}
       </button>
 
       {/* Cover */}
       <div
-        className="shrink-0 rounded-lg"
+        className="shrink-0 rounded-lg flex items-center justify-center"
         style={{
           width: 40, height: 40,
           backgroundColor: coverBg,
@@ -78,7 +81,9 @@ function RecommendedSampleCard({
           backgroundSize: "cover", backgroundPosition: "center",
           boxShadow: "0 2px 8px rgba(0,0,0,0.4)",
         }}
-      />
+      >
+        {!coverImg && isPack && <FolderArchive size={14} style={{ color: "rgba(255,255,255,0.3)" }} />}
+      </div>
 
       {/* Title + meta */}
       <div className="min-w-0 flex-1">
@@ -87,7 +92,8 @@ function RecommendedSampleCard({
         </p>
         <p className="text-xs mt-0.5 truncate" style={{ color: "#86868b" }}>
           {sample.producer?.display_name ?? "Ukjent"}
-          {!isPreset && sample.bpm ? ` · ${sample.bpm} BPM` : ""}
+          {!isPreset && !isPack && sample.bpm ? ` · ${sample.bpm} BPM` : ""}
+          {isPack && sample.pack_files ? ` · ${sample.pack_files.length} filer` : ""}
         </p>
       </div>
 
@@ -125,6 +131,11 @@ export default function SampleDetailClient({
   const [isPlaying, setIsPlaying] = useState(false);
   const [checkoutOpen, setCheckoutOpen] = useState(false);
 
+  const isPack = sample.item_type === "sample-pack" || sample.item_type === "preset-pack";
+  const isPreset = sample.item_type === "preset";
+  const isPresetPack = sample.item_type === "preset-pack";
+  const canPlay = !!sample.audio_preview_url;
+
   async function handleFreeDownload() {
     const res = await fetch(`/api/free-download?type=sample&id=${sample.id}`);
     const data = await res.json();
@@ -135,8 +146,6 @@ export default function SampleDetailClient({
   const producer = sample.producer;
   const coverImg = sample.cover_url ?? producer?.avatar_url ?? null;
   const coverBg = coverImg ? undefined : genreColor(sample.category);
-  const isPreset = sample.item_type === "preset";
-  const canPlay = !!sample.audio_preview_url;
 
   function handleTogglePlay() {
     if (!canPlay) return;
@@ -164,11 +173,17 @@ export default function SampleDetailClient({
     toast("Lenke kopiert!");
   }
 
+  const typeLabel = isPack
+    ? isPresetPack ? "Preset Pack" : "Sample Pack"
+    : isPreset ? "Preset" : "Sample";
+
   const props: { label: string; value: string }[] = [
+    { label: "Type", value: typeLabel },
     { label: "Kategori", value: CATEGORY_LABELS[sample.category] ?? sample.category },
-    ...(sample.bpm && !isPreset ? [{ label: "BPM", value: String(sample.bpm) }] : []),
-    ...(sample.key ? [{ label: "Skala", value: sample.key }] : []),
-    ...(isPreset && sample.vst ? [{ label: "VST", value: sample.vst }] : []),
+    ...(sample.bpm && !isPreset && !isPack ? [{ label: "BPM", value: String(sample.bpm) }] : []),
+    ...(sample.key && !isPack ? [{ label: "Skala", value: sample.key }] : []),
+    ...((isPreset || isPresetPack) && sample.vst ? [{ label: "VST", value: sample.vst }] : []),
+    ...(isPack && sample.pack_files ? [{ label: "Filer", value: `${sample.pack_files.length} filer` }] : []),
   ];
 
   // Recommended playback state
@@ -228,10 +243,10 @@ export default function SampleDetailClient({
 
         {/* Cover + title row */}
         <div className="flex gap-5 items-start">
-          {/* Cover with play/preset overlay */}
+          {/* Cover with play overlay */}
           <div className="relative shrink-0" style={{ width: 112, height: 112 }}>
             <div
-              className="rounded-xl w-full h-full"
+              className="rounded-xl w-full h-full flex items-center justify-center"
               style={{
                 backgroundImage: coverImg ? `url(${coverImg})` : undefined,
                 backgroundSize: "cover",
@@ -239,7 +254,9 @@ export default function SampleDetailClient({
                 backgroundColor: coverBg ?? "#2a2a2a",
                 boxShadow: "0 8px 24px rgba(0,0,0,0.6)",
               }}
-            />
+            >
+              {!coverImg && isPack && <FolderArchive size={32} style={{ color: "rgba(255,255,255,0.2)" }} />}
+            </div>
             <button
               onClick={handleTogglePlay}
               className="absolute inset-0 flex items-center justify-center rounded-xl transition-all"
@@ -252,12 +269,22 @@ export default function SampleDetailClient({
                 ? <Pause size={20} fill="#f5f5f7" color="#f5f5f7" />
                 : !canPlay && isPreset
                   ? <Sliders size={20} color="#f5f5f7" />
-                  : <Play size={20} fill="#f5f5f7" color="#f5f5f7" />}
+                  : !canPlay && isPack
+                    ? <FolderArchive size={20} color="rgba(255,255,255,0.4)" />
+                    : <Play size={20} fill="#f5f5f7" color="#f5f5f7" />}
             </button>
           </div>
 
           {/* Title + producer */}
           <div className="flex-1 min-w-0 pt-1 pr-16">
+            <div className="mb-1">
+              <span
+                className="text-xs font-medium rounded-full px-2 py-0.5"
+                style={{ background: "rgba(99,102,241,0.1)", color: "#818cf8" }}
+              >
+                {typeLabel}
+              </span>
+            </div>
             <h1
               className="leading-tight mb-2"
               style={{ color: "#f5f5f7", fontWeight: 800, fontSize: 24 }}
@@ -315,6 +342,23 @@ export default function SampleDetailClient({
           </div>
         )}
 
+        {/* Pack file list */}
+        {isPack && sample.pack_files && sample.pack_files.length > 0 && (
+          <div className="mt-6 rounded-xl px-4 py-4" style={{ background: "#0f0f0f", border: "1px solid #1e1e1e" }}>
+            <p className="text-xs font-medium mb-3" style={{ color: "#86868b" }}>
+              {sample.pack_files.length} filer inkludert
+            </p>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5">
+              {sample.pack_files.map((name, i) => (
+                <div key={i} className="flex items-center gap-2">
+                  <FileAudio size={11} style={{ color: "#3a3a3a", flexShrink: 0 }} />
+                  <p className="text-xs font-mono truncate" style={{ color: "#4a4a4a" }}>{name}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
         {/* Bottom row: price + buy */}
         <div
           className="flex items-center justify-between mt-8 pt-6"
@@ -340,7 +384,7 @@ export default function SampleDetailClient({
       {recommended.length > 0 && (
         <div className="mt-8">
           <p className="text-xs font-medium uppercase tracking-wider mb-3" style={{ color: "#3a3a3a" }}>
-            Lignende samples
+            Lignende
           </p>
           <div>
             {recommended.map((s) => (

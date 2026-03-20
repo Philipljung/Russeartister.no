@@ -81,6 +81,7 @@ export type Remake = {
 export type Purchase = {
   id: string;
   buyer_id: string | null;
+  producer_id: string | null;
   beat_id: string | null;
   remake_id: string | null;
   sample_id: string | null;
@@ -88,7 +89,7 @@ export type Purchase = {
   order_number: string | null;
   customer_email: string | null;
   amount_paid: number;
-  stripe_payment_intent_id: string;
+  stripe_payment_intent_id: string | null;
   payout_released_at: string | null;
   complaint_filed_at: string | null;
   created_at: string;
