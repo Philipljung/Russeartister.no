@@ -211,7 +211,7 @@ export default function BeatDetailClient({
                   border: "1px solid rgba(234,179,8,0.25)",
                 }}
               >
-                Eksklusiv · kr {beat.exclusive_price.toLocaleString("nb-NO")}
+                Eksklusiv · kr {beat.exclusive_price!.toLocaleString("nb-NO")}
               </button>
             )}
             <button
