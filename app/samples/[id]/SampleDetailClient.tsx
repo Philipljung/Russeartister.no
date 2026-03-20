@@ -125,6 +125,13 @@ export default function SampleDetailClient({
   const [isPlaying, setIsPlaying] = useState(false);
   const [checkoutOpen, setCheckoutOpen] = useState(false);
 
+  async function handleFreeDownload() {
+    const res = await fetch(`/api/free-download?type=sample&id=${sample.id}`);
+    const data = await res.json();
+    if (data.url) window.location.href = data.url;
+    else toast("Nedlasting feilet. Prøv igjen.");
+  }
+
   const producer = sample.producer;
   const coverImg = sample.cover_url ?? producer?.avatar_url ?? null;
   const coverBg = coverImg ? undefined : genreColor(sample.category);
@@ -320,7 +327,7 @@ export default function SampleDetailClient({
             </span>
           </div>
           <button
-            onClick={() => setCheckoutOpen(true)}
+            onClick={sample.price === 0 ? handleFreeDownload : () => setCheckoutOpen(true)}
             className="rounded-full px-6 py-2 text-sm font-semibold transition-opacity hover:opacity-90"
             style={{ background: "#f5f5f7", color: "#080808" }}
           >

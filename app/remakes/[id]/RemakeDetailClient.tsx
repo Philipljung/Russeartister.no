@@ -29,6 +29,13 @@ export default function RemakeDetailClient({
   const [isPlaying, setIsPlaying] = useState(false);
   const [checkoutOpen, setCheckoutOpen] = useState(false);
 
+  async function handleFreeDownload() {
+    const res = await fetch(`/api/free-download?type=remake&id=${remake.id}`);
+    const data = await res.json();
+    if (data.url) window.location.href = data.url;
+    else toast("Nedlasting feilet. Prøv igjen.");
+  }
+
   const producer = remake.producer;
   const coverImg = remake.cover_url ?? producer?.avatar_url ?? null;
   const coverBg = coverImg ? undefined : genreColor(remake.title);
@@ -238,7 +245,7 @@ export default function RemakeDetailClient({
             </span>
           </div>
           <button
-            onClick={() => setCheckoutOpen(true)}
+            onClick={remake.price === 0 ? handleFreeDownload : () => setCheckoutOpen(true)}
             className="rounded-full px-6 py-2 text-sm font-semibold transition-opacity hover:opacity-90"
             style={{ background: "#f5f5f7", color: "#080808" }}
           >

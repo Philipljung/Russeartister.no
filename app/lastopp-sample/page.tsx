@@ -2,7 +2,7 @@
 
 import { useState, useRef, KeyboardEvent, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { X, Upload, Package, ImageIcon, AlertCircle, FolderArchive } from "lucide-react";
+import { X, Upload, Package, ImageIcon, AlertCircle, FolderArchive, Music } from "lucide-react";
 import { getSupabaseClient } from "@/lib/supabase/client";
 import Link from "next/link";
 import { useToast } from "@/lib/toast-context";

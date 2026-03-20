@@ -131,7 +131,7 @@ export async function POST(request: NextRequest) {
         producerEmail = producerUser?.email ?? null;
       }
 
-      await supabase.from("purchases").insert({
+      const { error: insertBeatError } = await supabase.from("purchases").insert({
         beat_id: beatId,
         item_type: "beat",
         buyer_id: buyerId,
@@ -141,6 +141,8 @@ export async function POST(request: NextRequest) {
         order_number: orderNumber,
         customer_email: customerEmail,
       });
+      if (insertBeatError) console.error("[webhook] Beat purchase insert failed:", insertBeatError.message);
+      else console.log("[webhook] Beat purchase recorded:", orderNumber);
     }
 
     // ── Remake path ──
@@ -169,7 +171,7 @@ export async function POST(request: NextRequest) {
         producerEmail = producerUser?.email ?? null;
       }
 
-      await supabase.from("purchases").insert({
+      const { error: insertRemakeError } = await supabase.from("purchases").insert({
         remake_id: remakeId,
         item_type: "remake",
         buyer_id: buyerId,
@@ -179,6 +181,8 @@ export async function POST(request: NextRequest) {
         order_number: orderNumber,
         customer_email: customerEmail,
       });
+      if (insertRemakeError) console.error("[webhook] Remake purchase insert failed:", insertRemakeError.message);
+      else console.log("[webhook] Remake purchase recorded:", orderNumber);
     }
 
     // ── Sample path ──
@@ -206,7 +210,7 @@ export async function POST(request: NextRequest) {
         producerEmail = producerUser?.email ?? null;
       }
 
-      await supabase.from("purchases").insert({
+      const { error: insertSampleError } = await supabase.from("purchases").insert({
         sample_id: sampleId,
         item_type: "sample",
         buyer_id: buyerId,
@@ -216,6 +220,8 @@ export async function POST(request: NextRequest) {
         order_number: orderNumber,
         customer_email: customerEmail,
       });
+      if (insertSampleError) console.error("[webhook] Sample purchase insert failed:", insertSampleError.message);
+      else console.log("[webhook] Sample purchase recorded:", orderNumber);
     }
 
     // ── Send emails ──
