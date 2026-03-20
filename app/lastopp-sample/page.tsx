@@ -2,7 +2,7 @@
 
 import { useState, useRef, KeyboardEvent, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { X, Upload, Package, ImageIcon, AlertCircle, Music, FolderArchive } from "lucide-react";
+import { X, Upload, Package, ImageIcon, AlertCircle, FolderArchive } from "lucide-react";
 import { getSupabaseClient } from "@/lib/supabase/client";
 import Link from "next/link";
 import { useToast } from "@/lib/toast-context";
@@ -87,7 +87,6 @@ export default function LastOppSamplePage() {
   const [price, setPrice] = useState("");
 
   const [cover, setCover] = useState<UploadFile>(null);
-  const [audioPreview, setAudioPreview] = useState<UploadFile>(null);
   const [sampleFile, setSampleFile] = useState<UploadFile>(null);
   const [packFiles, setPackFiles] = useState<string[]>([]);
   const [parsingZip, setParsing] = useState(false);
@@ -96,7 +95,6 @@ export default function LastOppSamplePage() {
   const [error, setError] = useState<string | null>(null);
 
   const coverInputRef = useRef<HTMLInputElement>(null);
-  const audioInputRef = useRef<HTMLInputElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const isPack = itemType === "sample-pack" || itemType === "preset-pack";
@@ -107,7 +105,6 @@ export default function LastOppSamplePage() {
     setItemType(t);
     setCategory("");
     setVst("");
-    setAudioPreview(null);
     setSampleFile(null);
     setPackFiles([]);
   }
@@ -145,7 +142,6 @@ export default function LastOppSamplePage() {
     if (!title) { setError("Tittel er påkrevd."); return; }
     if (!isPack && !category) { setError("Velg kategori."); return; }
     if (isPreset && !vst) { setError("Velg VST."); return; }
-    if (isSample && !audioPreview?.file) { setError("Du må laste opp lydforhåndsvisning."); return; }
     if (!sampleFile?.file) { setError(`Du må laste opp ${isPack ? "zip-filen" : isPreset ? "presetfilen" : "sampelfilen"}.`); return; }
     if (stripeReady && !price) { setError("Fyll ut pris."); return; }
 
@@ -191,8 +187,13 @@ export default function LastOppSamplePage() {
       }
 
       const coverUrl = cover?.file ? await uploadFile("beat-covers", cover.file, "cover") : null;
-      const audioUrl = audioPreview?.file ? await uploadFile("sample-previews", audioPreview.file, "preview") : null;
       const fileUrl = await uploadPrivateFile(sampleFile.file, "file");
+
+      // For samples (WAV/MP3), also upload to public sample-previews so the player can stream it
+      let audioPreviewUrl: string | null = null;
+      if (isSample && sampleFile.file) {
+        audioPreviewUrl = await uploadFile("sample-previews", sampleFile.file, "preview");
+      }
 
       const { data: sample, error: insertError } = await supabase
         .from("samples")
@@ -201,7 +202,7 @@ export default function LastOppSamplePage() {
           title: title.trim(),
           description: description.trim(),
           item_type: itemType,
-          category: category || itemType, // packs use item_type as category fallback
+          category: category || itemType,
           genre: genre.trim() || null,
           bpm: bpmNum,
           key: key || null,
@@ -209,7 +210,7 @@ export default function LastOppSamplePage() {
           tags,
           price: priceNum,
           cover_url: coverUrl,
-          audio_preview_url: audioUrl ?? (isSample ? null : fileUrl),
+          audio_preview_url: audioPreviewUrl,
           file_url: fileUrl,
           pack_files: isPack && packFiles.length > 0 ? packFiles : null,
           is_published: true,
@@ -439,18 +440,6 @@ export default function LastOppSamplePage() {
         {/* Filer */}
         <div className="rounded-2xl p-5 flex flex-col gap-4" style={{ background: "#0f0f0f", border: "1px solid #1e1e1e" }}>
           <p className="text-sm font-medium" style={{ color: "#86868b" }}>Filer</p>
-
-          {/* Audio preview */}
-          <FileRow
-            label={`Lydforhåndsvisning${isSample ? " *" : " (valgfritt)"}`}
-            hint="MP3 eller WAV"
-            accept="audio/*"
-            icon={<Music size={15} style={{ color: "#86868b" }} />}
-            file={audioPreview?.file ?? null}
-            inputRef={audioInputRef}
-            onChange={(e) => { const f = e.target.files?.[0]; if (f) setAudioPreview({ file: f }); }}
-            onClear={() => { if (audioInputRef.current) audioInputRef.current.value = ""; setAudioPreview(null); }}
-          />
 
           {/* Main file: zip for packs, preset file or sample file */}
           <div>

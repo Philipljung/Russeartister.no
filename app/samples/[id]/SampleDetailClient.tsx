@@ -192,7 +192,7 @@ export default function SampleDetailClient({
   const [checkoutSample, setCheckoutSample] = useState<Sample | null>(null);
 
   return (
-    <div className="mx-auto max-w-2xl px-4 md:px-6 py-8">
+    <div className="mx-auto max-w-4xl px-4 md:px-6 py-8">
 
       {/* Back */}
       <Link
