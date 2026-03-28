@@ -10,7 +10,7 @@ import { NextResponse, type NextRequest } from "next/server";
  *
  * We do NOT use getUser() anywhere in client components — only getSession() there.
  */
-export async function middleware(request: NextRequest) {
+export async function proxy(request: NextRequest) {
   let supabaseResponse = NextResponse.next({ request });
 
   const supabase = createServerClient(

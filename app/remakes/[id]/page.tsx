@@ -73,10 +73,18 @@ export async function generateMetadata({
       type: "music.song",
     },
     twitter: {
-      card: "summary_large_image",
+      card: "player",
       title: remake.title,
       description,
       images: remake.cover_url ? [remake.cover_url] : [],
+      ...(remake.audio_preview_url ? {
+        players: [{
+          playerUrl: `${APP_URL}/api/embed/remake/${remake.id}`,
+          streamUrl: remake.audio_preview_url,
+          width: 480,
+          height: 90,
+        }],
+      } : {}),
     },
   };
 }

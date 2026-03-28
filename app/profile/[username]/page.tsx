@@ -3,7 +3,7 @@
 import { useState, useRef, useEffect, useCallback } from "react";
 import Link from "next/link";
 import Image from "next/image";
-import { useParams } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import { Pencil, Settings, Play, Pause, Package, Trash2, CreditCard, CheckCircle2, Share2 } from "lucide-react";
 import { getSupabaseClient } from "@/lib/supabase/client";
 import { fetchProfileByUsername } from "@/lib/fetchProfile";
@@ -25,9 +25,10 @@ function genreColor(genre: string): string {
 
 export default function ProfilePage() {
   const params = useParams();
+  const router = useRouter();
   const usernameParam = params.username as string;
   const { toast } = useToast();
-  const { currentBeat, isPlaying, toggleBeat } = usePlayer();
+  const { currentBeat, isPlaying, toggleBeat, pausePlayer } = usePlayer();
 
   const [profile, setProfile] = useState<Profile | null>(null);
   const [beats, setBeats] = useState<Beat[]>([]);
@@ -64,10 +65,11 @@ export default function ProfilePage() {
     if (localPlayingId === id) {
       if (localAudioRef.current) {
         if (localPlaying) { localAudioRef.current.pause(); setLocalPlaying(false); }
-        else { void localAudioRef.current.play(); setLocalPlaying(true); }
+        else { pausePlayer(); void localAudioRef.current.play(); setLocalPlaying(true); }
       }
       return;
     }
+    pausePlayer();
     localAudioRef.current?.pause();
     const audio = new Audio(url);
     audio.onended = () => { setLocalPlayingId(null); setLocalPlaying(false); };
@@ -75,7 +77,7 @@ export default function ProfilePage() {
     setLocalPlayingId(id);
     void audio.play();
     setLocalPlaying(true);
-  }, [localPlayingId, localPlaying]);
+  }, [localPlayingId, localPlaying, pausePlayer]);
 
   useEffect(() => { return () => { localAudioRef.current?.pause(); }; }, []);
 
@@ -749,11 +751,12 @@ export default function ProfilePage() {
                 return (
                   <div
                     key={beat.id}
-                    className="flex items-center gap-2 md:gap-4 rounded-xl px-2 md:px-3 py-2.5"
+                    className="flex items-center gap-2 md:gap-4 rounded-xl px-2 md:px-3 py-2.5 cursor-pointer transition-colors hover:bg-white/[0.03]"
                     style={{ borderBottom: "1px solid #141414" }}
+                    onClick={() => router.push(`/later/${beat.id}`)}
                   >
                     <button
-                      onClick={() => toggleBeat(beat)}
+                      onClick={(e) => { e.stopPropagation(); localAudioRef.current?.pause(); setLocalPlayingId(null); setLocalPlaying(false); toggleBeat(beat); }}
                       className="flex shrink-0 items-center justify-center rounded-full"
                       style={{
                         width: 32, height: 32,
@@ -807,12 +810,20 @@ export default function ProfilePage() {
                       <span className="text-sm font-semibold" style={{ color: "#f5f5f7", minWidth: 48, textAlign: "right" }}>
                         kr {beat.price.toLocaleString("nb-NO")}
                       </span>
+                      <button
+                        title="Del"
+                        className="flex items-center justify-center rounded-lg transition-colors hover:opacity-80"
+                        style={{ width: 30, height: 30, color: "#86868b" }}
+                        onClick={(e) => { e.stopPropagation(); navigator.clipboard.writeText(`${window.location.origin}/later/${beat.id}`); toast("Lenke kopiert!"); }}
+                      >
+                        <Share2 size={14} />
+                      </button>
                       {isOwner && (
                         <button
                           title="Slett låt"
                           className="flex items-center justify-center rounded-lg transition-colors hover:opacity-80"
                           style={{ width: 30, height: 30, color: "#ff3b30" }}
-                          onClick={() => deleteBeat(beat.id)}
+                          onClick={(e) => { e.stopPropagation(); deleteBeat(beat.id); }}
                         >
                           <Trash2 size={14} />
                         </button>
@@ -857,11 +868,12 @@ export default function ProfilePage() {
               {samples.map((sample) => (
                 <div
                   key={sample.id}
-                  className="flex items-center gap-2 md:gap-4 rounded-xl px-2 md:px-3 py-2.5"
+                  className="flex items-center gap-2 md:gap-4 rounded-xl px-2 md:px-3 py-2.5 cursor-pointer transition-colors hover:bg-white/[0.03]"
                   style={{ borderBottom: "1px solid #141414" }}
+                  onClick={() => router.push(`/samples/${sample.id}`)}
                 >
                   <button
-                    onClick={() => sample.audio_preview_url && toggleLocal(sample.audio_preview_url, sample.id)}
+                    onClick={(e) => { e.stopPropagation(); sample.audio_preview_url && toggleLocal(sample.audio_preview_url, sample.id); }}
                     className="shrink-0 flex items-center justify-center rounded-full"
                     style={{
                       width: 32, height: 32,
@@ -902,12 +914,20 @@ export default function ProfilePage() {
                     <span className="text-sm font-semibold" style={{ color: "#f5f5f7", minWidth: 48, textAlign: "right" }}>
                       {sample.price === 0 ? "Gratis" : `kr ${sample.price.toLocaleString("nb-NO")}`}
                     </span>
+                    <button
+                      title="Del"
+                      className="flex items-center justify-center rounded-lg transition-colors hover:opacity-80"
+                      style={{ width: 30, height: 30, color: "#86868b" }}
+                      onClick={(e) => { e.stopPropagation(); navigator.clipboard.writeText(`${window.location.origin}/samples/${sample.id}`); toast("Lenke kopiert!"); }}
+                    >
+                      <Share2 size={14} />
+                    </button>
                     {isOwner && (
                       <button
                         title="Slett sample"
                         className="flex items-center justify-center rounded-lg transition-colors hover:opacity-80"
                         style={{ width: 30, height: 30, color: "#ff3b30" }}
-                        onClick={() => deleteSample(sample.id)}
+                        onClick={(e) => { e.stopPropagation(); deleteSample(sample.id); }}
                       >
                         <Trash2 size={14} />
                       </button>
@@ -948,11 +968,12 @@ export default function ProfilePage() {
               {remakes.map((remake) => (
                 <div
                   key={remake.id}
-                  className="flex items-center gap-2 md:gap-4 rounded-xl px-2 md:px-3 py-2.5"
+                  className="flex items-center gap-2 md:gap-4 rounded-xl px-2 md:px-3 py-2.5 cursor-pointer transition-colors hover:bg-white/[0.03]"
                   style={{ borderBottom: "1px solid #141414" }}
+                  onClick={() => router.push(`/remakes/${remake.id}`)}
                 >
                   <button
-                    onClick={() => remake.audio_preview_url && toggleLocal(remake.audio_preview_url, remake.id)}
+                    onClick={(e) => { e.stopPropagation(); remake.audio_preview_url && toggleLocal(remake.audio_preview_url, remake.id); }}
                     className="shrink-0 flex items-center justify-center rounded-full"
                     style={{
                       width: 32, height: 32,
@@ -986,12 +1007,20 @@ export default function ProfilePage() {
                     <span className="text-sm font-semibold" style={{ color: "#f5f5f7", minWidth: 48, textAlign: "right" }}>
                       kr {remake.price.toLocaleString("nb-NO")}
                     </span>
+                    <button
+                      title="Del"
+                      className="flex items-center justify-center rounded-lg transition-colors hover:opacity-80"
+                      style={{ width: 30, height: 30, color: "#86868b" }}
+                      onClick={(e) => { e.stopPropagation(); navigator.clipboard.writeText(`${window.location.origin}/remakes/${remake.id}`); toast("Lenke kopiert!"); }}
+                    >
+                      <Share2 size={14} />
+                    </button>
                     {isOwner && (
                       <button
                         title="Slett remake"
                         className="flex items-center justify-center rounded-lg transition-colors hover:opacity-80"
                         style={{ width: 30, height: 30, color: "#ff3b30" }}
-                        onClick={() => deleteRemake(remake.id)}
+                        onClick={(e) => { e.stopPropagation(); deleteRemake(remake.id); }}
                       >
                         <Trash2 size={14} />
                       </button>
@@ -1019,7 +1048,7 @@ export default function ProfilePage() {
 
     {/* Delete confirmation overlay */}
     {pendingDelete && (
-      <div className="fixed bottom-6 left-1/2 z-50 -translate-x-1/2 flex items-center gap-3 rounded-2xl px-5 py-3 shadow-2xl"
+      <div className={`fixed ${currentBeat ? "bottom-20" : "bottom-6"} left-1/2 z-[60] -translate-x-1/2 flex items-center gap-3 rounded-2xl px-5 py-3 shadow-2xl`}
         style={{ background: "#1a1a1a", border: "1px solid #2a2a2a", whiteSpace: "nowrap" }}
       >
         <p className="text-sm" style={{ color: "#f5f5f7" }}>

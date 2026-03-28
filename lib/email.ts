@@ -132,7 +132,7 @@ export function buildProducerSaleEmail({
       </table>
     </div>
 
-    <p style="color:#86868b;font-size:13px;">Utbetalingen frigis innen 48 timer etter kjøpet, forutsatt at ingen klage er mottatt.</p>
+    <p style="color:#86868b;font-size:13px;">Pengene overføres direkte til din Stripe-konto. Forventet ankomsttid: 2–3 bankdager.</p>
   </div>
 </body>
 </html>`,
@@ -210,41 +210,8 @@ export function buildComplaintConfirmationEmail({
   <div style="max-width:520px;margin:0 auto;">
     <h1 style="font-size:22px;margin-bottom:4px;">Klage mottatt</h1>
     <p>Vi har mottatt klagen din for bestilling <strong>${orderNumber}</strong> (${itemTitle}).</p>
-    <p>Vi undersøker saken og gir deg tilbakemelding så snart som mulig. Utbetalingen til produsenten er satt på vent.</p>
+    <p>Vi undersøker saken og gir deg tilbakemelding så snart som mulig.</p>
     <p style="color:#86868b;font-size:13px;">Har du spørsmål? Send e-post til <a href="mailto:russeartister@gmail.com" style="color:#818cf8;">russeartister@gmail.com</a>.</p>
-  </div>
-</body>
-</html>`,
-  };
-}
-
-export function buildPayoutReleasedEmail({
-  producerEmail,
-  orderNumber,
-  itemTitle,
-  payoutNok,
-}: {
-  producerEmail: string;
-  orderNumber: string;
-  itemTitle: string;
-  payoutNok: number;
-}): EmailPayload {
-  return {
-    from: FROM,
-    to: producerEmail,
-    subject: `Utbetaling sendt for bestilling ${orderNumber}`,
-    html: `
-<!DOCTYPE html>
-<html lang="no">
-<body style="font-family:sans-serif;background:#080808;color:#f5f5f7;margin:0;padding:32px;">
-  <div style="max-width:520px;margin:0 auto;">
-    <h1 style="font-size:22px;margin-bottom:4px;">Utbetaling sendt</h1>
-    <p>Utbetalingen for <strong>${itemTitle}</strong> (bestilling ${orderNumber}) er frigitt.</p>
-    <div style="background:#141414;border:1px solid #2a2a2a;border-radius:12px;padding:20px;margin:24px 0;text-align:center;">
-      <p style="margin:0;color:#86868b;font-size:13px;">Din utbetaling</p>
-      <p style="margin:8px 0 0;font-size:28px;font-weight:700;color:#34d399;">${formatNok(payoutNok)}</p>
-    </div>
-    <p style="color:#86868b;font-size:13px;">Pengene er på vei til bankkontoen din via Stripe. Forventet ankomsttid: 2-3 bankdager.</p>
   </div>
 </body>
 </html>`,
@@ -255,8 +222,4 @@ export function buildPayoutReleasedEmail({
 
 export async function sendComplaintConfirmationEmail(args: { customerEmail: string; orderNumber: string; itemTitle: string }) {
   await sendBatch([buildComplaintConfirmationEmail(args)]);
-}
-
-export async function sendPayoutReleasedEmail(args: { producerEmail: string; orderNumber: string; itemTitle: string; payoutNok: number }) {
-  await sendBatch([buildPayoutReleasedEmail(args)]);
 }

@@ -76,10 +76,18 @@ export async function generateMetadata({
       type: "music.song",
     },
     twitter: {
-      card: "summary_large_image",
+      card: "player",
       title: beat.title,
       description,
       images: beat.cover_url ? [beat.cover_url] : [],
+      ...(beat.audio_preview_url ? {
+        players: [{
+          playerUrl: `${APP_URL}/api/embed/beat/${beat.id}`,
+          streamUrl: beat.audio_preview_url,
+          width: 480,
+          height: 90,
+        }],
+      } : {}),
     },
   };
 }

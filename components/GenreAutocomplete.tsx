@@ -3,6 +3,10 @@
 import { useState, useRef, useEffect } from "react";
 import { ChevronDown } from "lucide-react";
 
+function normalizeGenre(g: string) {
+  return g.trim().split(" ").map((w) => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()).join(" ");
+}
+
 type Props = {
   value: string;
   onChange: (v: string) => void;
@@ -52,6 +56,7 @@ export default function GenreAutocomplete({
         placeholder={placeholder}
         value={value}
         onChange={(e) => { onChange(e.target.value); setOpen(true); }}
+        onBlur={() => { if (value.trim()) onChange(normalizeGenre(value)); }}
         onFocus={() => setOpen(true)}
         required
         style={defaultInputStyle}

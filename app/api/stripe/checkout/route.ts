@@ -56,7 +56,7 @@ export async function POST(request: NextRequest) {
         .select("id", { count: "exact", head: true })
         .eq("beat_id", beatId);
       if ((count ?? 0) > 0) {
-        return NextResponse.json({ error: "Eksklusiv lisens ikke lenger tilgjengelig — noen har allerede kjøpt dette beatet" }, { status: 409 });
+        return NextResponse.json({ error: "Eksklusiv lisens ikke lenger tilgjengelig, noen har allerede kjøpt låten" }, { status: 409 });
       }
     }
 

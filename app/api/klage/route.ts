@@ -138,7 +138,7 @@ export async function POST(request: NextRequest) {
       ? `<a href="${artistFileUrl}" style="display:block;text-align:center;background:#1a3a2a;color:#34d399;font-weight:600;font-size:14px;padding:12px 24px;border-radius:10px;text-decoration:none;margin-bottom:24px;">Last ned (artistens original, 14 dager)</a>`
       : `<p style="color:#3a3a3a;font-size:13px;margin-bottom:24px;">Ingen originalfil registrert for denne bestillingen.</p>`}
 
-    <p style="color:#86868b;font-size:13px;">Utbetalingen til produsenten er satt på vent inntil saken er avgjort.</p>
+    <p style="color:#86868b;font-size:13px;">Husk å reversere overføringen til produsenten i Stripe hvis klagen er gyldig.</p>
   </div>
 </body>
 </html>`,

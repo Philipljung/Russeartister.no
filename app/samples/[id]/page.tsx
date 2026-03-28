@@ -74,10 +74,18 @@ export async function generateMetadata({
       type: "music.song",
     },
     twitter: {
-      card: "summary_large_image",
+      card: "player",
       title: sample.title,
       description,
       images: sample.cover_url ? [sample.cover_url] : [],
+      ...(sample.audio_preview_url ? {
+        players: [{
+          playerUrl: `${APP_URL}/api/embed/sample/${sample.id}`,
+          streamUrl: sample.audio_preview_url,
+          width: 480,
+          height: 90,
+        }],
+      } : {}),
     },
   };
 }

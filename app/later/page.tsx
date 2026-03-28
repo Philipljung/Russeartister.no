@@ -21,8 +21,9 @@ export default function LaterPage() {
   }, []);
 
   const genres = useMemo(() => {
-    const all = beats.map((b) => b.genre);
-    return Array.from(new Set(all)).sort();
+    const counts = new Map<string, number>();
+    for (const b of beats) counts.set(b.genre, (counts.get(b.genre) ?? 0) + 1);
+    return Array.from(counts.entries()).sort((a, b) => b[1] - a[1]).map(([g]) => g);
   }, [beats]);
 
   const filtered = useMemo(() => {

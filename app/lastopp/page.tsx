@@ -226,7 +226,7 @@ export default function LastOppPage() {
         producer_id: userId,
         title: title.trim(),
         description: description.trim(),
-        genre: genre.trim(),
+        genre: genre.trim().split(" ").map((w) => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()).join(" "),
         bpm: bpmNum,
         key,
         tags,
@@ -262,7 +262,7 @@ export default function LastOppPage() {
         Last opp beat
       </h1>
       <p className="mb-8 text-sm" style={{ color: "#86868b" }}>
-        Fyll ut informasjon om beatet ditt.
+        Fyll ut informasjon om låten din.
       </p>
 
       {/* Anti-scam warning */}
@@ -287,7 +287,7 @@ export default function LastOppPage() {
               Stripe ikke konfigurert
             </p>
             <p className="mt-0.5 text-xs" style={{ color: "#86868b" }}>
-              Beatet blir gratis inntil du{" "}
+              Låten blir gratis inntil du{" "}
               <Link href="/profile" className="underline" style={{ color: "#ff9500" }}>
                 setter opp Stripe
               </Link>{" "}
@@ -472,7 +472,7 @@ export default function LastOppPage() {
         <div>
           <Label>Beskrivelse</Label>
           <textarea
-            placeholder="Kort beskrivelse av beatet..."
+            placeholder="Kort beskrivelse av låten..."
             value={description}
             onChange={(e) => setDescription(e.target.value)}
             rows={3}
@@ -523,7 +523,7 @@ export default function LastOppPage() {
               <div className="flex-1">
                 <p className="text-sm font-semibold" style={{ color: "#f5f5f7" }}>Tilby eksklusivt kjøp</p>
                 <p className="mt-1 text-xs leading-relaxed" style={{ color: "#86868b" }}>
-                  Med eksklusiv lisens kan én kjøper betale en høyere pris for å eie beatet alene — det fjernes fra salg umiddelbart etter kjøpet. Eksklusivt kjøp tilbys kun til den første kjøperen: har noen allerede kjøpt vanlig lisens, er dette alternativet ikke lenger tilgjengelig.
+                  Med eksklusiv lisens kan én kjøper betale en høyere pris for å eie låten alene, det fjernes fra salg umiddelbart etter kjøpet. Eksklusivt kjøp tilbys kun til den første kjøperen: har noen allerede kjøpt vanlig lisens, er dette alternativet ikke lenger tilgjengelig.
                 </p>
               </div>
               <button

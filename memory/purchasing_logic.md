@@ -162,6 +162,10 @@ Full column list:
 
 ---
 
+## Payout cron — PLANNED FOR FUTURE (not currently active)
+
+> The cron job and escrow system was removed in favour of immediate transfers (webhook fires → 85% transferred directly to producer via `source_transaction`). The escrow/hold system is planned to be re-implemented later. Keep this section as a reference.
+
 ## Payout cron (`app/api/cron/release-payouts/route.ts`)
 
 - Runs daily at 02:00 UTC (configured in `vercel.json`)

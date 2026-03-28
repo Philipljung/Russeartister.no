@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { stripe } from "@/lib/stripe";
+import { stripe, nokToOre } from "@/lib/stripe";
 import { createServiceClient } from "@/lib/supabase/server";
 import {
   sendBatch,
@@ -10,6 +10,39 @@ import {
 import Stripe from "stripe";
 
 const PLATFORM_FEE_PERCENT = 0.15;
+
+/** Transfer producer's share immediately using source_transaction so Stripe queues it on settlement. */
+async function transferToProducer(
+  paymentIntentId: string,
+  amountNok: number,
+  stripeAccountId: string,
+  orderNumber: string
+) {
+  try {
+    const pi = await stripe.paymentIntents.retrieve(paymentIntentId, {
+      expand: ["latest_charge"],
+    });
+    const chargeId =
+      typeof pi.latest_charge === "string"
+        ? pi.latest_charge
+        : (pi.latest_charge as Stripe.Charge | null)?.id ?? null;
+
+    const payoutOre = nokToOre(Math.round(amountNok * (1 - PLATFORM_FEE_PERCENT)));
+
+    await stripe.transfers.create({
+      amount: payoutOre,
+      currency: "nok",
+      destination: stripeAccountId,
+      transfer_group: orderNumber,
+      ...(chargeId ? { source_transaction: chargeId } : {}),
+      metadata: { order_number: orderNumber },
+    });
+
+    console.log(`[webhook] Transfer of ${payoutOre} øre queued for ${orderNumber}`);
+  } catch (err) {
+    console.error(`[webhook] Transfer failed for ${orderNumber}:`, err);
+  }
+}
 
 function generateOrderNumber(): string {
   return "RA-" + Math.random().toString(36).slice(2, 7).toUpperCase();
@@ -111,7 +144,7 @@ export async function POST(request: NextRequest) {
 
       const { data: beat } = await supabase
         .from("beats")
-        .select("title, project_file_url, producer_id, producer:profiles(display_name)")
+        .select("title, project_file_url, producer_id, producer:profiles(display_name, stripe_account_id)")
         .eq("id", beatId)
         .single();
 
@@ -120,7 +153,7 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({ error: "Beat ikke funnet" }, { status: 404 });
       }
 
-      const producer = beat.producer as unknown as { display_name: string } | null;
+      const producer = beat.producer as unknown as { display_name: string; stripe_account_id: string | null } | null;
       itemTitle = beat.title;
       producerName = producer?.display_name ?? "Ukjent";
       fileRawPath = beat.project_file_url;
@@ -143,6 +176,10 @@ export async function POST(request: NextRequest) {
       });
       if (insertBeatError) console.error("[webhook] Beat purchase insert failed:", insertBeatError.message);
       else console.log("[webhook] Beat purchase recorded:", orderNumber);
+
+      if (paymentIntentId && producer?.stripe_account_id) {
+        await transferToProducer(paymentIntentId, amountNok, producer.stripe_account_id, orderNumber);
+      }
     }
 
     // ── Remake path ──
@@ -151,7 +188,7 @@ export async function POST(request: NextRequest) {
 
       const { data: remake } = await supabase
         .from("remakes")
-        .select("title, file_url, producer_id, producer:profiles(display_name)")
+        .select("title, file_url, producer_id, producer:profiles(display_name, stripe_account_id)")
         .eq("id", remakeId)
         .single();
 
@@ -160,7 +197,7 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({ error: "Remake ikke funnet" }, { status: 404 });
       }
 
-      const producer = remake.producer as unknown as { display_name: string } | null;
+      const producer = remake.producer as unknown as { display_name: string; stripe_account_id: string | null } | null;
       itemTitle = remake.title;
       producerName = producer?.display_name ?? "Ukjent";
       fileRawPath = remake.file_url;
@@ -183,6 +220,10 @@ export async function POST(request: NextRequest) {
       });
       if (insertRemakeError) console.error("[webhook] Remake purchase insert failed:", insertRemakeError.message);
       else console.log("[webhook] Remake purchase recorded:", orderNumber);
+
+      if (paymentIntentId && producer?.stripe_account_id) {
+        await transferToProducer(paymentIntentId, amountNok, producer.stripe_account_id, orderNumber);
+      }
     }
 
     // ── Sample path ──
@@ -191,7 +232,7 @@ export async function POST(request: NextRequest) {
 
       const { data: sample } = await supabase
         .from("samples")
-        .select("title, file_url, producer_id, producer:profiles(display_name)")
+        .select("title, file_url, producer_id, producer:profiles(display_name, stripe_account_id)")
         .eq("id", sampleId)
         .single();
 
@@ -200,7 +241,7 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({ error: "Sample ikke funnet" }, { status: 404 });
       }
 
-      const producer = sample.producer as unknown as { display_name: string } | null;
+      const producer = sample.producer as unknown as { display_name: string; stripe_account_id: string | null } | null;
       itemTitle = sample.title;
       producerName = producer?.display_name ?? "Ukjent";
       fileRawPath = sample.file_url;
@@ -222,6 +263,10 @@ export async function POST(request: NextRequest) {
       });
       if (insertSampleError) console.error("[webhook] Sample purchase insert failed:", insertSampleError.message);
       else console.log("[webhook] Sample purchase recorded:", orderNumber);
+
+      if (paymentIntentId && producer?.stripe_account_id) {
+        await transferToProducer(paymentIntentId, amountNok, producer.stripe_account_id, orderNumber);
+      }
     }
 
     // ── Send emails ──

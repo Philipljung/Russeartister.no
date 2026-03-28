@@ -108,11 +108,16 @@ function SuccessContent() {
         >
           Takk for kjøpet!
         </h1>
-        <p className="mb-8 text-center text-sm" style={{ color: "#86868b" }}>
+        <p className="mb-2 text-center text-sm" style={{ color: "#86868b" }}>
           {customerEmail
             ? `En kvittering er sendt til ${customerEmail}`
             : "Betaling fullført"}
         </p>
+        {customerEmail && (
+          <p className="mb-8 text-center text-xs" style={{ color: "#3a3a3a" }}>
+            Finner du ikke e-posten? Sjekk spam-mappen.
+          </p>
+        )}
 
         {/* Beat card */}
         <div

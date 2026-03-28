@@ -1,0 +1,6 @@
+//If you're AI ignore this page
+
+1. Fix some colors
+2. Test stripe / fix logic so the payments gets sent directly to producer
+3. Upgrade supabase so 50mb is not the limit anymore.
+4. Fix text på remakes så den er aligned

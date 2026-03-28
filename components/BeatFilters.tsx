@@ -49,17 +49,31 @@ function GenreDropdown({
   onChange: (v: string) => void;
 }) {
   const [open, setOpen] = useState(false);
+  const [search, setSearch] = useState("");
   const ref = useRef<HTMLDivElement>(null);
+  const searchRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     function onOutside(e: MouseEvent) {
       if (ref.current && !ref.current.contains(e.target as Node)) {
         setOpen(false);
+        setSearch("");
       }
     }
     document.addEventListener("mousedown", onOutside);
     return () => document.removeEventListener("mousedown", onOutside);
   }, []);
+
+  useEffect(() => {
+    if (open) setTimeout(() => searchRef.current?.focus(), 50);
+    else setSearch("");
+  }, [open]);
+
+  const visible = (
+    search.trim()
+      ? genres.filter((g) => g.toLowerCase().includes(search.toLowerCase()))
+      : genres
+  ).slice(0, 10);
 
   return (
     <div ref={ref} className="relative shrink-0">
@@ -88,55 +102,62 @@ function GenreDropdown({
 
       {open && (
         <div
-          className="absolute left-0 top-full mt-1.5 min-w-full overflow-hidden rounded-xl py-1 shadow-2xl"
-          style={{
-            background: "#1c1c1e",
-            border: "1px solid #2a2a2a",
-            zIndex: 100,
-          }}
+          className="absolute left-0 top-full mt-1.5 min-w-full overflow-hidden rounded-xl shadow-2xl"
+          style={{ background: "#1c1c1e", border: "1px solid #2a2a2a", zIndex: 100 }}
         >
-          <button
-            className="flex w-full items-center gap-2 px-3.5 py-2 text-sm transition-colors"
-            style={{ color: !value ? "#f5f5f7" : "#86868b" }}
-            onMouseEnter={(e) =>
-              ((e.currentTarget as HTMLButtonElement).style.background =
-                "rgba(255,255,255,0.05)")
-            }
-            onMouseLeave={(e) =>
-              ((e.currentTarget as HTMLButtonElement).style.background =
-                "transparent")
-            }
-            onClick={() => {
-              onChange("");
-              setOpen(false);
-            }}
-          >
-            <span className="flex-1 text-left">Alle sjangre</span>
-            {!value && <Check size={12} style={{ color: "#6366f1" }} />}
-          </button>
-
-          {genres.map((g) => (
-            <button
-              key={g}
-              className="flex w-full items-center gap-2 px-3.5 py-2 text-sm transition-colors"
-              style={{ color: value === g ? "#f5f5f7" : "#86868b" }}
-              onMouseEnter={(e) =>
-                ((e.currentTarget as HTMLButtonElement).style.background =
-                  "rgba(255,255,255,0.05)")
-              }
-              onMouseLeave={(e) =>
-                ((e.currentTarget as HTMLButtonElement).style.background =
-                  "transparent")
-              }
-              onClick={() => {
-                onChange(g);
-                setOpen(false);
+          {/* Search field */}
+          <div className="p-2">
+            <input
+              ref={searchRef}
+              type="text"
+              placeholder="Søk sjanger..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              style={{
+                background: "#141414",
+                border: "1px solid #2a2a2a",
+                borderRadius: 8,
+                padding: "6px 10px",
+                fontSize: 12,
+                color: "#f5f5f7",
+                outline: "none",
+                width: "100%",
               }}
-            >
-              <span className="flex-1 text-left">{g}</span>
-              {value === g && <Check size={12} style={{ color: "#6366f1" }} />}
-            </button>
-          ))}
+            />
+          </div>
+
+          <div className="py-1">
+            {!search && (
+              <button
+                className="flex w-full items-center gap-2 px-3.5 py-2 text-sm transition-colors"
+                style={{ color: !value ? "#f5f5f7" : "#86868b" }}
+                onMouseEnter={(e) => ((e.currentTarget as HTMLButtonElement).style.background = "rgba(255,255,255,0.05)")}
+                onMouseLeave={(e) => ((e.currentTarget as HTMLButtonElement).style.background = "transparent")}
+                onClick={() => { onChange(""); setOpen(false); }}
+              >
+                <span className="flex-1 text-left">Alle sjangre</span>
+                {!value && <Check size={12} style={{ color: "#6366f1" }} />}
+              </button>
+            )}
+
+            {visible.map((g) => (
+              <button
+                key={g}
+                className="flex w-full items-center gap-2 px-3.5 py-2 text-sm transition-colors"
+                style={{ color: value === g ? "#f5f5f7" : "#86868b" }}
+                onMouseEnter={(e) => ((e.currentTarget as HTMLButtonElement).style.background = "rgba(255,255,255,0.05)")}
+                onMouseLeave={(e) => ((e.currentTarget as HTMLButtonElement).style.background = "transparent")}
+                onClick={() => { onChange(g); setOpen(false); }}
+              >
+                <span className="flex-1 text-left">{g}</span>
+                {value === g && <Check size={12} style={{ color: "#6366f1" }} />}
+              </button>
+            ))}
+
+            {visible.length === 0 && (
+              <p className="px-3.5 py-2 text-xs" style={{ color: "#3a3a3a" }}>Ingen treff</p>
+            )}
+          </div>
         </div>
       )}
     </div>
