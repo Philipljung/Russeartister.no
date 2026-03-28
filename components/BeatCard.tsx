@@ -161,8 +161,8 @@ export default function BeatCard({ beat, isSelected = false, onSelect }: Props) 
       {/* Price + buy + share */}
       <div className="flex shrink-0 items-center gap-2">
         <span
-          className="text-sm font-semibold"
-          style={{ color: "#f5f5f7", width: 80, textAlign: "right", flexShrink: 0 }}
+          className="text-xs sm:text-sm font-semibold"
+          style={{ color: "#f5f5f7", minWidth: 48, textAlign: "right", flexShrink: 0 }}
         >
           {beat.price === 0 ? "Gratis" : `kr ${beat.price.toLocaleString("nb-NO")}`}
         </span>
@@ -172,7 +172,7 @@ export default function BeatCard({ beat, isSelected = false, onSelect }: Props) 
             background: hovered ? "#f5f5f7" : "rgba(255,255,255,0.08)",
             color: hovered ? "#080808" : "#f5f5f7",
             cursor: "pointer",
-            width: 76,
+            width: 64,
           }}
           onClick={beat.price === 0 ? handleFreeDownload : handleBuy}
         >

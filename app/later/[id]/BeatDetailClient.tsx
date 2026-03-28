@@ -91,7 +91,7 @@ export default function BeatDetailClient({
 
       {/* Main card */}
       <div
-        className="rounded-2xl p-8 mb-4 relative"
+        className="rounded-2xl p-5 md:p-8 mb-4 relative"
         style={{ background: "linear-gradient(135deg, #1e1e1e, #121212)" }}
       >
         {/* Del — top right */}
@@ -105,9 +105,9 @@ export default function BeatDetailClient({
         </button>
 
         {/* Cover + title row */}
-        <div className="flex gap-5 items-start">
+        <div className="flex gap-4 md:gap-5 items-start">
           {/* Cover with play overlay */}
-          <div className="relative shrink-0" style={{ width: 112, height: 112 }}>
+          <div className="relative shrink-0 w-20 h-20 md:w-28 md:h-28">
             <div
               className="rounded-xl w-full h-full"
               style={{
@@ -130,10 +130,10 @@ export default function BeatDetailClient({
           </div>
 
           {/* Title + producer */}
-          <div className="flex-1 min-w-0 pt-1 pr-16">
+          <div className="flex-1 min-w-0 pt-1 pr-10 md:pr-16">
             <h1
-              className="leading-tight mb-2"
-              style={{ color: "#f5f5f7", fontWeight: 800, fontSize: 24 }}
+              className="leading-tight mb-2 text-xl md:text-2xl"
+              style={{ color: "#f5f5f7", fontWeight: 800 }}
             >
               {beat.title}
             </h1>
@@ -191,7 +191,7 @@ export default function BeatDetailClient({
 
         {/* Bottom row: price + buy + exclusive */}
         <div
-          className="flex items-center justify-between mt-8 pt-6"
+          className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mt-8 pt-6"
           style={{ borderTop: "1px solid rgba(255,255,255,0.06)" }}
         >
           <div className="flex flex-col gap-0.5">
@@ -204,7 +204,7 @@ export default function BeatDetailClient({
             {exclusiveAvailable && (
               <button
                 onClick={() => openCheckout(true)}
-                className="rounded-full px-4 py-2 text-sm font-semibold transition-opacity hover:opacity-80"
+                className="rounded-full px-4 py-2 text-xs sm:text-sm font-semibold transition-opacity hover:opacity-80"
                 style={{
                   background: "rgba(234,179,8,0.1)",
                   color: "#eab308",

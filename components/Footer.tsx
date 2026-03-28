@@ -23,7 +23,7 @@ export default function Footer() {
       className="border-t"
       style={{ borderColor: "#1e1e1e", background: "#080808" }}
     >
-      <div className="mx-auto max-w-7xl px-6 py-10">
+      <div className="mx-auto max-w-7xl px-4 md:px-6 py-8 md:py-10">
         <div className="flex flex-col items-center gap-6 md:flex-row md:justify-between">
           {/* Brand */}
           <div>

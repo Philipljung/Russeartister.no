@@ -331,7 +331,7 @@ export default function ProfilePage() {
         className="relative"
         style={{
           background: "linear-gradient(135deg, #1a0d3a 0%, #0d1a40 40%, #001430 70%, #0a0a14 100%)",
-          height: 160,
+          height: 130,
         }}
       >
         <div
@@ -807,12 +807,12 @@ export default function ProfilePage() {
                           {beat.is_published ? "Publisert" : "Utkast"}
                         </span>
                       )}
-                      <span className="text-sm font-semibold" style={{ color: "#f5f5f7", minWidth: 48, textAlign: "right" }}>
+                      <span className="text-xs sm:text-sm font-semibold" style={{ color: "#f5f5f7", minWidth: 40, textAlign: "right" }}>
                         kr {beat.price.toLocaleString("nb-NO")}
                       </span>
                       <button
                         title="Del"
-                        className="flex items-center justify-center rounded-lg transition-colors hover:opacity-80"
+                        className="hidden sm:flex items-center justify-center rounded-lg transition-colors hover:opacity-80"
                         style={{ width: 30, height: 30, color: "#86868b" }}
                         onClick={(e) => { e.stopPropagation(); navigator.clipboard.writeText(`${window.location.origin}/later/${beat.id}`); toast("Lenke kopiert!"); }}
                       >
@@ -911,12 +911,12 @@ export default function ProfilePage() {
                         {sample.is_published ? "Publisert" : "Utkast"}
                       </span>
                     )}
-                    <span className="text-sm font-semibold" style={{ color: "#f5f5f7", minWidth: 48, textAlign: "right" }}>
+                    <span className="text-xs sm:text-sm font-semibold" style={{ color: "#f5f5f7", minWidth: 40, textAlign: "right" }}>
                       {sample.price === 0 ? "Gratis" : `kr ${sample.price.toLocaleString("nb-NO")}`}
                     </span>
                     <button
                       title="Del"
-                      className="flex items-center justify-center rounded-lg transition-colors hover:opacity-80"
+                      className="hidden sm:flex items-center justify-center rounded-lg transition-colors hover:opacity-80"
                       style={{ width: 30, height: 30, color: "#86868b" }}
                       onClick={(e) => { e.stopPropagation(); navigator.clipboard.writeText(`${window.location.origin}/samples/${sample.id}`); toast("Lenke kopiert!"); }}
                     >
@@ -1004,12 +1004,12 @@ export default function ProfilePage() {
                         {remake.is_published ? "Publisert" : "Utkast"}
                       </span>
                     )}
-                    <span className="text-sm font-semibold" style={{ color: "#f5f5f7", minWidth: 48, textAlign: "right" }}>
+                    <span className="text-xs sm:text-sm font-semibold" style={{ color: "#f5f5f7", minWidth: 40, textAlign: "right" }}>
                       kr {remake.price.toLocaleString("nb-NO")}
                     </span>
                     <button
                       title="Del"
-                      className="flex items-center justify-center rounded-lg transition-colors hover:opacity-80"
+                      className="hidden sm:flex items-center justify-center rounded-lg transition-colors hover:opacity-80"
                       style={{ width: 30, height: 30, color: "#86868b" }}
                       onClick={(e) => { e.stopPropagation(); navigator.clipboard.writeText(`${window.location.origin}/remakes/${remake.id}`); toast("Lenke kopiert!"); }}
                     >

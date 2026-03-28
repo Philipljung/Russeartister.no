@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import Image from "next/image";
 import { Download, Music, RefreshCw, Package, AlertCircle } from "lucide-react";
 import { getSupabaseClient } from "@/lib/supabase/client";
 import type { Purchase } from "@/lib/supabase/types";
@@ -95,14 +94,14 @@ export default function NedlastningerPage() {
 
   if (!loading && authed === false) {
     return (
-      <div className="mx-auto max-w-7xl px-6 py-20 text-center">
+      <div className="mx-auto max-w-7xl px-4 md:px-6 py-20 text-center">
         <p style={{ color: "#86868b" }}>Du må være innlogget for å se nedlastninger.</p>
       </div>
     );
   }
 
   return (
-    <div className="mx-auto max-w-7xl px-6 py-10">
+    <div className="mx-auto max-w-7xl px-4 md:px-6 py-10">
       <h1 className="mb-1 text-2xl font-bold tracking-tight" style={{ color: "#f5f5f7" }}>
         Mine nedlastninger
       </h1>
@@ -229,21 +228,22 @@ function PurchaseRow({
 
   return (
     <div
-      className="flex items-center gap-4 rounded-xl px-4 py-3"
+      className="flex items-center gap-3 md:gap-4 rounded-xl px-3 md:px-4 py-3"
       style={{ background: "#141414", border: "1px solid #1e1e1e" }}
     >
       {/* Cover */}
       <div
-        className="shrink-0 rounded-lg overflow-hidden"
-        style={{ width: 48, height: 48, background: "#1e1e1e" }}
+        className="shrink-0 rounded-lg"
+        style={{
+          width: 48,
+          height: 48,
+          background: coverUrl ? `url(${coverUrl}) center/cover` : "#1e1e1e",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+        }}
       >
-        {coverUrl ? (
-          <Image src={coverUrl} alt={title} width={48} height={48} style={{ objectFit: "cover" }} />
-        ) : (
-          <div className="w-full h-full flex items-center justify-center">
-            <Music size={16} style={{ color: "#3a3a3a" }} />
-          </div>
-        )}
+        {!coverUrl && <Music size={16} style={{ color: "#3a3a3a" }} />}
       </div>
 
       {/* Info */}
@@ -275,7 +275,7 @@ function PurchaseRow({
         style={{ background: "rgba(99,102,241,0.12)", border: "1px solid rgba(99,102,241,0.25)", color: "#818cf8" }}
       >
         <Download size={13} />
-        {downloading ? "Laster..." : "Last ned"}
+        <span className="hidden sm:inline">{downloading ? "Laster..." : "Last ned"}</span>
       </button>
     </div>
   );
