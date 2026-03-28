@@ -1038,16 +1038,20 @@ export default function ProfilePage() {
       <StripeOnboardingModal
         onClose={() => {
           setShowStripeModal(false);
-          // Refetch profile — the account.updated webhook may have set stripe_onboarding_complete
-          fetchProfileByUsername(usernameParam).then((p) => {
-            if (p) setProfile(p);
-          });
+          // Check Stripe account status directly and update DB if complete
+          fetch("/api/stripe/check-onboarding", { method: "POST" })
+            .then((r) => r.json())
+            .then(() => fetchProfileByUsername(usernameParam))
+            .then((p) => { if (p) setProfile(p); })
+            .catch(() => {});
         }}
         onComplete={() => {
           setShowStripeModal(false);
-          fetchProfileByUsername(usernameParam).then((p) => {
-            if (p) setProfile(p);
-          });
+          fetch("/api/stripe/check-onboarding", { method: "POST" })
+            .then((r) => r.json())
+            .then(() => fetchProfileByUsername(usernameParam))
+            .then((p) => { if (p) setProfile(p); })
+            .catch(() => {});
         }}
       />
     )}
