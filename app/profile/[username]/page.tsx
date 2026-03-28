@@ -1038,20 +1038,40 @@ export default function ProfilePage() {
       <StripeOnboardingModal
         onClose={() => {
           setShowStripeModal(false);
-          // Check Stripe account status directly and update DB if complete
-          fetch("/api/stripe/check-onboarding", { method: "POST" })
-            .then((r) => r.json())
-            .then(() => fetchProfileByUsername(usernameParam))
-            .then((p) => { if (p) setProfile(p); })
-            .catch(() => {});
+          // Poll Stripe account status — may take a moment to fully enable
+          let attempts = 0;
+          const poll = () => {
+            fetch("/api/stripe/check-onboarding", { method: "POST" })
+              .then((r) => r.json())
+              .then((data) => {
+                if (data.complete) {
+                  fetchProfileByUsername(usernameParam).then((p) => { if (p) setProfile(p); });
+                } else if (attempts < 3) {
+                  attempts++;
+                  setTimeout(poll, 2000);
+                }
+              })
+              .catch(() => {});
+          };
+          poll();
         }}
         onComplete={() => {
           setShowStripeModal(false);
-          fetch("/api/stripe/check-onboarding", { method: "POST" })
-            .then((r) => r.json())
-            .then(() => fetchProfileByUsername(usernameParam))
-            .then((p) => { if (p) setProfile(p); })
-            .catch(() => {});
+          let attempts = 0;
+          const poll = () => {
+            fetch("/api/stripe/check-onboarding", { method: "POST" })
+              .then((r) => r.json())
+              .then((data) => {
+                if (data.complete) {
+                  fetchProfileByUsername(usernameParam).then((p) => { if (p) setProfile(p); });
+                } else if (attempts < 3) {
+                  attempts++;
+                  setTimeout(poll, 2000);
+                }
+              })
+              .catch(() => {});
+          };
+          poll();
         }}
       />
     )}
