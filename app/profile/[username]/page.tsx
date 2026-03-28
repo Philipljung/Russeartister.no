@@ -1045,13 +1045,16 @@ export default function ProfilePage() {
               .then((r) => r.json())
               .then((data) => {
                 if (data.complete) {
+                  toast("Stripe er tilkoblet!");
                   fetchProfileByUsername(usernameParam).then((p) => { if (p) setProfile(p); });
                 } else if (attempts < 3) {
                   attempts++;
                   setTimeout(poll, 2000);
+                } else {
+                  toast("Kunne ikke bekrefte Stripe-status. Prøv å laste siden på nytt.");
                 }
               })
-              .catch(() => {});
+              .catch(() => { toast("Noe gikk galt med Stripe-sjekken. Prøv å laste siden på nytt."); });
           };
           poll();
         }}
@@ -1063,13 +1066,16 @@ export default function ProfilePage() {
               .then((r) => r.json())
               .then((data) => {
                 if (data.complete) {
+                  toast("Stripe er tilkoblet!");
                   fetchProfileByUsername(usernameParam).then((p) => { if (p) setProfile(p); });
                 } else if (attempts < 3) {
                   attempts++;
                   setTimeout(poll, 2000);
+                } else {
+                  toast("Kunne ikke bekrefte Stripe-status. Prøv å laste siden på nytt.");
                 }
               })
-              .catch(() => {});
+              .catch(() => { toast("Noe gikk galt med Stripe-sjekken. Prøv å laste siden på nytt."); });
           };
           poll();
         }}
