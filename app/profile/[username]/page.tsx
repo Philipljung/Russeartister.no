@@ -1036,7 +1036,13 @@ export default function ProfilePage() {
 
     {showStripeModal && (
       <StripeOnboardingModal
-        onClose={() => setShowStripeModal(false)}
+        onClose={() => {
+          setShowStripeModal(false);
+          // Refetch profile — the account.updated webhook may have set stripe_onboarding_complete
+          fetchProfileByUsername(usernameParam).then((p) => {
+            if (p) setProfile(p);
+          });
+        }}
         onComplete={() => {
           setShowStripeModal(false);
           fetchProfileByUsername(usernameParam).then((p) => {
