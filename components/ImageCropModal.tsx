@@ -22,23 +22,31 @@ export default function ImageCropModal({ imageSrc, aspect = 1, onCrop, onCancel 
   async function handleConfirm() {
     if (!croppedArea) return;
 
-    // Fetch the original blob and crop directly with createImageBitmap
-    const response = await fetch(imageSrc);
-    const imageBlob = await response.blob();
-    const cropped = await createImageBitmap(
-      imageBlob,
+    // Load via <img> so the browser applies EXIF orientation automatically
+    const image = new window.Image();
+    image.crossOrigin = "anonymous";
+    await new Promise<void>((resolve, reject) => {
+      image.onload = () => resolve();
+      image.onerror = reject;
+      image.src = imageSrc;
+    });
+
+    const canvas = document.createElement("canvas");
+    canvas.width = Math.round(croppedArea.width);
+    canvas.height = Math.round(croppedArea.height);
+    const ctx = canvas.getContext("2d")!;
+
+    ctx.drawImage(
+      image,
       Math.round(croppedArea.x),
       Math.round(croppedArea.y),
       Math.round(croppedArea.width),
-      Math.round(croppedArea.height)
+      Math.round(croppedArea.height),
+      0,
+      0,
+      Math.round(croppedArea.width),
+      Math.round(croppedArea.height),
     );
-
-    const canvas = document.createElement("canvas");
-    canvas.width = cropped.width;
-    canvas.height = cropped.height;
-    const ctx = canvas.getContext("2d")!;
-    ctx.drawImage(cropped, 0, 0);
-    cropped.close();
 
     canvas.toBlob(
       (blob) => { if (blob) onCrop(blob); },
