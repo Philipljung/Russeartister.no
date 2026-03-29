@@ -274,7 +274,7 @@ export default function BeatCheckoutModal({ beat, onClose, initialExclusive = fa
 
               {/* Producer */}
               <Link
-                href={`/profile/${beat.producer?.username ?? ""}`}
+                href={`/profile/${encodeURIComponent(beat.producer?.display_name ?? beat.producer?.username ?? "")}`}
                 onClick={onClose}
                 className="mb-5 text-sm hover:underline"
                 style={{ color: "#86868b" }}

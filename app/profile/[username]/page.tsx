@@ -150,7 +150,7 @@ export default function ProfilePage() {
   function deleteRemake(remakeId: string) { setPendingDelete({ type: "remake", id: remakeId }); }
 
   async function shareProfile() {
-    const url = `${window.location.origin}/profile/${profile!.username}`;
+    const url = `${window.location.origin}/profile/${encodeURIComponent(displayName || profile!.username)}`;
     await navigator.clipboard.writeText(url);
     toast("Lenken er kopiert!", "success");
   }
@@ -725,7 +725,7 @@ export default function ProfilePage() {
               <Link
                 href="/lastopp"
                 className="rounded-xl px-4 py-1.5 text-sm font-semibold transition-opacity hover:opacity-90"
-                style={{ background: "#0071e3", color: "#fff" }}
+                style={{ background: "#ffffff", color: "#000000" }}
               >
                 Last opp låt
               </Link>
@@ -758,7 +758,7 @@ export default function ProfilePage() {
                       className="flex shrink-0 items-center justify-center rounded-full"
                       style={{
                         width: 32, height: 32,
-                        background: isActive ? "#6366f1" : "rgba(255,255,255,0.06)",
+                        background: "rgba(255,255,255,0.06)",
                         color: "#f5f5f7",
                       }}
                     >
@@ -854,9 +854,9 @@ export default function ProfilePage() {
               <Link
                 href="/lastopp-sample"
                 className="rounded-xl px-3 md:px-4 py-1.5 text-xs md:text-sm font-semibold transition-opacity hover:opacity-90 whitespace-nowrap"
-                style={{ background: "#0071e3", color: "#fff" }}
+                style={{ background: "#ffffff", color: "#000000" }}
               >
-                <span className="hidden sm:inline">Last opp </span>sample / Preset
+                <span className="hidden sm:inline">Last opp </span>sample / preset
               </Link>
             )}
           </div>
@@ -885,7 +885,7 @@ export default function ProfilePage() {
                     className="shrink-0 flex items-center justify-center rounded-full"
                     style={{
                       width: 32, height: 32,
-                      background: currentBeat?.id === sample.id && isPlaying ? "#6366f1" : "rgba(255,255,255,0.06)",
+                      background: "rgba(255,255,255,0.06)",
                       color: sample.audio_preview_url ? "#f5f5f7" : "#3a3a3a",
                       cursor: sample.audio_preview_url ? "pointer" : "default",
                     }}
@@ -967,7 +967,7 @@ export default function ProfilePage() {
               <Link
                 href="/lastopp-remake"
                 className="rounded-xl px-3 md:px-4 py-1.5 text-xs md:text-sm font-semibold transition-opacity hover:opacity-90 whitespace-nowrap"
-                style={{ background: "#0071e3", color: "#fff" }}
+                style={{ background: "#ffffff", color: "#000000" }}
               >
                 Last opp remake
               </Link>
@@ -995,7 +995,7 @@ export default function ProfilePage() {
                     className="shrink-0 flex items-center justify-center rounded-full"
                     style={{
                       width: 32, height: 32,
-                      background: currentBeat?.id === remake.id && isPlaying ? "#6366f1" : "rgba(255,255,255,0.06)",
+                      background: "rgba(255,255,255,0.06)",
                       color: remake.audio_preview_url ? "#f5f5f7" : "#3a3a3a",
                       cursor: remake.audio_preview_url ? "pointer" : "default",
                     }}

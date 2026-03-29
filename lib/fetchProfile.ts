@@ -1,23 +1,37 @@
 import { getSupabaseClient } from "./supabase/client";
 import type { Profile } from "./supabase/types";
 
-export async function fetchProfileByUsername(username: string): Promise<Profile | null> {
+export async function fetchProfileByUsername(identifier: string): Promise<Profile | null> {
   const supabase = getSupabaseClient();
+
+  // Try username first
   const { data, error } = await supabase
     .from("profiles")
     .select("*")
-    .ilike("username", username)
+    .ilike("username", identifier)
     .single();
 
-  if (error) {
-    // PGRST116 = row not found (expected when profile doesn't exist)
-    if (error.code !== "PGRST116") {
-      console.error("[fetchProfile] Unexpected error:", error.code, error.message);
+  if (data) return data as Profile;
+
+  // Fallback: try display_name
+  if (error?.code === "PGRST116") {
+    const { data: byName, error: nameError } = await supabase
+      .from("profiles")
+      .select("*")
+      .ilike("display_name", identifier)
+      .single();
+
+    if (byName) return byName as Profile;
+    if (nameError && nameError.code !== "PGRST116") {
+      console.error("[fetchProfile] Unexpected error:", nameError.code, nameError.message);
     }
     return null;
   }
 
-  return data as Profile;
+  if (error) {
+    console.error("[fetchProfile] Unexpected error:", error.code, error.message);
+  }
+  return null;
 }
 
 export async function fetchProfileById(id: string): Promise<Profile | null> {

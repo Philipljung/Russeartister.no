@@ -136,7 +136,7 @@ export default function RemakeCheckoutModal({ remake, onClose }: Props) {
               <p className="mb-1 text-sm" style={{ color: "#86868b" }}>Remake av <span style={{ color: "#f5f5f7" }}>{remake.original_song}</span></p>
 
               <Link
-                href={`/profile/${remake.producer?.username ?? ""}`}
+                href={`/profile/${encodeURIComponent(remake.producer?.display_name ?? remake.producer?.username ?? "")}`}
                 onClick={onClose}
                 className="mb-5 text-sm hover:underline"
                 style={{ color: "#86868b" }}

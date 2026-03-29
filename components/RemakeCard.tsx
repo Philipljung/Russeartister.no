@@ -58,8 +58,8 @@ export default function RemakeCard({ remake, isActive, isPlaying, isSelected = f
         className="flex shrink-0 items-center justify-center rounded-full transition-all"
         style={{
           width: 36, height: 36,
-          background: isActive ? "#6366f1" : hovered ? "rgba(255,255,255,0.1)" : "rgba(255,255,255,0.06)",
-          color: isActive ? "#fff" : canPlay ? "#f5f5f7" : "#3a3a3a",
+          background: hovered ? "rgba(255,255,255,0.1)" : "rgba(255,255,255,0.06)",
+          color: canPlay ? "#f5f5f7" : "#3a3a3a",
           cursor: canPlay ? "pointer" : "default",
         }}
         title={canPlay ? (isPlaying && isActive ? "Pause" : "Spill av") : "Ingen forhåndsvisning"}
@@ -69,7 +69,7 @@ export default function RemakeCard({ remake, isActive, isPlaying, isSelected = f
 
       {/* Cover */}
       <Link
-        href={`/profile/${remake.producer?.username ?? ""}`}
+        href={`/profile/${encodeURIComponent(remake.producer?.display_name ?? remake.producer?.username ?? "")}`}
         onClick={(e) => e.stopPropagation()}
         className="shrink-0 rounded-lg transition-opacity hover:opacity-80"
         style={{
@@ -89,7 +89,7 @@ export default function RemakeCard({ remake, isActive, isPlaying, isSelected = f
         </p>
         <p className="text-xs mt-0.5 truncate" style={{ color: "#86868b" }}>
           <Link
-            href={`/profile/${remake.producer?.username ?? ""}`}
+            href={`/profile/${encodeURIComponent(remake.producer?.display_name ?? remake.producer?.username ?? "")}`}
             onClick={(e) => e.stopPropagation()}
             className="hover:underline"
             style={{ color: "#86868b" }}
