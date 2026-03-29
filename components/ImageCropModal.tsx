@@ -22,16 +22,19 @@ export default function ImageCropModal({ imageSrc, aspect = 1, onCrop, onCancel 
   async function handleConfirm() {
     if (!croppedArea) return;
 
-    const image = new window.Image();
-    image.src = imageSrc;
-    await new Promise((resolve) => { image.onload = resolve; });
+    // Load the full-resolution image
+    const response = await fetch(imageSrc);
+    const imageBlob = await response.blob();
+    const bitmap = await createImageBitmap(imageBlob);
 
+    // croppedArea (croppedAreaPixels) is in the image's natural pixel coordinates
     const canvas = document.createElement("canvas");
     canvas.width = croppedArea.width;
     canvas.height = croppedArea.height;
+
     const ctx = canvas.getContext("2d")!;
     ctx.drawImage(
-      image,
+      bitmap,
       croppedArea.x,
       croppedArea.y,
       croppedArea.width,
@@ -41,6 +44,7 @@ export default function ImageCropModal({ imageSrc, aspect = 1, onCrop, onCancel 
       croppedArea.width,
       croppedArea.height
     );
+    bitmap.close();
 
     canvas.toBlob(
       (blob) => { if (blob) onCrop(blob); },
