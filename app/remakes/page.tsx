@@ -14,7 +14,6 @@ export default function RemakesPage() {
   const [debouncedQuery, setDebouncedQuery] = useState("");
   const [activeDaw, setActiveDaw] = useState("");
   const [activeVsts, setActiveVsts] = useState<string[]>([]);
-  const [vstExcludeMode, setVstExcludeMode] = useState(false);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [checkoutRemake, setCheckoutRemake] = useState<Remake | null>(null);
 
@@ -78,14 +77,10 @@ export default function RemakesPage() {
     }
     if (activeDaw) result = result.filter((r) => r.daw === activeDaw);
     if (activeVsts.length > 0) {
-      if (vstExcludeMode) {
-        result = result.filter((r) => !activeVsts.some((v) => r.vsts?.includes(v)));
-      } else {
-        result = result.filter((r) => activeVsts.some((v) => r.vsts?.includes(v)));
-      }
+      result = result.filter((r) => activeVsts.some((v) => r.vsts?.includes(v)));
     }
     return result;
-  }, [remakes, debouncedQuery, activeDaw, activeVsts, vstExcludeMode]);
+  }, [remakes, debouncedQuery, activeDaw, activeVsts]);
 
   // Keyboard navigation
   const handleKeyDown = useCallback((e: KeyboardEvent) => {
@@ -180,19 +175,6 @@ export default function RemakesPage() {
           {vsts.length > 0 && (
             <div className="flex items-center gap-2 overflow-x-auto pb-1" style={{ scrollbarWidth: "none" }}>
               <span className="shrink-0 text-xs" style={{ color: "#3a3a3a" }}>VST</span>
-              {activeVsts.length > 0 && (
-                <button
-                  onClick={() => setVstExcludeMode(!vstExcludeMode)}
-                  className="shrink-0 rounded-xl px-2.5 py-1 text-xs transition-all whitespace-nowrap"
-                  style={{
-                    background: vstExcludeMode ? "rgba(255,59,48,0.12)" : "rgba(16,185,129,0.12)",
-                    border: `1px solid ${vstExcludeMode ? "rgba(255,59,48,0.35)" : "rgba(16,185,129,0.35)"}`,
-                    color: vstExcludeMode ? "#ff6b6b" : "#34d399",
-                  }}
-                >
-                  {vstExcludeMode ? "Ekskluder" : "Inkluder"}
-                </button>
-              )}
               {vsts.map((v) => {
                 const isActive = activeVsts.includes(v);
                 return (
@@ -201,15 +183,9 @@ export default function RemakesPage() {
                     onClick={() => setActiveVsts(isActive ? activeVsts.filter((x) => x !== v) : [...activeVsts, v])}
                     className="shrink-0 rounded-xl px-3 py-1.5 text-xs transition-all whitespace-nowrap"
                     style={{
-                      background: isActive
-                        ? vstExcludeMode ? "rgba(255,59,48,0.12)" : "rgba(16,185,129,0.12)"
-                        : "transparent",
-                      border: `1px solid ${isActive
-                        ? vstExcludeMode ? "rgba(255,59,48,0.35)" : "rgba(16,185,129,0.35)"
-                        : "#2a2a2a"}`,
-                      color: isActive
-                        ? vstExcludeMode ? "#ff6b6b" : "#34d399"
-                        : "#3a3a3a",
+                      background: isActive ? "rgba(16,185,129,0.12)" : "transparent",
+                      border: `1px solid ${isActive ? "rgba(16,185,129,0.35)" : "#2a2a2a"}`,
+                      color: isActive ? "#34d399" : "#3a3a3a",
                     }}
                   >
                     {v}
@@ -218,7 +194,7 @@ export default function RemakesPage() {
               })}
               {activeVsts.length > 0 && (
                 <button
-                  onClick={() => { setActiveVsts([]); setVstExcludeMode(false); }}
+                  onClick={() => setActiveVsts([])}
                   className="shrink-0 flex items-center gap-1.5 rounded-xl px-3 py-1.5 text-xs ml-auto"
                   style={{ background: "rgba(255,255,255,0.06)", border: "1px solid #2a2a2a", color: "#86868b" }}
                 >
