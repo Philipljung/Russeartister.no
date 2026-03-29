@@ -111,7 +111,7 @@ export default function LastOppRemakePage() {
     if (stripeReady && !price) { setError("Fyll ut pris."); return; }
 
     const priceNum = stripeReady ? parseInt(price) : 0;
-    if (stripeReady && priceNum < 100) { setError("Pris må være minst kr 100."); return; }
+    if (stripeReady && (isNaN(priceNum) || priceNum < 0)) { setError("Ugyldig pris."); return; }
 
     setSubmitting(true);
     const supabase = getSupabaseClient();
@@ -350,7 +350,7 @@ export default function LastOppRemakePage() {
           ) : (
             <div className="relative">
               <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-sm" style={{ color: "#86868b" }}>kr</span>
-              <input type="number" placeholder="299" value={price} onChange={(e) => setPrice(e.target.value)} min={100} required style={{ ...inputStyle, paddingLeft: 32 }} />
+              <input type="number" placeholder="299" value={price} onChange={(e) => setPrice(e.target.value)} min={0} required style={{ ...inputStyle, paddingLeft: 32 }} />
             </div>
           )}
         </div>

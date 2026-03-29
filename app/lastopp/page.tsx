@@ -152,16 +152,16 @@ export default function LastOppPage() {
       setError("BPM må være mellom 60 og 220.");
       return;
     }
-    if (stripeReady && priceNum < 100) {
-      setError("Pris må være minst kr 100.");
+    if (stripeReady && (isNaN(priceNum) || priceNum < 0)) {
+      setError("Ugyldig pris.");
       return;
     }
 
     let exclusivePriceNum: number | null = null;
     if (stripeReady && exclusiveEnabled) {
       exclusivePriceNum = parseInt(exclusivePrice);
-      if (isNaN(exclusivePriceNum) || exclusivePriceNum < 100) {
-        setError("Eksklusiv pris må være minst kr 100.");
+      if (isNaN(exclusivePriceNum) || exclusivePriceNum < 0) {
+        setError("Ugyldig eksklusiv pris.");
         return;
       }
       if (exclusivePriceNum <= priceNum) {
@@ -584,7 +584,7 @@ export default function LastOppPage() {
                 placeholder="299"
                 value={price}
                 onChange={(e) => setPrice(e.target.value)}
-                min={100}
+                min={0}
                 required
                 style={{ ...inputStyle, paddingLeft: 32 }}
               />
@@ -622,7 +622,7 @@ export default function LastOppPage() {
                     placeholder="2999"
                     value={exclusivePrice}
                     onChange={(e) => setExclusivePrice(e.target.value)}
-                    min={100}
+                    min={0}
                     style={{ ...inputStyle, paddingLeft: 32 }}
                   />
                 </div>
