@@ -1,10 +1,10 @@
 "use client";
 
-import { useState, useRef, useEffect, useCallback } from "react";
+import { useState, useRef, useEffect } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { useParams, useRouter } from "next/navigation";
-import { Pencil, Settings, Play, Pause, Package, Trash2, CreditCard, CheckCircle2, Share2, SquarePen } from "lucide-react";
+import { Pencil, Settings, Play, Pause, Package, Trash2, CreditCard, CheckCircle2, Share2, SquarePen, LogOut } from "lucide-react";
 import { getSupabaseClient } from "@/lib/supabase/client";
 import { fetchProfileByUsername } from "@/lib/fetchProfile";
 import { fetchBeatsByProducer } from "@/lib/fetchBeats";
@@ -30,7 +30,7 @@ export default function ProfilePage() {
   const router = useRouter();
   const usernameParam = params.username as string;
   const { toast } = useToast();
-  const { currentBeat, isPlaying, toggleBeat, pausePlayer } = usePlayer();
+  const { currentBeat, isPlaying, toggleBeat } = usePlayer();
 
   const [profile, setProfile] = useState<Profile | null>(null);
   const [beats, setBeats] = useState<Beat[]>([]);
@@ -59,30 +59,6 @@ export default function ProfilePage() {
   const [pendingDelete, setPendingDelete] = useState<{ type: "beat" | "sample" | "remake"; id: string } | null>(null);
   const [editing, setEditing] = useState<{ type: "beat"; item: Beat } | { type: "sample"; item: Sample } | { type: "remake"; item: Remake } | null>(null);
 
-  // Local audio for samples & remakes (separate from global beat player)
-  const localAudioRef = useRef<HTMLAudioElement | null>(null);
-  const [localPlayingId, setLocalPlayingId] = useState<string | null>(null);
-  const [localPlaying, setLocalPlaying] = useState(false);
-
-  const toggleLocal = useCallback((url: string, id: string) => {
-    if (localPlayingId === id) {
-      if (localAudioRef.current) {
-        if (localPlaying) { localAudioRef.current.pause(); setLocalPlaying(false); }
-        else { pausePlayer(); void localAudioRef.current.play(); setLocalPlaying(true); }
-      }
-      return;
-    }
-    pausePlayer();
-    localAudioRef.current?.pause();
-    const audio = new Audio(url);
-    audio.onended = () => { setLocalPlayingId(null); setLocalPlaying(false); };
-    localAudioRef.current = audio;
-    setLocalPlayingId(id);
-    void audio.play();
-    setLocalPlaying(true);
-  }, [localPlayingId, localPlaying, pausePlayer]);
-
-  useEffect(() => { return () => { localAudioRef.current?.pause(); }; }, []);
 
   const nameInputRef = useRef<HTMLInputElement>(null);
   const bioTextareaRef = useRef<HTMLTextAreaElement>(null);
@@ -175,12 +151,8 @@ export default function ProfilePage() {
 
   async function shareProfile() {
     const url = `${window.location.origin}/profile/${profile!.username}`;
-    if (navigator.share) {
-      await navigator.share({ title: displayName, url }).catch(() => {});
-    } else {
-      await navigator.clipboard.writeText(url);
-      toast("Lenke kopiert!", "success");
-    }
+    await navigator.clipboard.writeText(url);
+    toast("Lenken er kopiert!", "success");
   }
 
   async function saveName() {
@@ -352,14 +324,29 @@ export default function ProfilePage() {
             <Share2 size={18} />
           </button>
           {isOwner && (
-            <Link
-              href="/innstillinger"
-              className="rounded-lg p-2 transition-opacity hover:opacity-80"
-              style={{ background: "rgba(255,255,255,0.06)", color: "#86868b" }}
-              title="Innstillinger"
-            >
-              <Settings size={18} />
-            </Link>
+            <>
+              <Link
+                href="/innstillinger"
+                className="rounded-lg p-2 transition-opacity hover:opacity-80"
+                style={{ background: "rgba(255,255,255,0.06)", color: "#86868b" }}
+                title="Innstillinger"
+              >
+                <Settings size={18} />
+              </Link>
+              <button
+                onClick={async () => {
+                  const supabase = getSupabaseClient();
+                  await supabase.auth.signOut();
+                  router.push("/later");
+                  router.refresh();
+                }}
+                className="rounded-lg p-2 transition-opacity hover:opacity-80"
+                style={{ background: "rgba(255,255,255,0.06)", color: "#86868b" }}
+                title="Logg ut"
+              >
+                <LogOut size={18} />
+              </button>
+            </>
           )}
         </div>
 
@@ -767,7 +754,7 @@ export default function ProfilePage() {
                     onClick={() => router.push(`/later/${beat.id}`)}
                   >
                     <button
-                      onClick={(e) => { e.stopPropagation(); localAudioRef.current?.pause(); setLocalPlayingId(null); setLocalPlaying(false); toggleBeat(beat); }}
+                      onClick={(e) => { e.stopPropagation(); toggleBeat(beat); }}
                       className="flex shrink-0 items-center justify-center rounded-full"
                       style={{
                         width: 32, height: 32,
@@ -869,7 +856,7 @@ export default function ProfilePage() {
                 className="rounded-xl px-3 md:px-4 py-1.5 text-xs md:text-sm font-semibold transition-opacity hover:opacity-90 whitespace-nowrap"
                 style={{ background: "#0071e3", color: "#fff" }}
               >
-                <span className="hidden sm:inline">Last opp </span>Sample / Preset
+                <span className="hidden sm:inline">Last opp </span>sample / Preset
               </Link>
             )}
           </div>
@@ -894,16 +881,16 @@ export default function ProfilePage() {
                   onClick={() => router.push(`/samples/${sample.id}`)}
                 >
                   <button
-                    onClick={(e) => { e.stopPropagation(); sample.audio_preview_url && toggleLocal(sample.audio_preview_url, sample.id); }}
+                    onClick={(e) => { e.stopPropagation(); if (sample.audio_preview_url) toggleBeat(sample); }}
                     className="shrink-0 flex items-center justify-center rounded-full"
                     style={{
                       width: 32, height: 32,
-                      background: localPlayingId === sample.id ? "#6366f1" : "rgba(255,255,255,0.06)",
+                      background: currentBeat?.id === sample.id && isPlaying ? "#6366f1" : "rgba(255,255,255,0.06)",
                       color: sample.audio_preview_url ? "#f5f5f7" : "#3a3a3a",
                       cursor: sample.audio_preview_url ? "pointer" : "default",
                     }}
                   >
-                    {localPlayingId === sample.id && localPlaying
+                    {currentBeat?.id === sample.id && isPlaying
                       ? <Pause size={12} fill="#f5f5f7" />
                       : sample.audio_preview_url
                         ? <Play size={12} fill="#f5f5f7" />
@@ -1004,16 +991,16 @@ export default function ProfilePage() {
                   onClick={() => router.push(`/remakes/${remake.id}`)}
                 >
                   <button
-                    onClick={(e) => { e.stopPropagation(); remake.audio_preview_url && toggleLocal(remake.audio_preview_url, remake.id); }}
+                    onClick={(e) => { e.stopPropagation(); if (remake.audio_preview_url) toggleBeat(remake); }}
                     className="shrink-0 flex items-center justify-center rounded-full"
                     style={{
                       width: 32, height: 32,
-                      background: localPlayingId === remake.id ? "#6366f1" : "rgba(255,255,255,0.06)",
+                      background: currentBeat?.id === remake.id && isPlaying ? "#6366f1" : "rgba(255,255,255,0.06)",
                       color: remake.audio_preview_url ? "#f5f5f7" : "#3a3a3a",
                       cursor: remake.audio_preview_url ? "pointer" : "default",
                     }}
                   >
-                    {localPlayingId === remake.id && localPlaying
+                    {currentBeat?.id === remake.id && isPlaying
                       ? <Pause size={12} fill="#f5f5f7" />
                       : <Play size={12} fill="#f5f5f7" />}
                   </button>

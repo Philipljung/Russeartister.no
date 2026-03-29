@@ -76,7 +76,7 @@ export default function AudioPlayer() {
 
   const progress = duration > 0 ? currentTime / duration : 0;
   const coverImg = currentBeat.cover_url ?? currentBeat.producer?.avatar_url ?? null;
-  const coverBg = coverImg ? undefined : genreColor(currentBeat.genre);
+  const coverBg = coverImg ? undefined : genreColor(currentBeat.genre ?? "");
 
   return (
     <div
@@ -180,14 +180,20 @@ export default function AudioPlayer() {
       </div>
 
       {/* BPM · Key */}
-      <div className="hidden shrink-0 text-right md:block" style={{ width: 80 }}>
-        <p className="text-xs" style={{ color: "#86868b" }}>
-          {currentBeat.bpm} BPM
-        </p>
-        <p className="text-xs mt-0.5" style={{ color: "#3a3a3a" }}>
-          {currentBeat.key}
-        </p>
-      </div>
+      {(currentBeat.bpm || currentBeat.key) && (
+        <div className="hidden shrink-0 text-right md:block" style={{ width: 80 }}>
+          {currentBeat.bpm && (
+            <p className="text-xs" style={{ color: "#86868b" }}>
+              {currentBeat.bpm} BPM
+            </p>
+          )}
+          {currentBeat.key && (
+            <p className="text-xs mt-0.5" style={{ color: "#3a3a3a" }}>
+              {currentBeat.key}
+            </p>
+          )}
+        </div>
+      )}
 
       {/* Close */}
       <button

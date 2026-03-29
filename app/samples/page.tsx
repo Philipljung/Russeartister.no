@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useMemo, useRef, useCallback } from "react";
+import { useState, useEffect, useMemo, useCallback } from "react";
 import { Search, X, Package, Sliders, Play, Pause, FolderArchive, ChevronDown, ChevronUp, Share2 } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -9,6 +9,7 @@ import { SAMPLE_CATEGORIES, PRESET_CATEGORIES, CATEGORY_LABELS } from "@/lib/sam
 import type { Sample } from "@/lib/supabase/types";
 import SampleCheckoutModal from "@/components/SampleCheckoutModal";
 import { useToast } from "@/lib/toast-context";
+import { usePlayer } from "@/lib/player-context";
 
 type ActiveType = "sample" | "preset" | "sample-pack" | "preset-pack";
 
@@ -354,30 +355,12 @@ export default function SamplesPage() {
   const [activeVst, setActiveVst] = useState("");
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [checkoutSample, setCheckoutSample] = useState<Sample | null>(null);
-
-  const audioRef = useRef<HTMLAudioElement | null>(null);
-  const [playingId, setPlayingId] = useState<string | null>(null);
-  const [audioPlaying, setAudioPlaying] = useState(false);
+  const { currentBeat, isPlaying, toggleBeat } = usePlayer();
 
   const toggleSample = useCallback((sample: Sample) => {
     if (!sample.audio_preview_url) return;
-    if (playingId === sample.id) {
-      if (audioRef.current) {
-        if (audioPlaying) { audioRef.current.pause(); setAudioPlaying(false); }
-        else { void audioRef.current.play(); setAudioPlaying(true); }
-      }
-      return;
-    }
-    if (audioRef.current) audioRef.current.pause();
-    const audio = new Audio(sample.audio_preview_url);
-    audio.onended = () => { setPlayingId(null); setAudioPlaying(false); };
-    audioRef.current = audio;
-    setPlayingId(sample.id);
-    void audio.play();
-    setAudioPlaying(true);
-  }, [playingId, audioPlaying]);
-
-  useEffect(() => { return () => { audioRef.current?.pause(); }; }, []);
+    toggleBeat(sample);
+  }, [toggleBeat]);
 
   useEffect(() => {
     fetchPublicSamples().then((data) => { setSamples(data); setLoading(false); });
@@ -629,9 +612,9 @@ export default function SamplesPage() {
             <div>
               {filtered.map((s) =>
                 s.item_type === "sample-pack" || s.item_type === "preset-pack" ? (
-                  <PackCard key={s.id} sample={s} isActive={playingId === s.id} isPlaying={audioPlaying} onToggle={toggleSample} onBuy={setCheckoutSample} />
+                  <PackCard key={s.id} sample={s} isActive={currentBeat?.id === s.id} isPlaying={currentBeat?.id === s.id && isPlaying} onToggle={toggleSample} onBuy={setCheckoutSample} />
                 ) : (
-                  <SampleCard key={s.id} sample={s} isActive={playingId === s.id} isPlaying={audioPlaying} isSelected={selectedId === s.id} onToggle={toggleSample} onBuy={setCheckoutSample} />
+                  <SampleCard key={s.id} sample={s} isActive={currentBeat?.id === s.id} isPlaying={currentBeat?.id === s.id && isPlaying} isSelected={selectedId === s.id} onToggle={toggleSample} onBuy={setCheckoutSample} />
                 )
               )}
             </div>

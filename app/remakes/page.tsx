@@ -1,10 +1,11 @@
 "use client";
 
-import { useState, useEffect, useMemo, useRef, useCallback } from "react";
+import { useState, useEffect, useMemo, useCallback } from "react";
 import { Search, X } from "lucide-react";
 import { fetchPublicRemakes } from "@/lib/fetchRemakes";
 import RemakeCard from "@/components/RemakeCard";
 import RemakeCheckoutModal from "@/components/RemakeCheckoutModal";
+import { usePlayer } from "@/lib/player-context";
 import type { Remake } from "@/lib/supabase/types";
 
 export default function RemakesPage() {
@@ -17,33 +18,12 @@ export default function RemakesPage() {
   const [excludeVsts, setExcludeVsts] = useState<string[]>([]);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [checkoutRemake, setCheckoutRemake] = useState<Remake | null>(null);
-
-  // Audio playback
-  const audioRef = useRef<HTMLAudioElement | null>(null);
-  const [playingId, setPlayingId] = useState<string | null>(null);
-  const [audioPlaying, setAudioPlaying] = useState(false);
+  const { currentBeat, isPlaying, toggleBeat } = usePlayer();
 
   const toggleRemake = useCallback((remake: Remake) => {
     if (!remake.audio_preview_url) return;
-
-    if (playingId === remake.id) {
-      if (audioRef.current) {
-        if (audioPlaying) { audioRef.current.pause(); setAudioPlaying(false); }
-        else { void audioRef.current.play(); setAudioPlaying(true); }
-      }
-      return;
-    }
-
-    audioRef.current?.pause();
-    const audio = new Audio(remake.audio_preview_url);
-    audio.onended = () => { setPlayingId(null); setAudioPlaying(false); };
-    audioRef.current = audio;
-    setPlayingId(remake.id);
-    void audio.play();
-    setAudioPlaying(true);
-  }, [playingId, audioPlaying]);
-
-  useEffect(() => { return () => { audioRef.current?.pause(); }; }, []);
+    toggleBeat(remake);
+  }, [toggleBeat]);
 
   useEffect(() => {
     fetchPublicRemakes().then((data) => { setRemakes(data); setLoading(false); });
@@ -271,8 +251,8 @@ export default function RemakesPage() {
                 <RemakeCard
                   key={remake.id}
                   remake={remake}
-                  isActive={playingId === remake.id}
-                  isPlaying={playingId === remake.id && audioPlaying}
+                  isActive={currentBeat?.id === remake.id}
+                  isPlaying={currentBeat?.id === remake.id && isPlaying}
                   isSelected={selectedId === remake.id}
                   onToggle={toggleRemake}
                   onBuy={handleBuy}

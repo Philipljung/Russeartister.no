@@ -1,12 +1,23 @@
 "use client";
 
 import { createContext, useContext, useState, useCallback } from "react";
-import type { Beat } from "./supabase/types";
+import type { Profile } from "./supabase/types";
+
+export type PlayableItem = {
+  id: string;
+  title: string;
+  audio_preview_url: string | null;
+  cover_url: string | null;
+  genre: string | null;
+  bpm: number | null;
+  key: string | null;
+  producer?: Profile;
+};
 
 type PlayerContextType = {
-  currentBeat: Beat | null;
+  currentBeat: PlayableItem | null;
   isPlaying: boolean;
-  toggleBeat: (beat: Beat) => void;
+  toggleBeat: (item: PlayableItem) => void;
   pausePlayer: () => void;
   stopPlayer: () => void;
   clearPlayer: () => void;
@@ -15,17 +26,16 @@ type PlayerContextType = {
 const PlayerContext = createContext<PlayerContextType | null>(null);
 
 export function PlayerProvider({ children }: { children: React.ReactNode }) {
-  const [currentBeat, setCurrentBeat] = useState<Beat | null>(null);
+  const [currentBeat, setCurrentBeat] = useState<PlayableItem | null>(null);
   const [isPlaying, setIsPlaying] = useState(false);
 
-  const toggleBeat = useCallback((beat: Beat) => {
+  const toggleBeat = useCallback((item: PlayableItem) => {
     setCurrentBeat((prev) => {
-      if (prev?.id === beat.id) return prev;
-      return beat;
+      if (prev?.id === item.id) return prev;
+      return item;
     });
     setIsPlaying((prevPlaying) => {
-      // Same beat → toggle; different beat → always start playing
-      if (currentBeat?.id === beat.id) return !prevPlaying;
+      if (currentBeat?.id === item.id) return !prevPlaying;
       return true;
     });
   }, [currentBeat?.id]);

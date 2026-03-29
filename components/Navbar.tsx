@@ -60,13 +60,6 @@ export default function Navbar() {
     setMenuOpen(false);
   }, [pathname]);
 
-  async function handleSignOut() {
-    const supabase = getSupabaseClient();
-    await supabase.auth.signOut();
-    setMenuOpen(false);
-    router.push("/later");
-    router.refresh();
-  }
 
   return (
     <nav
@@ -160,13 +153,6 @@ export default function Navbar() {
                 </div>
                 {displayName ?? username}
               </Link>
-              <button
-                onClick={handleSignOut}
-                className="rounded-md px-3 py-1.5 text-sm transition-colors hover:opacity-80"
-                style={{ color: "#86868b" }}
-              >
-                Logg ut
-              </button>
             </>
           ) : (
             <>
@@ -273,13 +259,6 @@ export default function Navbar() {
                     >
                       Mine nedlastninger
                     </Link>
-                    <button
-                      onClick={handleSignOut}
-                      className="text-left rounded-lg px-3 py-2.5 text-sm transition-colors"
-                      style={{ color: "#86868b" }}
-                    >
-                      Logg ut
-                    </button>
                   </>
                 ) : (
                   <div className="flex gap-2 pt-1">
