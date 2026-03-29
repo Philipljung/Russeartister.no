@@ -222,15 +222,37 @@ export default function ProfilePage() {
     const file = e.target.files?.[0];
     if (!file || !profile) return;
 
-    const ext = file.name.split(".").pop();
-    const path = `${profile.id}/avatar.${ext}`;
+    const path = `${profile.id}/avatar.webp`;
     setUploadingAvatar(true);
 
     try {
+      // Resize and compress to WebP before uploading
+      const compressed = await new Promise<Blob>((resolve, reject) => {
+        const img = new window.Image();
+        img.onload = () => {
+          const size = 400;
+          const canvas = document.createElement("canvas");
+          canvas.width = size;
+          canvas.height = size;
+          const ctx = canvas.getContext("2d")!;
+          const min = Math.min(img.width, img.height);
+          const sx = (img.width - min) / 2;
+          const sy = (img.height - min) / 2;
+          ctx.drawImage(img, sx, sy, min, min, 0, 0, size, size);
+          canvas.toBlob(
+            (blob) => (blob ? resolve(blob) : reject(new Error("Compression failed"))),
+            "image/webp",
+            0.8
+          );
+        };
+        img.onerror = () => reject(new Error("Could not load image"));
+        img.src = URL.createObjectURL(file);
+      });
+
       const supabase = getSupabaseClient();
       const { error: uploadError } = await supabase.storage
         .from("avatars")
-        .upload(path, file, { upsert: true });
+        .upload(path, compressed, { upsert: true, contentType: "image/webp" });
 
       if (uploadError) {
         console.error("[profile] Avatar upload error:", uploadError.message);
