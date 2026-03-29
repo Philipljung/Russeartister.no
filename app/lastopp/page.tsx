@@ -315,12 +315,8 @@ export default function LastOppPage() {
             style={{
               width: 100,
               height: 100,
-              background: cover?.previewUrl
-                ? undefined
-                : "#141414",
-              backgroundImage: cover?.previewUrl
-                ? `url(${cover.previewUrl})`
-                : undefined,
+              backgroundColor: cover?.previewUrl ? "transparent" : "#141414",
+              backgroundImage: cover?.previewUrl ? `url(${cover.previewUrl})` : "none",
               backgroundSize: "cover",
               backgroundPosition: "center",
               border: "1px solid #2a2a2a",
