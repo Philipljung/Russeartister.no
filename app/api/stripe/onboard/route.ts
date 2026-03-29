@@ -2,8 +2,10 @@ import { NextResponse } from "next/server";
 import { stripe } from "@/lib/stripe";
 import { createClient } from "@/lib/supabase/server";
 
-export async function POST() {
+export async function POST(request: Request) {
   try {
+    const body = await request.json().catch(() => ({}));
+    const country = body.country || "NO";
     const supabase = await createClient();
 
     const {
@@ -33,6 +35,7 @@ export async function POST() {
 
       const account = await stripe.accounts.create({
         type: "express",
+        country,
         capabilities: {
           card_payments: { requested: true },
           transfers: { requested: true },

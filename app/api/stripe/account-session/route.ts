@@ -8,8 +8,10 @@ import { createClient } from "@/lib/supabase/server";
  * Creates (or reuses) a Stripe Express account for the logged-in user,
  * then returns a short-lived client_secret for the Connect embedded component.
  */
-export async function POST() {
+export async function POST(request: Request) {
   try {
+    const body = await request.json().catch(() => ({}));
+    const country = body.country || "NO";
     const supabase = await createClient();
 
     const {
@@ -38,6 +40,7 @@ export async function POST() {
     if (!accountId) {
       const account = await stripe.accounts.create({
         type: "express",
+        country,
         capabilities: {
           card_payments: { requested: true },
           transfers: { requested: true },

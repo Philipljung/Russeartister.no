@@ -9,8 +9,12 @@ type Props = {
   onComplete: () => void;
 };
 
-async function fetchClientSecret(): Promise<string> {
-  const res = await fetch("/api/stripe/account-session", { method: "POST" });
+async function fetchClientSecret(country: string): Promise<string> {
+  const res = await fetch("/api/stripe/account-session", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ country }),
+  });
   const data = await res.json();
   if (!res.ok) {
     console.error("[StripeOnboarding] Failed to get client_secret:", data.error);
@@ -19,11 +23,35 @@ async function fetchClientSecret(): Promise<string> {
   return data.client_secret;
 }
 
+const COUNTRIES = [
+  { code: "NO", label: "Norge" },
+  { code: "GB", label: "United Kingdom" },
+  { code: "SE", label: "Sverige" },
+  { code: "DK", label: "Danmark" },
+  { code: "FI", label: "Finland" },
+  { code: "DE", label: "Deutschland" },
+  { code: "FR", label: "France" },
+  { code: "NL", label: "Nederland" },
+  { code: "BE", label: "Belgia" },
+  { code: "AT", label: "Østerrike" },
+  { code: "IE", label: "Irland" },
+  { code: "ES", label: "España" },
+  { code: "IT", label: "Italia" },
+  { code: "PT", label: "Portugal" },
+  { code: "PL", label: "Polen" },
+  { code: "CH", label: "Sveits" },
+  { code: "US", label: "United States" },
+  { code: "AU", label: "Australia" },
+  { code: "CA", label: "Canada" },
+  { code: "NZ", label: "New Zealand" },
+];
+
 export default function StripeOnboardingModal({ onClose, onComplete }: Props) {
   const containerRef = useRef<HTMLDivElement>(null);
   const [step, setStep] = useState<"intro" | "form">("intro");
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [country, setCountry] = useState("NO");
 
   // Mount the Stripe embedded component when the user moves to "form" step
   useEffect(() => {
@@ -33,9 +61,10 @@ export default function StripeOnboardingModal({ onClose, onComplete }: Props) {
     setLoading(true);
     setError(null);
 
+    const selectedCountry = country;
     const instance = loadConnectAndInitialize({
       publishableKey: process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY!,
-      fetchClientSecret,
+      fetchClientSecret: () => fetchClientSecret(selectedCountry),
       appearance: {
         overlays: "drawer",
         variables: {
@@ -121,6 +150,32 @@ export default function StripeOnboardingModal({ onClose, onComplete }: Props) {
                 en trygg betalingsløsning brukt av millioner av selgere verden over.
                 Vi tar <strong style={{ color: "#f5f5f7" }}>15&thinsp;%</strong> i plattformavgift, og resten går direkte til deg.
               </p>
+            </div>
+
+            {/* Country selector */}
+            <div className="mb-6">
+              <p className="mb-2 text-xs font-semibold uppercase tracking-wider" style={{ color: "#3a3a3a" }}>
+                Hvilket land bor du i?
+              </p>
+              <select
+                value={country}
+                onChange={(e) => setCountry(e.target.value)}
+                style={{
+                  background: "#141414",
+                  border: "1px solid #2a2a2a",
+                  borderRadius: 12,
+                  padding: "10px 14px",
+                  fontSize: 13,
+                  color: "#f5f5f7",
+                  outline: "none",
+                  width: "100%",
+                  cursor: "pointer",
+                }}
+              >
+                {COUNTRIES.map((c) => (
+                  <option key={c.code} value={c.code}>{c.label}</option>
+                ))}
+              </select>
             </div>
 
             {/* What you'll need */}
