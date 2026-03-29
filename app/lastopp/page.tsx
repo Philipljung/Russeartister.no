@@ -712,6 +712,7 @@ export default function LastOppPage() {
             const previewUrl = URL.createObjectURL(blob);
             setCover({ file, previewUrl });
             setCropSrc(null);
+            if (coverInputRef.current) coverInputRef.current.value = "";
           }}
         />
       )}
