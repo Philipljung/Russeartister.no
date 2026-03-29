@@ -724,10 +724,10 @@ export default function ProfilePage() {
             {isOwner && (
               <Link
                 href="/lastopp"
-                className="rounded-xl px-4 py-1.5 text-sm font-semibold transition-opacity hover:opacity-90"
-                style={{ background: "#ffffff", color: "#000000" }}
+                className="rounded-xl px-4 py-1.5 text-sm font-semibold transition-opacity hover:opacity-80"
+                style={{ background: "transparent", color: "#f5f5f7", border: "1px solid #3a3a3a" }}
               >
-                Last opp låt
+                + Last opp låt
               </Link>
             )}
           </div>
@@ -853,10 +853,10 @@ export default function ProfilePage() {
             {isOwner && (
               <Link
                 href="/lastopp-sample"
-                className="rounded-xl px-3 md:px-4 py-1.5 text-xs md:text-sm font-semibold transition-opacity hover:opacity-90 whitespace-nowrap"
-                style={{ background: "#ffffff", color: "#000000" }}
+                className="rounded-xl px-3 md:px-4 py-1.5 text-xs md:text-sm font-semibold transition-opacity hover:opacity-80 whitespace-nowrap"
+                style={{ background: "transparent", color: "#f5f5f7", border: "1px solid #3a3a3a" }}
               >
-                <span className="hidden sm:inline">Last opp </span>sample / preset
+                + <span className="hidden sm:inline">Last opp </span>sample / preset
               </Link>
             )}
           </div>
@@ -966,10 +966,10 @@ export default function ProfilePage() {
             {isOwner && (
               <Link
                 href="/lastopp-remake"
-                className="rounded-xl px-3 md:px-4 py-1.5 text-xs md:text-sm font-semibold transition-opacity hover:opacity-90 whitespace-nowrap"
-                style={{ background: "#ffffff", color: "#000000" }}
+                className="rounded-xl px-3 md:px-4 py-1.5 text-xs md:text-sm font-semibold transition-opacity hover:opacity-80 whitespace-nowrap"
+                style={{ background: "transparent", color: "#f5f5f7", border: "1px solid #3a3a3a" }}
               >
-                Last opp remake
+                + Last opp remake
               </Link>
             )}
           </div>
