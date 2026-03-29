@@ -758,12 +758,12 @@ export default function ProfilePage() {
                       className="flex shrink-0 items-center justify-center rounded-full"
                       style={{
                         width: 32, height: 32,
-                        background: "rgba(255,255,255,0.06)",
-                        color: "#f5f5f7",
+                        background: isCurrentlyPlaying ? "#f5f5f7" : "rgba(255,255,255,0.06)",
+                        color: isCurrentlyPlaying ? "#080808" : "#f5f5f7",
                       }}
                     >
                       {isCurrentlyPlaying
-                        ? <Pause size={12} fill="#f5f5f7" />
+                        ? <Pause size={12} fill="#080808" />
                         : <Play size={12} fill="#f5f5f7" />}
                     </button>
 
@@ -885,13 +885,13 @@ export default function ProfilePage() {
                     className="shrink-0 flex items-center justify-center rounded-full"
                     style={{
                       width: 32, height: 32,
-                      background: "rgba(255,255,255,0.06)",
-                      color: sample.audio_preview_url ? "#f5f5f7" : "#3a3a3a",
+                      background: currentBeat?.id === sample.id && isPlaying ? "#f5f5f7" : "rgba(255,255,255,0.06)",
+                      color: currentBeat?.id === sample.id && isPlaying ? "#080808" : sample.audio_preview_url ? "#f5f5f7" : "#3a3a3a",
                       cursor: sample.audio_preview_url ? "pointer" : "default",
                     }}
                   >
                     {currentBeat?.id === sample.id && isPlaying
-                      ? <Pause size={12} fill="#f5f5f7" />
+                      ? <Pause size={12} fill="#080808" />
                       : sample.audio_preview_url
                         ? <Play size={12} fill="#f5f5f7" />
                         : <Package size={12} />}
@@ -995,13 +995,13 @@ export default function ProfilePage() {
                     className="shrink-0 flex items-center justify-center rounded-full"
                     style={{
                       width: 32, height: 32,
-                      background: "rgba(255,255,255,0.06)",
-                      color: remake.audio_preview_url ? "#f5f5f7" : "#3a3a3a",
+                      background: currentBeat?.id === remake.id && isPlaying ? "#f5f5f7" : "rgba(255,255,255,0.06)",
+                      color: currentBeat?.id === remake.id && isPlaying ? "#080808" : remake.audio_preview_url ? "#f5f5f7" : "#3a3a3a",
                       cursor: remake.audio_preview_url ? "pointer" : "default",
                     }}
                   >
                     {currentBeat?.id === remake.id && isPlaying
-                      ? <Pause size={12} fill="#f5f5f7" />
+                      ? <Pause size={12} fill="#080808" />
                       : <Play size={12} fill="#f5f5f7" />}
                   </button>
                   <div className="min-w-0 flex-1">

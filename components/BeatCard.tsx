@@ -85,14 +85,12 @@ export default function BeatCard({ beat, isSelected = false, onSelect }: Props) 
         style={{
           width: 36,
           height: 36,
-          background: hovered
-            ? "rgba(255,255,255,0.1)"
-            : "rgba(255,255,255,0.06)",
-          color: "#f5f5f7",
+          background: isCurrentlyPlaying ? "#f5f5f7" : hovered ? "rgba(255,255,255,0.1)" : "rgba(255,255,255,0.06)",
+          color: isCurrentlyPlaying ? "#080808" : "#f5f5f7",
         }}
       >
         {isCurrentlyPlaying ? (
-          <Pause size={14} fill="#f5f5f7" />
+          <Pause size={14} fill="#080808" />
         ) : (
           <Play size={14} fill="#f5f5f7" />
         )}

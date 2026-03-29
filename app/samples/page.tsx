@@ -71,14 +71,14 @@ function SampleCard({
         className="shrink-0 flex items-center justify-center rounded-full transition-colors"
         style={{
           width: 36, height: 36,
-          background: "rgba(255,255,255,0.06)",
-          color: canPlay ? "#f5f5f7" : "#3a3a3a",
+          background: isActive && isPlaying ? "#f5f5f7" : "rgba(255,255,255,0.06)",
+          color: isActive && isPlaying ? "#080808" : canPlay ? "#f5f5f7" : "#3a3a3a",
           cursor: canPlay ? "pointer" : "default",
         }}
         title={canPlay ? (isPlaying && isActive ? "Pause" : "Spill av") : "Ingen forhåndsvisning"}
       >
         {isActive && isPlaying
-          ? <Pause size={13} fill="currentColor" />
+          ? <Pause size={13} fill="#080808" />
           : !canPlay && isPreset
             ? <Sliders size={13} />
             : <Play size={13} fill="currentColor" />}
@@ -229,12 +229,12 @@ function PackCard({
           className="shrink-0 flex items-center justify-center rounded-full transition-colors"
           style={{
             width: 36, height: 36,
-            background: "rgba(255,255,255,0.06)",
-            color: canPlay ? "#f5f5f7" : "#3a3a3a",
+            background: isActive && isPlaying ? "#f5f5f7" : "rgba(255,255,255,0.06)",
+            color: isActive && isPlaying ? "#080808" : canPlay ? "#f5f5f7" : "#3a3a3a",
             cursor: canPlay ? "pointer" : "default",
           }}
         >
-          {isActive && isPlaying ? <Pause size={13} fill="currentColor" /> : <Play size={13} fill="currentColor" />}
+          {isActive && isPlaying ? <Pause size={13} fill="#080808" /> : <Play size={13} fill="currentColor" />}
         </button>
 
         {/* Cover */}

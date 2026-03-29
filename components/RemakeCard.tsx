@@ -58,13 +58,13 @@ export default function RemakeCard({ remake, isActive, isPlaying, isSelected = f
         className="flex shrink-0 items-center justify-center rounded-full transition-all"
         style={{
           width: 36, height: 36,
-          background: hovered ? "rgba(255,255,255,0.1)" : "rgba(255,255,255,0.06)",
-          color: canPlay ? "#f5f5f7" : "#3a3a3a",
+          background: isActive && isPlaying ? "#f5f5f7" : hovered ? "rgba(255,255,255,0.1)" : "rgba(255,255,255,0.06)",
+          color: isActive && isPlaying ? "#080808" : canPlay ? "#f5f5f7" : "#3a3a3a",
           cursor: canPlay ? "pointer" : "default",
         }}
         title={canPlay ? (isPlaying && isActive ? "Pause" : "Spill av") : "Ingen forhåndsvisning"}
       >
-        {isActive && isPlaying ? <Pause size={14} fill="currentColor" /> : <Play size={14} fill="currentColor" />}
+        {isActive && isPlaying ? <Pause size={14} fill="#080808" /> : <Play size={14} fill="currentColor" />}
       </button>
 
       {/* Cover */}
