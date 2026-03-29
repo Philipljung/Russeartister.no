@@ -13,7 +13,8 @@ export default function RemakesPage() {
   const [query, setQuery] = useState("");
   const [debouncedQuery, setDebouncedQuery] = useState("");
   const [activeDaw, setActiveDaw] = useState("");
-  const [activeVsts, setActiveVsts] = useState<string[]>([]);
+  const [includeVsts, setIncludeVsts] = useState<string[]>([]);
+  const [excludeVsts, setExcludeVsts] = useState<string[]>([]);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [checkoutRemake, setCheckoutRemake] = useState<Remake | null>(null);
 
@@ -76,11 +77,14 @@ export default function RemakesPage() {
       );
     }
     if (activeDaw) result = result.filter((r) => r.daw === activeDaw);
-    if (activeVsts.length > 0) {
-      result = result.filter((r) => activeVsts.some((v) => r.vsts?.includes(v)));
+    if (includeVsts.length > 0) {
+      result = result.filter((r) => includeVsts.some((v) => r.vsts?.includes(v)));
+    }
+    if (excludeVsts.length > 0) {
+      result = result.filter((r) => !excludeVsts.some((v) => r.vsts?.includes(v)));
     }
     return result;
-  }, [remakes, debouncedQuery, activeDaw, activeVsts]);
+  }, [remakes, debouncedQuery, activeDaw, includeVsts, excludeVsts]);
 
   // Keyboard navigation
   const handleKeyDown = useCallback((e: KeyboardEvent) => {
@@ -176,25 +180,46 @@ export default function RemakesPage() {
             <div className="flex items-center gap-2 overflow-x-auto pb-1" style={{ scrollbarWidth: "none" }}>
               <span className="shrink-0 text-xs" style={{ color: "#3a3a3a" }}>VST</span>
               {vsts.map((v) => {
-                const isActive = activeVsts.includes(v);
+                const isIncluded = includeVsts.includes(v);
+                const isExcluded = excludeVsts.includes(v);
                 return (
                   <button
                     key={v}
-                    onClick={() => setActiveVsts(isActive ? activeVsts.filter((x) => x !== v) : [...activeVsts, v])}
+                    onClick={() => {
+                      if (!isIncluded && !isExcluded) {
+                        // neutral -> include
+                        setIncludeVsts([...includeVsts, v]);
+                      } else if (isIncluded) {
+                        // include -> exclude
+                        setIncludeVsts(includeVsts.filter((x) => x !== v));
+                        setExcludeVsts([...excludeVsts, v]);
+                      } else {
+                        // exclude -> neutral
+                        setExcludeVsts(excludeVsts.filter((x) => x !== v));
+                      }
+                    }}
                     className="shrink-0 rounded-xl px-3 py-1.5 text-xs transition-all whitespace-nowrap"
                     style={{
-                      background: isActive ? "rgba(16,185,129,0.12)" : "transparent",
-                      border: `1px solid ${isActive ? "rgba(16,185,129,0.35)" : "#2a2a2a"}`,
-                      color: isActive ? "#34d399" : "#3a3a3a",
+                      background: isIncluded
+                        ? "rgba(16,185,129,0.12)"
+                        : isExcluded
+                        ? "rgba(255,59,48,0.12)"
+                        : "transparent",
+                      border: `1px solid ${isIncluded
+                        ? "rgba(16,185,129,0.35)"
+                        : isExcluded
+                        ? "rgba(255,59,48,0.35)"
+                        : "#2a2a2a"}`,
+                      color: isIncluded ? "#34d399" : isExcluded ? "#ff6b6b" : "#3a3a3a",
                     }}
                   >
                     {v}
                   </button>
                 );
               })}
-              {activeVsts.length > 0 && (
+              {(includeVsts.length > 0 || excludeVsts.length > 0) && (
                 <button
-                  onClick={() => setActiveVsts([])}
+                  onClick={() => { setIncludeVsts([]); setExcludeVsts([]); }}
                   className="shrink-0 flex items-center gap-1.5 rounded-xl px-3 py-1.5 text-xs ml-auto"
                   style={{ background: "rgba(255,255,255,0.06)", border: "1px solid #2a2a2a", color: "#86868b" }}
                 >
@@ -222,8 +247,8 @@ export default function RemakesPage() {
           </div>
         ) : filtered.length === 0 ? (
           <div className="mt-20 text-center" style={{ color: "#3a3a3a" }}>
-            <p className="text-lg font-medium">{query || activeDaw || activeVsts.length > 0 ? "Ingen remakes funnet" : "Ingen remakes enda"}</p>
-            {(query || activeDaw || activeVsts.length > 0) && <p className="mt-1 text-sm">Prøv et annet søk</p>}
+            <p className="text-lg font-medium">{query || activeDaw || (includeVsts.length > 0 || excludeVsts.length > 0) ? "Ingen remakes funnet" : "Ingen remakes enda"}</p>
+            {(query || activeDaw || includeVsts.length > 0 || excludeVsts.length > 0) && <p className="mt-1 text-sm">Prøv et annet søk</p>}
           </div>
         ) : (
           <>
