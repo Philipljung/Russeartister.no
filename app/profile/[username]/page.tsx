@@ -4,7 +4,7 @@ import { useState, useRef, useEffect, useCallback } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { useParams, useRouter } from "next/navigation";
-import { Pencil, Settings, Play, Pause, Package, Trash2, CreditCard, CheckCircle2, Share2 } from "lucide-react";
+import { Pencil, Settings, Play, Pause, Package, Trash2, CreditCard, CheckCircle2, Share2, SquarePen } from "lucide-react";
 import { getSupabaseClient } from "@/lib/supabase/client";
 import { fetchProfileByUsername } from "@/lib/fetchProfile";
 import { fetchBeatsByProducer } from "@/lib/fetchBeats";
@@ -14,6 +14,7 @@ import { usePlayer } from "@/lib/player-context";
 import { useToast } from "@/lib/toast-context";
 import StripeOnboardingModal from "@/components/StripeOnboardingModal";
 import ImageCropModal from "@/components/ImageCropModal";
+import EditProductModal from "@/components/EditProductModal";
 import { CATEGORY_LABELS } from "@/lib/sampleCategories";
 import type { Profile, Beat, Sample, Remake } from "@/lib/supabase/types";
 
@@ -56,6 +57,7 @@ export default function ProfilePage() {
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
   const [pendingDelete, setPendingDelete] = useState<{ type: "beat" | "sample" | "remake"; id: string } | null>(null);
+  const [editing, setEditing] = useState<{ type: "beat"; item: Beat } | { type: "sample"; item: Sample } | { type: "remake"; item: Remake } | null>(null);
 
   // Local audio for samples & remakes (separate from global beat player)
   const localAudioRef = useRef<HTMLAudioElement | null>(null);
@@ -828,14 +830,24 @@ export default function ProfilePage() {
                         <Share2 size={14} />
                       </button>
                       {isOwner && (
-                        <button
-                          title="Slett låt"
-                          className="flex items-center justify-center rounded-lg transition-colors hover:opacity-80"
-                          style={{ width: 30, height: 30, color: "#ff3b30" }}
-                          onClick={(e) => { e.stopPropagation(); deleteBeat(beat.id); }}
-                        >
-                          <Trash2 size={14} />
-                        </button>
+                        <>
+                          <button
+                            title="Rediger låt"
+                            className="flex items-center justify-center rounded-lg transition-colors hover:opacity-80"
+                            style={{ width: 30, height: 30, color: "#86868b" }}
+                            onClick={(e) => { e.stopPropagation(); setEditing({ type: "beat", item: beat }); }}
+                          >
+                            <SquarePen size={14} />
+                          </button>
+                          <button
+                            title="Slett låt"
+                            className="flex items-center justify-center rounded-lg transition-colors hover:opacity-80"
+                            style={{ width: 30, height: 30, color: "#ff3b30" }}
+                            onClick={(e) => { e.stopPropagation(); deleteBeat(beat.id); }}
+                          >
+                            <Trash2 size={14} />
+                          </button>
+                        </>
                       )}
                     </div>
                   </div>
@@ -932,14 +944,24 @@ export default function ProfilePage() {
                       <Share2 size={14} />
                     </button>
                     {isOwner && (
-                      <button
-                        title="Slett sample"
-                        className="flex items-center justify-center rounded-lg transition-colors hover:opacity-80"
-                        style={{ width: 30, height: 30, color: "#ff3b30" }}
-                        onClick={(e) => { e.stopPropagation(); deleteSample(sample.id); }}
-                      >
-                        <Trash2 size={14} />
-                      </button>
+                      <>
+                        <button
+                          title="Rediger sample"
+                          className="flex items-center justify-center rounded-lg transition-colors hover:opacity-80"
+                          style={{ width: 30, height: 30, color: "#86868b" }}
+                          onClick={(e) => { e.stopPropagation(); setEditing({ type: "sample", item: sample }); }}
+                        >
+                          <SquarePen size={14} />
+                        </button>
+                        <button
+                          title="Slett sample"
+                          className="flex items-center justify-center rounded-lg transition-colors hover:opacity-80"
+                          style={{ width: 30, height: 30, color: "#ff3b30" }}
+                          onClick={(e) => { e.stopPropagation(); deleteSample(sample.id); }}
+                        >
+                          <Trash2 size={14} />
+                        </button>
+                      </>
                     )}
                   </div>
                 </div>
@@ -1025,14 +1047,24 @@ export default function ProfilePage() {
                       <Share2 size={14} />
                     </button>
                     {isOwner && (
-                      <button
-                        title="Slett remake"
-                        className="flex items-center justify-center rounded-lg transition-colors hover:opacity-80"
-                        style={{ width: 30, height: 30, color: "#ff3b30" }}
-                        onClick={(e) => { e.stopPropagation(); deleteRemake(remake.id); }}
-                      >
-                        <Trash2 size={14} />
-                      </button>
+                      <>
+                        <button
+                          title="Rediger remake"
+                          className="flex items-center justify-center rounded-lg transition-colors hover:opacity-80"
+                          style={{ width: 30, height: 30, color: "#86868b" }}
+                          onClick={(e) => { e.stopPropagation(); setEditing({ type: "remake", item: remake }); }}
+                        >
+                          <SquarePen size={14} />
+                        </button>
+                        <button
+                          title="Slett remake"
+                          className="flex items-center justify-center rounded-lg transition-colors hover:opacity-80"
+                          style={{ width: 30, height: 30, color: "#ff3b30" }}
+                          onClick={(e) => { e.stopPropagation(); deleteRemake(remake.id); }}
+                        >
+                          <Trash2 size={14} />
+                        </button>
+                      </>
                     )}
                   </div>
                 </div>
@@ -1097,6 +1129,21 @@ export default function ProfilePage() {
         aspect={1}
         onCancel={() => { setAvatarCropSrc(null); if (avatarInputRef.current) avatarInputRef.current.value = ""; }}
         onCrop={(blob) => void uploadCroppedAvatar(blob)}
+      />
+    )}
+
+    {/* Edit product modal */}
+    {editing && (
+      <EditProductModal
+        type={editing.type}
+        item={editing.item as never}
+        onClose={() => setEditing(null)}
+        onSaved={(updated) => {
+          if (editing.type === "beat") setBeats((prev) => prev.map((b) => b.id === updated.id ? updated as Beat : b));
+          else if (editing.type === "sample") setSamples((prev) => prev.map((s) => s.id === updated.id ? updated as Sample : s));
+          else setRemakes((prev) => prev.map((r) => r.id === updated.id ? updated as Remake : r));
+          toast("Endringer lagret!", "success");
+        }}
       />
     )}
 

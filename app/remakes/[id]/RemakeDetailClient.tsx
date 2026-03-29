@@ -174,7 +174,7 @@ export default function RemakeDetailClient({
 
         {/* Description */}
         {remake.description && (
-          <p className="mt-6 text-sm leading-relaxed" style={{ color: "#86868b" }}>
+          <p className="mt-6 text-sm leading-relaxed whitespace-pre-line" style={{ color: "#86868b" }}>
             {remake.description}
           </p>
         )}

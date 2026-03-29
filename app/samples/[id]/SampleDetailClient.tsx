@@ -303,7 +303,7 @@ export default function SampleDetailClient({
 
         {/* Description */}
         {sample.description && (
-          <p className="mt-6 text-sm leading-relaxed" style={{ color: "#86868b" }}>
+          <p className="mt-6 text-sm leading-relaxed whitespace-pre-line" style={{ color: "#86868b" }}>
             {sample.description}
           </p>
         )}
