@@ -36,7 +36,6 @@ export const createClient = getSupabaseServerClient;
  * Sync — no cookies needed.
  */
 export function createServiceClient() {
-  console.log("[supabase] createServiceClient() — using service role key");
   return createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.SUPABASE_SERVICE_ROLE_KEY!,

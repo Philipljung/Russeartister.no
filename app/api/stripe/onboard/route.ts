@@ -3,8 +3,6 @@ import { stripe } from "@/lib/stripe";
 import { createClient } from "@/lib/supabase/server";
 
 export async function POST() {
-  console.log("[onboard] POST /api/stripe/onboard called");
-
   try {
     const supabase = await createClient();
 
@@ -12,8 +10,6 @@ export async function POST() {
       data: { user },
       error: authError,
     } = await supabase.auth.getUser();
-
-    console.log("[onboard] auth.getUser result — user:", user?.email ?? "none", "error:", authError?.message ?? "none");
 
     if (authError || !user) {
       return NextResponse.json({ error: "Ikke innlogget" }, { status: 401 });
@@ -25,8 +21,6 @@ export async function POST() {
       .eq("id", user.id)
       .single();
 
-    console.log("[onboard] Profile fetch — username:", profile?.username ?? "none", "error:", profileError?.message ?? "none");
-
     if (profileError || !profile) {
       return NextResponse.json({ error: "Profil ikke funnet" }, { status: 404 });
     }
@@ -34,8 +28,6 @@ export async function POST() {
     let accountId = profile.stripe_account_id as string | null;
 
     if (!accountId) {
-      console.log("[onboard] Creating new Stripe Express account for:", profile.username);
-
       const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? "";
       const isLocalhost = appUrl.includes("localhost") || appUrl.includes("127.0.0.1");
 
@@ -54,7 +46,6 @@ export async function POST() {
       });
 
       accountId = account.id;
-      console.log("[onboard] Created Stripe account:", accountId);
 
       const { error: updateError } = await supabase
         .from("profiles")
@@ -65,11 +56,7 @@ export async function POST() {
         console.error("[onboard] Failed to save stripe_account_id:", updateError.message);
         // Don't abort — the account exists in Stripe, just log the error
       }
-    } else {
-      console.log("[onboard] Existing Stripe account:", accountId);
     }
-
-    console.log("[onboard] Creating account link for:", accountId);
 
     const accountLink = await stripe.accountLinks.create({
       account: accountId,
@@ -77,8 +64,6 @@ export async function POST() {
       return_url: `${process.env.NEXT_PUBLIC_APP_URL}/profile/${profile.username}?stripe=success`,
       type: "account_onboarding",
     });
-
-    console.log("[onboard] Account link created:", accountLink.url);
 
     return NextResponse.json({ url: accountLink.url });
   } catch (err) {

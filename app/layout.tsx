@@ -12,7 +12,7 @@ const geist = Geist({
 
 export const metadata: Metadata = {
   title: "Russeartister.no",
-  description: "Marketplace for russesanger — beats, remakes, samples og presets.",
+  description: "Markedsplass for russesanger låter, remakes, samples og presets.",
 };
 
 export default function RootLayout({

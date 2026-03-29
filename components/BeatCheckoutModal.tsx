@@ -125,7 +125,6 @@ export default function BeatCheckoutModal({ beat, onClose, initialExclusive = fa
   }, [onClose]);
 
   const fetchClientSecret = useCallback(async () => {
-    console.log("[BeatCheckoutModal] Fetching client secret for beat:", beat.id, "exclusive:", exclusiveSelected);
     try {
       const res = await fetch("/api/stripe/checkout", {
         method: "POST",
@@ -137,7 +136,6 @@ export default function BeatCheckoutModal({ beat, onClose, initialExclusive = fa
         console.error("[BeatCheckoutModal] Failed to get client secret:", data.error);
         return "";
       }
-      console.log("[BeatCheckoutModal] Got client secret");
       return data.clientSecret as string;
     } catch (err) {
       console.error("[BeatCheckoutModal] Unexpected error:", err);

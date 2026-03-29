@@ -175,8 +175,6 @@ export default function LastOppPage() {
 
     // 1. Get current user from session (no network call)
     const { data: { session } } = await supabase.auth.getSession();
-    console.log("[lastopp] Session user:", session?.user?.email ?? "none");
-
     if (!session) {
       setError("Du må være innlogget for å laste opp beats.");
       setSubmitting(false);
@@ -199,14 +197,12 @@ export default function LastOppPage() {
     ): Promise<string | null> {
       const ext = file.name.split(".").pop() ?? "bin";
       const path = `${userId}/${timestamp}_${suffix}.${ext}`;
-      console.log(`[lastopp] Uploading to ${bucket}/${path}`);
       const { error } = await supabase.storage.from(bucket).upload(path, file, { upsert: false });
       if (error) {
         console.error(`[lastopp] Upload failed for ${bucket}:`, error.message);
         return null;
       }
       const { data } = supabase.storage.from(bucket).getPublicUrl(path);
-      console.log(`[lastopp] Uploaded ${bucket}:`, data.publicUrl);
       return data.publicUrl;
     }
 
@@ -219,18 +215,15 @@ export default function LastOppPage() {
     if (projectFile?.file) {
       const ext = projectFile.file.name.split(".").pop() ?? "bin";
       const path = `${userId}/${timestamp}_project.${ext}`;
-      console.log("[lastopp] Uploading project file to beat-files/" + path);
       const { error } = await supabase.storage.from("beat-files").upload(path, projectFile.file, { upsert: false });
       if (error) {
         console.error("[lastopp] Project file upload failed:", error.message);
       } else {
         projectFileUrl = path; // store path, not public URL
-        console.log("[lastopp] Project file uploaded:", path);
       }
     }
 
     // 3. Insert beat row
-    console.log("[lastopp] Inserting beat row...");
     const { data: beat, error: insertError } = await supabase
       .from("beats")
       .insert({
@@ -261,7 +254,6 @@ export default function LastOppPage() {
       return;
     }
 
-    console.log("[lastopp] Beat created with id:", beat.id, "— redirecting to profile");
     toast("Lastet opp!", "success");
     router.push(username ? `/profile/${username}` : "/later");
   }

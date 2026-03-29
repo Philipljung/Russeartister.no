@@ -3,8 +3,6 @@ import { stripe, nokToOre } from "@/lib/stripe";
 import { createClient } from "@/lib/supabase/server";
 
 export async function POST(request: NextRequest) {
-  console.log("[checkout] POST /api/stripe/checkout called");
-
   try {
     const supabase = await createClient();
 
@@ -15,8 +13,6 @@ export async function POST(request: NextRequest) {
       console.error("[checkout] beatId missing in request body");
       return NextResponse.json({ error: "beatId mangler" }, { status: 400 });
     }
-
-    console.log("[checkout] Fetching beat:", beatId, "exclusive:", exclusive);
 
     // Fetch beat + producer's Stripe account
     const { data: beat, error: beatError } = await supabase
@@ -63,22 +59,12 @@ export async function POST(request: NextRequest) {
     const priceToUse = exclusive ? beat.exclusive_price! : beat.price;
     const amountOre = nokToOre(priceToUse);
 
-    console.log(
-      "[checkout] Creating Checkout Session for beat:",
-      beat.title,
-      exclusive ? "(EXCLUSIVE)" : "",
-      "price:",
-      amountOre,
-      "øre"
-    );
-
     // Read session to optionally link buyer — uses cookie, no network call
     const {
       data: { session: authSession },
     } = await supabase.auth.getSession();
 
     const buyerId = authSession?.user?.id ?? null;
-    console.log("[checkout] Buyer ID:", buyerId ?? "anonymous");
 
     const appUrl = process.env.NEXT_PUBLIC_APP_URL;
 
@@ -110,8 +96,6 @@ export async function POST(request: NextRequest) {
       ...(buyerId ? { client_reference_id: buyerId } : {}),
       return_url: `${appUrl}/kjop/success?session_id={CHECKOUT_SESSION_ID}`,
     });
-
-    console.log("[checkout] Embedded Checkout Session created:", checkoutSession.id);
 
     return NextResponse.json({ clientSecret: checkoutSession.client_secret });
   } catch (err) {

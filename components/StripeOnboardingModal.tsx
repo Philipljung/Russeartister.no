@@ -10,14 +10,12 @@ type Props = {
 };
 
 async function fetchClientSecret(): Promise<string> {
-  console.log("[StripeOnboarding] Fetching account session client_secret");
   const res = await fetch("/api/stripe/account-session", { method: "POST" });
   const data = await res.json();
   if (!res.ok) {
     console.error("[StripeOnboarding] Failed to get client_secret:", data.error);
     throw new Error(data.error ?? "Kunne ikke starte Stripe-oppsett");
   }
-  console.log("[StripeOnboarding] Got client_secret");
   return data.client_secret;
 }
 
@@ -34,8 +32,6 @@ export default function StripeOnboardingModal({ onClose, onComplete }: Props) {
     let mounted = true;
     setLoading(true);
     setError(null);
-
-    console.log("[StripeOnboarding] Initializing Connect embedded component");
 
     const instance = loadConnectAndInitialize({
       publishableKey: process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY!,
@@ -58,17 +54,11 @@ export default function StripeOnboardingModal({ onClose, onComplete }: Props) {
     const onboarding = instance.create("account-onboarding");
 
     onboarding.setOnLoaderStart(() => {
-      console.log("[StripeOnboarding] Loader started");
       if (mounted) setLoading(false);
     });
 
     onboarding.setOnExit(() => {
-      console.log("[StripeOnboarding] User exited onboarding");
       if (mounted) onClose();
-    });
-
-    onboarding.setOnStepChange((step) => {
-      console.log("[StripeOnboarding] Step changed:", step);
     });
 
     if (containerRef.current) {

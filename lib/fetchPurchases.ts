@@ -19,11 +19,8 @@ export async function fetchMyPurchases(): Promise<PurchasedBeat[]> {
 
   const { data: { session } } = await supabase.auth.getSession();
   if (!session) {
-    console.log("[fetchPurchases] No session, returning empty");
     return [];
   }
-
-  console.log("[fetchPurchases] Fetching purchases for user:", session.user.email);
 
   const { data, error } = await supabase
     .from("purchases")
@@ -35,8 +32,6 @@ export async function fetchMyPurchases(): Promise<PurchasedBeat[]> {
     console.error("[fetchPurchases] Error:", error.message);
     return [];
   }
-
-  console.log("[fetchPurchases] Found", data?.length ?? 0, "purchases");
 
   return (data ?? []).map((row: Record<string, unknown>) => {
     const beat = row.beat as Record<string, unknown> | null;

@@ -34,8 +34,6 @@ export default function RegistrerPage() {
     setError(null);
     setLoading(true);
 
-    console.log("[registrer] Attempting sign up — email:", email, "username:", username);
-
     const supabase = getSupabaseClient();
     const { data, error: signUpError } = await supabase.auth.signUp({
       email,
@@ -49,13 +47,6 @@ export default function RegistrerPage() {
         },
       },
     });
-
-    console.log(
-      "[registrer] signUp result — user:", data.user?.email ?? "null",
-      "identities:", data.user?.identities?.length ?? "n/a",
-      "session:", data.session ? "yes" : "no",
-      "error:", signUpError?.message ?? "none"
-    );
 
     if (signUpError) {
       setLoading(false);
@@ -81,12 +72,10 @@ export default function RegistrerPage() {
     // If email confirmation is DISABLED in Supabase: data.session is non-null → redirect now.
     // If email confirmation is ENABLED: data.session is null → ask user to check email.
     if (data.session) {
-      console.log("[registrer] Session created immediately — redirecting to /profile/" + username);
       router.push(`/profile/${username}`);
       return;
     }
 
-    console.log("[registrer] Email confirmation required — user must confirm before logging in");
     setLoading(false);
     setError("Sjekk e-posten din og klikk på bekreftelseslenken, og logg deretter inn.");
   }
@@ -154,7 +143,7 @@ export default function RegistrerPage() {
           <div>
             <input
               type="text"
-              placeholder="Brukernavn (f.eks. ljung)"
+              placeholder="Brukernavn"
               value={username}
               onChange={(e) => setUsername(slugify(e.target.value))}
               required

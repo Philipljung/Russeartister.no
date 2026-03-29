@@ -13,7 +13,6 @@ import { getSupabaseClient } from "./supabase/client";
  */
 export async function getSession() {
   const supabase = getSupabaseClient();
-  console.log("[auth] getSession() called");
 
   const { data, error } = await supabase.auth.getSession();
 
@@ -21,11 +20,6 @@ export async function getSession() {
     console.error("[auth] getSession error:", error.message);
     return null;
   }
-
-  console.log(
-    "[auth] getSession result:",
-    data.session ? `user=${data.session.user.email}` : "no session"
-  );
 
   return data.session;
 }

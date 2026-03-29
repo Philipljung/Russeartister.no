@@ -244,7 +244,6 @@ export default function LastOppSamplePage() {
 
       if (insertError) { setError("Kunne ikke lagre: " + insertError.message); setSubmitting(false); return; }
 
-      console.log("[lastopp-sample] Created:", sample.id);
       toast("Lastet opp!", "success");
       router.push(username ? `/profile/${username}` : "/samples");
     } catch (err) {

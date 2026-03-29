@@ -144,10 +144,8 @@ export async function POST(request: NextRequest) {
 </html>`,
   });
 
-  console.log("[klage] Sending batch of", emails.length, "emails");
   try {
     await sendBatch(emails);
-    console.log("[klage] Batch sent ok");
   } catch (err) {
     console.error("[klage] Batch email failed:", err);
   }

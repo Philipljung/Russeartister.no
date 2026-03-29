@@ -36,8 +36,6 @@ export async function GET(
     return NextResponse.json({ error: "Kjøp ikke funnet" }, { status: 404 });
   }
 
-  console.log("[downloads] Purchase:", { id: purchase.id, item_type: purchase.item_type, beat_id: purchase.beat_id, sample_id: purchase.sample_id, remake_id: purchase.remake_id });
-
   let fileRawPath: string | null = null;
   let filename = "fil";
   let beatAudioUrl: string | null = null;
@@ -51,7 +49,6 @@ export async function GET(
     fileRawPath = beat?.project_file_url ?? null;
     filename = beat?.title ?? "beat";
     beatAudioUrl = beat?.audio_preview_url ?? null;
-    console.log("[downloads] Beat project path:", fileRawPath, "audio:", beatAudioUrl);
   } else if (purchase.item_type === "remake" && purchase.remake_id) {
     const { data: remake } = await service
       .from("remakes")
@@ -60,7 +57,6 @@ export async function GET(
       .single();
     fileRawPath = remake?.file_url ?? null;
     filename = remake?.title ?? "prosjekt";
-    console.log("[downloads] Remake file path:", fileRawPath);
   } else if (purchase.item_type === "sample" && purchase.sample_id) {
     const { data: sample } = await service
       .from("samples")
@@ -69,7 +65,6 @@ export async function GET(
       .single();
     fileRawPath = sample?.file_url ?? null;
     filename = sample?.title ?? "sample";
-    console.log("[downloads] Sample file path:", fileRawPath);
   } else {
     console.error("[downloads] Unhandled item_type or missing id:", purchase.item_type, "beat_id:", purchase.beat_id, "sample_id:", purchase.sample_id);
   }

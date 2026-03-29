@@ -38,7 +38,6 @@ async function transferToProducer(
       metadata: { order_number: orderNumber },
     });
 
-    console.log(`[webhook] Transfer of ${payoutOre} øre queued for ${orderNumber}`);
   } catch (err) {
     console.error(`[webhook] Transfer failed for ${orderNumber}:`, err);
   }
@@ -122,7 +121,6 @@ export async function POST(request: NextRequest) {
         .eq("stripe_payment_intent_id", paymentIntentId)
         .maybeSingle();
       if (existing) {
-        console.log("[webhook] Purchase already recorded, skipping:", paymentIntentId);
         return NextResponse.json({ received: true });
       }
     }
@@ -175,7 +173,6 @@ export async function POST(request: NextRequest) {
         customer_email: customerEmail,
       });
       if (insertBeatError) console.error("[webhook] Beat purchase insert failed:", insertBeatError.message);
-      else console.log("[webhook] Beat purchase recorded:", orderNumber);
 
       if (paymentIntentId && producer?.stripe_account_id) {
         await transferToProducer(paymentIntentId, amountNok, producer.stripe_account_id, orderNumber);
@@ -219,7 +216,6 @@ export async function POST(request: NextRequest) {
         customer_email: customerEmail,
       });
       if (insertRemakeError) console.error("[webhook] Remake purchase insert failed:", insertRemakeError.message);
-      else console.log("[webhook] Remake purchase recorded:", orderNumber);
 
       if (paymentIntentId && producer?.stripe_account_id) {
         await transferToProducer(paymentIntentId, amountNok, producer.stripe_account_id, orderNumber);
@@ -262,7 +258,6 @@ export async function POST(request: NextRequest) {
         customer_email: customerEmail,
       });
       if (insertSampleError) console.error("[webhook] Sample purchase insert failed:", insertSampleError.message);
-      else console.log("[webhook] Sample purchase recorded:", orderNumber);
 
       if (paymentIntentId && producer?.stripe_account_id) {
         await transferToProducer(paymentIntentId, amountNok, producer.stripe_account_id, orderNumber);
@@ -292,10 +287,8 @@ export async function POST(request: NextRequest) {
       amountNok, fileSignedUrl: downloadUrl ?? "",
     }));
 
-    console.log("[webhook] Sending batch of", emails.length, "emails");
     try {
       await sendBatch(emails);
-      console.log("[webhook] Batch sent ok. Purchase recorded:", orderNumber);
     } catch (err) {
       console.error("[webhook] Batch email failed:", err);
     }

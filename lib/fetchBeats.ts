@@ -3,8 +3,6 @@ import type { Beat } from "./supabase/types";
 
 export async function fetchBeatsByProducer(producerId: string): Promise<Beat[]> {
   const supabase = getSupabaseClient();
-  console.log("[fetchBeats] Fetching beats for producer_id:", producerId);
-
   const { data, error } = await supabase
     .from("beats")
     .select("*, producer:profiles(*)")
@@ -17,14 +15,11 @@ export async function fetchBeatsByProducer(producerId: string): Promise<Beat[]> 
     return [];
   }
 
-  console.log("[fetchBeats] Found", data?.length ?? 0, "beats for producer:", producerId);
   return (data ?? []) as Beat[];
 }
 
 export async function fetchPublicBeats(): Promise<Beat[]> {
   const supabase = getSupabaseClient();
-  console.log("[fetchBeats] Fetching all public beats...");
-
   const { data, error } = await supabase
     .from("beats")
     .select("*, producer:profiles(*)")
@@ -38,6 +33,5 @@ export async function fetchPublicBeats(): Promise<Beat[]> {
     return [];
   }
 
-  console.log("[fetchBeats] Found", data?.length ?? 0, "public beats");
   return (data ?? []) as Beat[];
 }

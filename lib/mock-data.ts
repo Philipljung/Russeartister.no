@@ -2,8 +2,8 @@ import type { Beat, Profile } from "./supabase/types";
 
 export const MOCK_PROFILE: Profile = {
   id: "mock-1",
-  username: "ljung",
-  display_name: "LJUNG",
+  username: "abu",
+  display_name: "abu",
   bio: "Produsent fra Oslo. Spesialiserer meg på dark drill og melodisk trap.",
   avatar_url: null,
   stripe_account_id: null,

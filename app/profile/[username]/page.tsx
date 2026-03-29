@@ -87,15 +87,10 @@ export default function ProfilePage() {
 
   useEffect(() => {
     async function load() {
-      console.log("[profile] Loading profile for username:", usernameParam);
-
       const [fetchedProfile, sessionResult] = await Promise.all([
         fetchProfileByUsername(usernameParam),
         getSupabaseClient().auth.getSession(),
       ]);
-
-      console.log("[profile] Profile:", fetchedProfile?.username ?? "not found");
-      console.log("[profile] Session user:", sessionResult.data.session?.user?.email ?? "none");
 
       if (!fetchedProfile) {
         setNotFound(true);
@@ -105,7 +100,6 @@ export default function ProfilePage() {
 
       const currentUserId = sessionResult.data.session?.user?.id ?? null;
       const owner = currentUserId === fetchedProfile.id;
-      console.log("[profile] isOwner:", owner);
 
       setProfile(fetchedProfile);
       setDisplayName(fetchedProfile.display_name);
@@ -192,7 +186,6 @@ export default function ProfilePage() {
       return;
     }
 
-    console.log("[profile] Saving new display name:", trimmed);
     const supabase = getSupabaseClient();
     const { error } = await supabase
       .from("profiles")
@@ -210,7 +203,6 @@ export default function ProfilePage() {
 
   async function saveBio() {
     const trimmed = bioInput.trim();
-    console.log("[profile] Saving new bio");
     const supabase = getSupabaseClient();
     const { error } = await supabase
       .from("profiles")
@@ -232,7 +224,6 @@ export default function ProfilePage() {
 
     const ext = file.name.split(".").pop();
     const path = `${profile.id}/avatar.${ext}`;
-    console.log("[profile] Uploading avatar:", path);
     setUploadingAvatar(true);
 
     try {
@@ -272,7 +263,6 @@ export default function ProfilePage() {
   }
 
   async function saveSocialLinks() {
-    console.log("[profile] Saving social links");
     const supabase = getSupabaseClient();
     const { error } = await supabase
       .from("profiles")

@@ -28,20 +28,11 @@ export default function LoggInnPage() {
     setError(null);
     setLoading(true);
 
-    console.log("[logg-inn] Attempting sign in for:", email);
-
     const supabase = getSupabaseClient();
     const { data, error: signInError } = await supabase.auth.signInWithPassword({
       email,
       password,
     });
-
-    console.log(
-      "[logg-inn] Result — user:",
-      data.user?.email ?? "null",
-      "error:",
-      signInError?.message ?? "none"
-    );
 
     if (signInError) {
       setLoading(false);
@@ -57,7 +48,6 @@ export default function LoggInnPage() {
 
     // Use the username stored in auth metadata — no extra DB call needed.
     const username = data.user.user_metadata?.username as string | undefined;
-    console.log("[logg-inn] Success. Username from metadata:", username);
 
     if (username) {
       router.push(`/profile/${username}`);

@@ -165,7 +165,6 @@ export default function LastOppRemakePage() {
       return;
     }
 
-    console.log("[lastopp-remake] Created remake:", remake.id);
     toast("Lastet opp!", "success");
     router.push(username ? `/profile/${username}` : "/remakes");
   }

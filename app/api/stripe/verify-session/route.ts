@@ -15,8 +15,6 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: "session_id mangler" }, { status: 400 });
   }
 
-  console.log("[verify-session] Verifying session:", sessionId);
-
   // 1. Retrieve session from Stripe
   let session;
   try {
@@ -135,8 +133,6 @@ export async function GET(request: NextRequest) {
       .eq("id", beatId!);
     if (exclusiveError) {
       console.error("[verify-session] Failed to mark beat as exclusively_sold:", exclusiveError.message);
-    } else {
-      console.log("[verify-session] Beat marked as exclusively_sold:", beatId);
     }
   }
 
@@ -168,8 +164,6 @@ export async function GET(request: NextRequest) {
   }
 
   const producer = beat.producer as unknown as { display_name: string } | null;
-
-  console.log("[verify-session] Verified — beat:", beat.title, "download:", !!downloadUrl);
 
   return NextResponse.json({
     beat: {

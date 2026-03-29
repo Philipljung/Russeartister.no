@@ -9,8 +9,6 @@ import { createClient } from "@/lib/supabase/server";
  * then returns a short-lived client_secret for the Connect embedded component.
  */
 export async function POST() {
-  console.log("[account-session] POST /api/stripe/account-session called");
-
   try {
     const supabase = await createClient();
 
@@ -18,8 +16,6 @@ export async function POST() {
       data: { user },
       error: authError,
     } = await supabase.auth.getUser();
-
-    console.log("[account-session] user:", user?.email ?? "none", "error:", authError?.message ?? "none");
 
     if (authError || !user) {
       return NextResponse.json({ error: "Ikke innlogget" }, { status: 401 });
@@ -40,8 +36,6 @@ export async function POST() {
 
     // Create a Stripe Express account if one doesn't exist yet
     if (!accountId) {
-      console.log("[account-session] Creating new Stripe Express account for:", profile.username);
-
       const account = await stripe.accounts.create({
         type: "express",
         capabilities: {
@@ -51,7 +45,6 @@ export async function POST() {
       });
 
       accountId = account.id;
-      console.log("[account-session] Created Stripe account:", accountId);
 
       const { error: updateError } = await supabase
         .from("profiles")
@@ -61,8 +54,6 @@ export async function POST() {
       if (updateError) {
         console.error("[account-session] Failed to save stripe_account_id:", updateError.message);
       }
-    } else {
-      console.log("[account-session] Reusing existing Stripe account:", accountId);
     }
 
     // Create a short-lived account session for the embedded component
@@ -72,8 +63,6 @@ export async function POST() {
         account_onboarding: { enabled: true },
       },
     });
-
-    console.log("[account-session] Account session created — expires:", accountSession.expires_at);
 
     return NextResponse.json({ client_secret: accountSession.client_secret });
   } catch (err) {

@@ -78,8 +78,6 @@ export async function GET(req: NextRequest) {
     });
     if (insertError) {
       console.error("[free-download] Purchase insert failed:", insertError.message);
-    } else {
-      console.log("[free-download] Free purchase recorded:", orderNumber);
     }
   }
 
