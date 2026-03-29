@@ -13,6 +13,7 @@ import { fetchRemakesByProducer } from "@/lib/fetchRemakes";
 import { usePlayer } from "@/lib/player-context";
 import { useToast } from "@/lib/toast-context";
 import StripeOnboardingModal from "@/components/StripeOnboardingModal";
+import ImageCropModal from "@/components/ImageCropModal";
 import { CATEGORY_LABELS } from "@/lib/sampleCategories";
 import type { Profile, Beat, Sample, Remake } from "@/lib/supabase/types";
 
@@ -84,6 +85,8 @@ export default function ProfilePage() {
   const nameInputRef = useRef<HTMLInputElement>(null);
   const bioTextareaRef = useRef<HTMLTextAreaElement>(null);
   const avatarInputRef = useRef<HTMLInputElement>(null);
+  const [avatarCropSrc, setAvatarCropSrc] = useState<string | null>(null);
+  const [bannerCropSrc, setBannerCropSrc] = useState<string | null>(null);
 
   useEffect(() => {
     async function load() {
@@ -218,41 +221,24 @@ export default function ProfilePage() {
     setEditingBio(false);
   }
 
-  async function handleAvatarUpload(e: React.ChangeEvent<HTMLInputElement>) {
+  function handleAvatarSelect(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
     if (!file || !profile) return;
+    setAvatarCropSrc(URL.createObjectURL(file));
+  }
+
+  async function uploadCroppedAvatar(blob: Blob) {
+    if (!profile) return;
+    setAvatarCropSrc(null);
 
     const path = `${profile.id}/avatar.webp`;
     setUploadingAvatar(true);
 
     try {
-      // Resize and compress to WebP before uploading
-      const compressed = await new Promise<Blob>((resolve, reject) => {
-        const img = new window.Image();
-        img.onload = () => {
-          const size = 400;
-          const canvas = document.createElement("canvas");
-          canvas.width = size;
-          canvas.height = size;
-          const ctx = canvas.getContext("2d")!;
-          const min = Math.min(img.width, img.height);
-          const sx = (img.width - min) / 2;
-          const sy = (img.height - min) / 2;
-          ctx.drawImage(img, sx, sy, min, min, 0, 0, size, size);
-          canvas.toBlob(
-            (blob) => (blob ? resolve(blob) : reject(new Error("Compression failed"))),
-            "image/webp",
-            0.8
-          );
-        };
-        img.onerror = () => reject(new Error("Could not load image"));
-        img.src = URL.createObjectURL(file);
-      });
-
       const supabase = getSupabaseClient();
       const { error: uploadError } = await supabase.storage
         .from("avatars")
-        .upload(path, compressed, { upsert: true, contentType: "image/webp" });
+        .upload(path, blob, { upsert: true, contentType: "image/webp" });
 
       if (uploadError) {
         console.error("[profile] Avatar upload error:", uploadError.message);
@@ -445,7 +431,7 @@ export default function ProfilePage() {
             type="file"
             accept="image/*"
             className="hidden"
-            onChange={handleAvatarUpload}
+            onChange={handleAvatarSelect}
           />
         </div>
       </div>
@@ -1091,6 +1077,15 @@ export default function ProfilePage() {
           };
           poll();
         }}
+      />
+    )}
+
+    {avatarCropSrc && (
+      <ImageCropModal
+        imageSrc={avatarCropSrc}
+        aspect={1}
+        onCancel={() => { setAvatarCropSrc(null); if (avatarInputRef.current) avatarInputRef.current.value = ""; }}
+        onCrop={(blob) => void uploadCroppedAvatar(blob)}
       />
     )}
 

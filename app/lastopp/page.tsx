@@ -8,6 +8,7 @@ import { fetchExistingGenres } from "@/lib/fetchRemakes";
 import GenreAutocomplete from "@/components/GenreAutocomplete";
 import Link from "next/link";
 import { useToast } from "@/lib/toast-context";
+import ImageCropModal from "@/components/ImageCropModal";
 
 const DAWS = ["Ableton Live", "FL Studio", "Logic Pro", "Pro Tools", "Cubase", "Reason", "GarageBand", "Studio One", "Bitwig", "Reaper", "Annen"];
 
@@ -64,6 +65,7 @@ export default function LastOppPage() {
 
   // Files
   const [cover, setCover] = useState<UploadFile>(null);
+  const [cropSrc, setCropSrc] = useState<string | null>(null);
   const [audioPreview, setAudioPreview] = useState<UploadFile>(null);
   const [projectFile, setProjectFile] = useState<UploadFile>(null);
 
@@ -96,8 +98,7 @@ export default function LastOppPage() {
   function handleCoverChange(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
     if (!file) return;
-    const previewUrl = URL.createObjectURL(file);
-    setCover({ file, previewUrl });
+    setCropSrc(URL.createObjectURL(file));
   }
 
   const MAX_PROJECT_FILE_BYTES = 500 * 1024 * 1024; // 500 MB
@@ -352,7 +353,7 @@ export default function LastOppPage() {
             <Label>Tittel *</Label>
             <input
               type="text"
-              placeholder="MIDNIGHT RUSH"
+              placeholder="Tittel"
               value={title}
               onChange={(e) => setTitle(e.target.value)}
               required
@@ -700,6 +701,20 @@ export default function LastOppPage() {
           </button>
         </div>
       </form>
+
+      {cropSrc && (
+        <ImageCropModal
+          imageSrc={cropSrc}
+          aspect={1}
+          onCancel={() => { setCropSrc(null); if (coverInputRef.current) coverInputRef.current.value = ""; }}
+          onCrop={(blob) => {
+            const file = new File([blob], "cover.webp", { type: "image/webp" });
+            const previewUrl = URL.createObjectURL(blob);
+            setCover({ file, previewUrl });
+            setCropSrc(null);
+          }}
+        />
+      )}
     </div>
   );
 }

@@ -6,6 +6,7 @@ import { X, Upload, Package, ImageIcon, AlertCircle, FolderArchive, Music } from
 import { getSupabaseClient } from "@/lib/supabase/client";
 import Link from "next/link";
 import { useToast } from "@/lib/toast-context";
+import ImageCropModal from "@/components/ImageCropModal";
 import { SAMPLE_CATEGORIES, PRESET_CATEGORIES, CATEGORY_LABELS } from "@/lib/sampleCategories";
 import JSZip from "jszip";
 
@@ -87,6 +88,7 @@ export default function LastOppSamplePage() {
   const [price, setPrice] = useState("");
 
   const [cover, setCover] = useState<UploadFile>(null);
+  const [cropSrc, setCropSrc] = useState<string | null>(null);
   const [sampleFile, setSampleFile] = useState<UploadFile>(null);
   const [audioPreview, setAudioPreview] = useState<UploadFile>(null);
   const [packFiles, setPackFiles] = useState<string[]>([]);
@@ -320,7 +322,7 @@ export default function LastOppSamplePage() {
           </button>
           <input ref={coverInputRef} type="file" accept="image/*" className="hidden" onChange={(e) => {
             const f = e.target.files?.[0];
-            if (f) setCover({ file: f, previewUrl: URL.createObjectURL(f) });
+            if (f) setCropSrc(URL.createObjectURL(f));
           }} />
           <div className="flex-1">
             <Label>Tittel *</Label>
@@ -541,6 +543,20 @@ export default function LastOppSamplePage() {
           </button>
         </div>
       </form>
+
+      {cropSrc && (
+        <ImageCropModal
+          imageSrc={cropSrc}
+          aspect={1}
+          onCancel={() => { setCropSrc(null); if (coverInputRef.current) coverInputRef.current.value = ""; }}
+          onCrop={(blob) => {
+            const file = new File([blob], "cover.webp", { type: "image/webp" });
+            const previewUrl = URL.createObjectURL(blob);
+            setCover({ file, previewUrl });
+            setCropSrc(null);
+          }}
+        />
+      )}
     </div>
   );
 }

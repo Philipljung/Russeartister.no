@@ -6,6 +6,7 @@ import { X, Upload, Music, FileArchive, ImageIcon, AlertCircle } from "lucide-re
 import { getSupabaseClient } from "@/lib/supabase/client";
 import Link from "next/link";
 import { useToast } from "@/lib/toast-context";
+import ImageCropModal from "@/components/ImageCropModal";
 
 const DAWS = ["Ableton Live", "FL Studio", "Logic Pro", "Pro Tools", "Cubase", "Reason", "GarageBand", "Studio One", "Bitwig", "Reaper", "Annen"];
 
@@ -49,6 +50,7 @@ export default function LastOppRemakePage() {
   const [price, setPrice] = useState("");
 
   const [cover, setCover] = useState<UploadFile>(null);
+  const [cropSrc, setCropSrc] = useState<string | null>(null);
   const [audioPreview, setAudioPreview] = useState<UploadFile>(null);
   const [projectFile, setProjectFile] = useState<UploadFile>(null);
 
@@ -219,12 +221,12 @@ export default function LastOppRemakePage() {
               </>
             )}
           </button>
-          <input ref={coverInputRef} type="file" accept="image/*" className="hidden" onChange={(e) => { const f = e.target.files?.[0]; if (f) setCover({ file: f, previewUrl: URL.createObjectURL(f) }); }} />
+          <input ref={coverInputRef} type="file" accept="image/*" className="hidden" onChange={(e) => { const f = e.target.files?.[0]; if (f) setCropSrc(URL.createObjectURL(f)); }} />
 
           <div className="flex-1 flex flex-col gap-3">
             <div>
               <Label>Tittel *</Label>
-              <input type="text" placeholder="SUMMER NIGHTS" value={title} onChange={(e) => setTitle(e.target.value)} required style={inputStyle} />
+              <input type="text" placeholder="Tittel" value={title} onChange={(e) => setTitle(e.target.value)} required style={inputStyle} />
             </div>
             <div>
               <Label>DAW *</Label>
@@ -413,6 +415,20 @@ export default function LastOppRemakePage() {
           </button>
         </div>
       </form>
+
+      {cropSrc && (
+        <ImageCropModal
+          imageSrc={cropSrc}
+          aspect={1}
+          onCancel={() => { setCropSrc(null); if (coverInputRef.current) coverInputRef.current.value = ""; }}
+          onCrop={(blob) => {
+            const file = new File([blob], "cover.webp", { type: "image/webp" });
+            const previewUrl = URL.createObjectURL(blob);
+            setCover({ file, previewUrl });
+            setCropSrc(null);
+          }}
+        />
+      )}
     </div>
   );
 }
