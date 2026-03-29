@@ -700,14 +700,25 @@ export default function ProfilePage() {
                   Koble til Stripe for å begynne å selge
                 </p>
               </div>
-              <button
-                className="flex shrink-0 items-center gap-2 rounded-xl px-4 py-2 text-sm font-semibold transition-opacity hover:opacity-80 self-start sm:self-auto"
-                style={{ background: "#6366f1", color: "#fff" }}
-                onClick={() => setShowStripeModal(true)}
-              >
-                <CreditCard size={14} />
-                Sett opp Stripe
-              </button>
+              <div className="flex flex-col items-start sm:items-end gap-2 shrink-0">
+                <button
+                  className="flex items-center gap-2 rounded-xl px-4 py-2 text-sm font-semibold transition-opacity hover:opacity-80"
+                  style={{ background: "#6366f1", color: "#fff" }}
+                  onClick={() => setShowStripeModal(true)}
+                >
+                  <CreditCard size={14} />
+                  Sett opp Stripe
+                </button>
+                <a
+                  href="https://stripe.com"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-xs transition-opacity hover:opacity-70"
+                  style={{ color: "#86868b" }}
+                >
+                  Hva er Stripe? →
+                </a>
+              </div>
             </div>
           )
         )}
