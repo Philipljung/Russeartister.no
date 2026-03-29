@@ -162,11 +162,6 @@ export default function RemakeDetailClient({
             >
               {remake.title}
             </h1>
-            {remake.original_song && (
-              <p className="text-sm mb-2" style={{ color: "#86868b" }}>
-                Remake av {remake.original_song}
-              </p>
-            )}
             <Link
               href={`/profile/${producer?.username ?? ""}`}
               className="text-sm hover:underline"
