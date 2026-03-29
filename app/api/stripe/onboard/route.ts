@@ -41,7 +41,6 @@ export async function POST() {
 
       const account = await stripe.accounts.create({
         type: "express",
-        country: "NO",
         capabilities: {
           card_payments: { requested: true },
           transfers: { requested: true },

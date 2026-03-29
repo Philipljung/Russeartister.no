@@ -1,6 +1,17 @@
 # TODO
 
-- [ ] Add `STRIPE_WEBHOOK_SECRET` to Vercel env vars before going live (production purchases won't record without it)
+- [x] Add `STRIPE_WEBHOOK_SECRET` to Vercel env vars before going live
+- [x] Mobile optimization — make all pages responsive (profile, detail pages, filters, etc.)
+- [x] Mine Nedlastninger — cover photo not showing on download items
 - [ ] Fix anonymous purchases — require login before checkout so purchases always have a buyer_id and appear in Mine Nedlastninger
 - [ ] Remove `payout_released_at` column from purchases table if escrow won't be re-implemented (keep if it will)
 - [ ] Fix Discord embed play button — `twitter:player` approach not working, investigate alternatives
+- [x] Add more padding in the hero component
+- [x] Make "Skala" (key) optional when uploading a beat
+- [x] Make "VST/Plugins brukt" mandatory when uploading a remake
+- [x] Add VST/Plugins field to regular beat uploads as well
+- [x] Add DAW field to beat uploads (which DAW it was produced in)
+- [x] Add bottom audio player on remakes, samples, presets, preset packs, and sample packs pages (like the one on låter)
+- [x] Add artist name on remake card
+- [x] Change "Kontakt oss" to link to /kontaktoss page with "Kontakt oss på russeartister@gmail.com"
+- [x] Allow multi-select VST filtering on remakes page (currently single-select only), and add option to exclude VSTs

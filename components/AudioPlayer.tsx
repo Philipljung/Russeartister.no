@@ -30,8 +30,15 @@ export default function AudioPlayer() {
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
 
-  // Show on beats and profile pages; clear when leaving both
-  const showPlayer = pathname.startsWith("/later") || pathname.startsWith("/profile");
+  // Show on beats, profile, remakes, samples, presets, and pack pages
+  const showPlayer =
+    pathname.startsWith("/later") ||
+    pathname.startsWith("/profile") ||
+    pathname.startsWith("/remakes") ||
+    pathname.startsWith("/samples") ||
+    pathname.startsWith("/presets") ||
+    pathname.startsWith("/preset-packs") ||
+    pathname.startsWith("/sample-packs");
   useEffect(() => {
     if (!showPlayer) clearPlayer();
   }, [showPlayer, clearPlayer]);

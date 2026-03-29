@@ -82,16 +82,24 @@ export default function RemakeCard({ remake, isActive, isPlaying, isSelected = f
         }}
       />
 
-      {/* Title + VSTs */}
+      {/* Title + artist + VSTs */}
       <div className="min-w-0 flex-1">
         <p className="truncate text-sm font-semibold tracking-wide" style={{ color: "#f5f5f7" }}>
           {remake.title}
         </p>
-        {remake.vsts && remake.vsts.length > 0 && (
-          <p className="text-xs mt-0.5 truncate" style={{ color: "#4a4a4a" }}>
-            {remake.vsts.slice(0, 4).join(" · ")}
-          </p>
-        )}
+        <p className="text-xs mt-0.5 truncate" style={{ color: "#86868b" }}>
+          <Link
+            href={`/profile/${remake.producer?.username ?? ""}`}
+            onClick={(e) => e.stopPropagation()}
+            className="hover:underline"
+            style={{ color: "#86868b" }}
+          >
+            {remake.producer?.display_name ?? "Ukjent"}
+          </Link>
+          {remake.vsts && remake.vsts.length > 0 && (
+            <> &middot; {remake.vsts.slice(0, 3).join(", ")}</>
+          )}
+        </p>
       </div>
 
       {/* DAW badge */}

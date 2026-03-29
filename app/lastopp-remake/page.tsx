@@ -103,6 +103,7 @@ export default function LastOppRemakePage() {
 
     if (!title) { setError("Tittel er påkrevd."); return; }
     if (!daw) { setError("Velg DAW."); return; }
+    if (selectedVsts.length === 0) { setError("Legg til minst én VST / plugin."); return; }
     if (!audioPreview?.file) { setError("Du må laste opp lydforhåndsvisning."); return; }
     if (!projectFile?.file) { setError("Du må laste opp prosjektfilen."); return; }
     if (stripeReady && !price) { setError("Fyll ut pris."); return; }
@@ -238,7 +239,7 @@ export default function LastOppRemakePage() {
 
         {/* VSTs / Plugins brukt */}
         <div>
-          <Label>VST / Plugins brukt (valgfritt)</Label>
+          <Label>VST / Plugins brukt *</Label>
           <div
             className="flex flex-wrap items-center gap-2 rounded-xl px-3 py-2.5 min-h-[44px]"
             style={{ background: "#141414", border: "1px solid #2a2a2a" }}

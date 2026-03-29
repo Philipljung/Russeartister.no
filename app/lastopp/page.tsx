@@ -9,6 +9,8 @@ import GenreAutocomplete from "@/components/GenreAutocomplete";
 import Link from "next/link";
 import { useToast } from "@/lib/toast-context";
 
+const DAWS = ["Ableton Live", "FL Studio", "Logic Pro", "Pro Tools", "Cubase", "Reason", "GarageBand", "Studio One", "Bitwig", "Reaper", "Annen"];
+
 const MUSICAL_KEYS = [
   "C maj","C# maj","D maj","Eb maj","E maj","F maj",
   "F# maj","G maj","Ab maj","A maj","Bb maj","B maj",
@@ -26,6 +28,11 @@ export default function LastOppPage() {
   useEffect(() => {
     const supabase = getSupabaseClient();
     fetchExistingGenres().then(setExistingGenres);
+    supabase.from("beats").select("vsts").not("vsts", "is", null).then(({ data }: { data: { vsts: string[] | null }[] | null }) => {
+      if (!data) return;
+      const all: string[] = data.flatMap((r) => r.vsts ?? []);
+      setKnownVsts(Array.from(new Set(all)).sort());
+    });
     supabase.auth.getSession().then(async ({ data: { session } }: { data: { session: import("@supabase/supabase-js").Session | null } }) => {
       if (!session) { setStripeReady(false); return; }
       const { data } = await supabase
@@ -47,6 +54,10 @@ export default function LastOppPage() {
   const [tagInput, setTagInput] = useState("");
   const [price, setPrice] = useState("");
   const [vocalType, setVocalType] = useState<"med_vokal" | "uten_vokal" | "">("");
+  const [daw, setDaw] = useState("");
+  const [selectedVsts, setSelectedVsts] = useState<string[]>([]);
+  const [vstInput, setVstInput] = useState("");
+  const [knownVsts, setKnownVsts] = useState<string[]>([]);
   const [exclusiveEnabled, setExclusiveEnabled] = useState(false);
   const [exclusivePrice, setExclusivePrice] = useState("");
   const [isPublished, setIsPublished] = useState(true);
@@ -120,7 +131,7 @@ export default function LastOppPage() {
     e.preventDefault();
     setError(null);
 
-    if (!title || !genre || !bpm || !key) {
+    if (!title || !genre || !bpm) {
       setError("Fyll ut alle obligatoriske felt.");
       return;
     }
@@ -228,11 +239,13 @@ export default function LastOppPage() {
         description: description.trim(),
         genre: genre.trim().split(" ").map((w) => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()).join(" "),
         bpm: bpmNum,
-        key,
+        key: key || null,
         tags,
         price: priceNum,
         exclusive_price: exclusivePriceNum,
         vocal_type: vocalType || null,
+        daw: daw || null,
+        vsts: selectedVsts.length > 0 ? selectedVsts : null,
         cover_url: coverUrl,
         audio_preview_url: audioUrl,
         project_file_url: projectFileUrl,
@@ -381,11 +394,10 @@ export default function LastOppPage() {
             />
           </div>
           <div>
-            <Label>Skala *</Label>
+            <Label>Skala</Label>
             <select
               value={key}
               onChange={(e) => setKey(e.target.value)}
-              required
               style={{ ...inputStyle, cursor: "pointer" }}
             >
               <option value="">Velg...</option>
@@ -417,6 +429,77 @@ export default function LastOppPage() {
               </button>
             ))}
           </div>
+        </div>
+
+        {/* DAW */}
+        <div>
+          <Label>DAW</Label>
+          <select value={daw} onChange={(e) => setDaw(e.target.value)} style={{ ...inputStyle, cursor: "pointer" }}>
+            <option value="">Velg DAW...</option>
+            {DAWS.map((d) => <option key={d} value={d}>{d}</option>)}
+          </select>
+        </div>
+
+        {/* VST / Plugins */}
+        <div>
+          <Label>VST / Plugins brukt</Label>
+          <div
+            className="flex flex-wrap items-center gap-2 rounded-xl px-3 py-2.5 min-h-[44px]"
+            style={{ background: "#141414", border: "1px solid #2a2a2a" }}
+            onClick={() => document.getElementById("vst-input-beat")?.focus()}
+          >
+            {selectedVsts.map((v) => (
+              <span key={v} className="flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs" style={{ background: "rgba(99,102,241,0.15)", color: "#818cf8", border: "1px solid rgba(99,102,241,0.3)" }}>
+                {v}
+                <button type="button" onClick={(e) => { e.stopPropagation(); setSelectedVsts(selectedVsts.filter((x) => x !== v)); }} style={{ color: "#818cf8" }}>
+                  <X size={10} />
+                </button>
+              </span>
+            ))}
+            <input
+              id="vst-input-beat"
+              type="text"
+              placeholder={selectedVsts.length === 0 ? "Serum, Sylenth1, Massive..." : ""}
+              value={vstInput}
+              onChange={(e) => setVstInput(e.target.value)}
+              onKeyDown={(e: KeyboardEvent<HTMLInputElement>) => {
+                if (e.key === "Enter" || e.key === ",") {
+                  e.preventDefault();
+                  const v = vstInput.trim();
+                  if (v && !selectedVsts.includes(v)) setSelectedVsts([...selectedVsts, v]);
+                  setVstInput("");
+                }
+                if (e.key === "Backspace" && !vstInput && selectedVsts.length > 0) {
+                  setSelectedVsts(selectedVsts.slice(0, -1));
+                }
+              }}
+              onBlur={() => {
+                const v = vstInput.trim();
+                if (v && !selectedVsts.includes(v)) setSelectedVsts([...selectedVsts, v]);
+                setVstInput("");
+              }}
+              style={{ background: "transparent", border: "none", outline: "none", color: "#f5f5f7", fontSize: 13, minWidth: 120 }}
+            />
+          </div>
+          <p className="mt-1 text-xs" style={{ color: "#3a3a3a" }}>Trykk Enter eller komma for å legge til</p>
+          {knownVsts.filter((v) => !selectedVsts.includes(v) && (vstInput === "" || v.toLowerCase().includes(vstInput.toLowerCase()))).length > 0 && (
+            <div className="mt-2 flex flex-wrap gap-1.5">
+              {knownVsts
+                .filter((v) => !selectedVsts.includes(v) && (vstInput === "" || v.toLowerCase().includes(vstInput.toLowerCase())))
+                .slice(0, 12)
+                .map((v) => (
+                  <button
+                    key={v}
+                    type="button"
+                    onClick={() => { setSelectedVsts([...selectedVsts, v]); setVstInput(""); }}
+                    className="rounded-full px-2.5 py-0.5 text-xs transition-all"
+                    style={{ background: "transparent", border: "1px solid #2a2a2a", color: "#3a3a3a" }}
+                  >
+                    + {v}
+                  </button>
+                ))}
+            </div>
+          )}
         </div>
 
         {/* Tags */}
