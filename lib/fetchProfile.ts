@@ -5,33 +5,35 @@ export async function fetchProfileByUsername(identifier: string): Promise<Profil
   const supabase = getSupabaseClient();
   const trimmed = decodeURIComponent(identifier).trim();
 
-  // Try username first
-  const { data, error } = await supabase
+  // Try display_name first (preferred identifier)
+  const { data: byName } = await supabase
+    .from("profiles")
+    .select("*")
+    .ilike("display_name", trimmed)
+    .single();
+  if (byName) return byName as Profile;
+
+  // Try username
+  const { data: byUsername } = await supabase
     .from("profiles")
     .select("*")
     .ilike("username", trimmed)
     .single();
+  if (byUsername) return byUsername as Profile;
 
-  if (data) return data as Profile;
+  // Fuzzy: handle display_names with trailing whitespace in DB
+  const { data: fuzzyResults } = await supabase
+    .from("profiles")
+    .select("*")
+    .ilike("display_name", `${trimmed}%`);
 
-  // Fallback: try display_name
-  if (error?.code === "PGRST116") {
-    const { data: byName, error: nameError } = await supabase
-      .from("profiles")
-      .select("*")
-      .ilike("display_name", trimmed)
-      .single();
-
-    if (byName) return byName as Profile;
-    if (nameError && nameError.code !== "PGRST116") {
-      console.error("[fetchProfile] Unexpected error:", nameError.code, nameError.message);
-    }
-    return null;
+  if (fuzzyResults) {
+    const match = fuzzyResults.find(
+      (r: Profile) => r.display_name?.trim().toLowerCase() === trimmed.toLowerCase()
+    );
+    if (match) return match as Profile;
   }
 
-  if (error) {
-    console.error("[fetchProfile] Unexpected error:", error.code, error.message);
-  }
   return null;
 }
 
