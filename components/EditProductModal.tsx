@@ -84,7 +84,7 @@ export default function EditProductModal(props: Props) {
 
   function addVst() {
     const v = vstInput.trim();
-    if (v && !vsts.includes(v)) setVsts([...vsts, v]);
+    if (v && !vsts.some((x) => x.toLowerCase() === v.toLowerCase())) setVsts([...vsts, v]);
     setVstInput("");
   }
 

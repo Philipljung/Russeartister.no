@@ -115,7 +115,7 @@ export default function RemakeCheckoutModal({ remake, onClose }: Props) {
               <div className="min-w-0 flex-1">
                 <h2 className="truncate text-base font-bold tracking-tight" style={{ color: "#f5f5f7" }}>{remake.title}</h2>
                 <p className="text-xs mt-0.5" style={{ color: "#86868b" }}>
-                  {remake.producer?.display_name ?? "Ukjent"} &middot; {remake.original_song}
+                  {remake.producer?.display_name ?? "Ukjent"}{remake.original_song ? ` · ${remake.original_song}` : ""}
                 </p>
                 <p className="text-sm font-bold mt-1" style={{ color: "#f5f5f7" }}>kr {remake.price.toLocaleString("nb-NO")}</p>
               </div>
@@ -134,7 +134,9 @@ export default function RemakeCheckoutModal({ remake, onClose }: Props) {
               </div>
 
               <h2 className="mb-1 text-xl font-bold tracking-tight" style={{ color: "#f5f5f7" }}>{remake.title}</h2>
-              <p className="mb-1 text-sm" style={{ color: "#86868b" }}><span style={{ color: "#f5f5f7" }}>{remake.original_song}</span></p>
+              {remake.original_song && (
+                <p className="mb-1 text-sm" style={{ color: "#86868b" }}><span style={{ color: "#f5f5f7" }}>{remake.original_song}</span></p>
+              )}
 
               <Link
                 href={`/profile/${slugifyName(remake.producer?.display_name ?? remake.producer?.username ?? "")}`}
@@ -147,18 +149,30 @@ export default function RemakeCheckoutModal({ remake, onClose }: Props) {
 
               {/* Metadata grid */}
               <div className="mb-5 grid grid-cols-2 gap-3 rounded-xl p-4" style={{ background: "rgba(255,255,255,0.04)", border: "1px solid #1e1e1e" }}>
-                <div>
-                  <p className="mb-0.5 text-xs" style={{ color: "#3a3a3a" }}>Sjanger</p>
-                  <p className="text-sm font-medium" style={{ color: "#f5f5f7" }}>{remake.genre}</p>
-                </div>
-                <div>
-                  <p className="mb-0.5 text-xs" style={{ color: "#3a3a3a" }}>BPM</p>
-                  <p className="text-sm font-medium" style={{ color: "#f5f5f7" }}>{remake.bpm}</p>
-                </div>
-                <div>
-                  <p className="mb-0.5 text-xs" style={{ color: "#3a3a3a" }}>Skala</p>
-                  <p className="text-sm font-medium" style={{ color: "#f5f5f7" }}>{remake.key}</p>
-                </div>
+                {remake.genre && (
+                  <div>
+                    <p className="mb-0.5 text-xs" style={{ color: "#3a3a3a" }}>Sjanger</p>
+                    <p className="text-sm font-medium" style={{ color: "#f5f5f7" }}>{remake.genre}</p>
+                  </div>
+                )}
+                {remake.bpm && (
+                  <div>
+                    <p className="mb-0.5 text-xs" style={{ color: "#3a3a3a" }}>BPM</p>
+                    <p className="text-sm font-medium" style={{ color: "#f5f5f7" }}>{remake.bpm}</p>
+                  </div>
+                )}
+                {remake.key && (
+                  <div>
+                    <p className="mb-0.5 text-xs" style={{ color: "#3a3a3a" }}>Skala</p>
+                    <p className="text-sm font-medium" style={{ color: "#f5f5f7" }}>{remake.key}</p>
+                  </div>
+                )}
+                {remake.daw && (
+                  <div>
+                    <p className="mb-0.5 text-xs" style={{ color: "#3a3a3a" }}>DAW</p>
+                    <p className="text-sm font-medium" style={{ color: "#f5f5f7" }}>{remake.daw}</p>
+                  </div>
+                )}
                 <div>
                   <p className="mb-0.5 text-xs" style={{ color: "#3a3a3a" }}>Inkludert</p>
                   <p className="text-sm font-medium" style={{ color: "#34c759" }}>Prosjektfil (.zip)</p>
@@ -177,7 +191,9 @@ export default function RemakeCheckoutModal({ remake, onClose }: Props) {
               )}
 
               {remake.description && (
-                <p className="mb-5 text-sm leading-relaxed" style={{ color: "#86868b" }}>{remake.description}</p>
+                <div className="mb-5 overflow-y-auto" style={{ maxHeight: 120 }}>
+                  <p className="text-sm leading-relaxed whitespace-pre-line" style={{ color: "#86868b" }}>{remake.description}</p>
+                </div>
               )}
 
               <div className="mt-auto">

@@ -286,26 +286,6 @@ export default function LastOppPage() {
         </p>
       </div>
 
-      {stripeReady === false && (
-        <div
-          className="mb-6 flex items-start gap-3 rounded-xl px-4 py-3"
-          style={{ background: "rgba(255,149,0,0.08)", border: "1px solid rgba(255,149,0,0.2)" }}
-        >
-          <AlertCircle size={16} style={{ color: "#ff9500", flexShrink: 0, marginTop: 2 }} />
-          <div>
-            <p className="text-sm font-medium" style={{ color: "#ff9500" }}>
-              Stripe ikke konfigurert
-            </p>
-            <p className="mt-0.5 text-xs" style={{ color: "#86868b" }}>
-              Låten blir gratis inntil du{" "}
-              <Link href="/profile" className="underline" style={{ color: "#ff9500" }}>
-                setter opp Stripe
-              </Link>{" "}
-              for å begynne å tjene penger.
-            </p>
-          </div>
-        </div>
-      )}
 
       <form onSubmit={handleSubmit} className="flex flex-col gap-6">
 
@@ -459,7 +439,7 @@ export default function LastOppPage() {
                 if (e.key === "Enter" || e.key === ",") {
                   e.preventDefault();
                   const v = vstInput.trim();
-                  if (v && !selectedVsts.includes(v)) setSelectedVsts([...selectedVsts, v]);
+                  if (v && !selectedVsts.some((x) => x.toLowerCase() === v.toLowerCase())) setSelectedVsts([...selectedVsts, v]);
                   setVstInput("");
                 }
                 if (e.key === "Backspace" && !vstInput && selectedVsts.length > 0) {
@@ -468,17 +448,17 @@ export default function LastOppPage() {
               }}
               onBlur={() => {
                 const v = vstInput.trim();
-                if (v && !selectedVsts.includes(v)) setSelectedVsts([...selectedVsts, v]);
+                if (v && !selectedVsts.some((x) => x.toLowerCase() === v.toLowerCase())) setSelectedVsts([...selectedVsts, v]);
                 setVstInput("");
               }}
               style={{ background: "transparent", border: "none", outline: "none", color: "#f5f5f7", fontSize: 13, minWidth: 120 }}
             />
           </div>
           <p className="mt-1 text-xs" style={{ color: "#3a3a3a" }}>Trykk Enter eller komma for å legge til</p>
-          {knownVsts.filter((v) => !selectedVsts.includes(v) && (vstInput === "" || v.toLowerCase().includes(vstInput.toLowerCase()))).length > 0 && (
+          {knownVsts.filter((v) => !selectedVsts.some((x) => x.toLowerCase() === v.toLowerCase()) && (vstInput === "" || v.toLowerCase().includes(vstInput.toLowerCase()))).length > 0 && (
             <div className="mt-2 flex flex-wrap gap-1.5">
               {knownVsts
-                .filter((v) => !selectedVsts.includes(v) && (vstInput === "" || v.toLowerCase().includes(vstInput.toLowerCase())))
+                .filter((v) => !selectedVsts.some((x) => x.toLowerCase() === v.toLowerCase()) && (vstInput === "" || v.toLowerCase().includes(vstInput.toLowerCase())))
                 .slice(0, 12)
                 .map((v) => (
                   <button
@@ -564,12 +544,17 @@ export default function LastOppPage() {
         <div style={{ maxWidth: 200 }}>
           <Label>Pris (kr) {stripeReady ? "*" : ""}</Label>
           {stripeReady === false ? (
-            <div
-              className="flex items-center gap-2 rounded-xl px-3.5 py-2.5"
-              style={{ background: "#141414", border: "1px solid #2a2a2a", opacity: 0.5 }}
-            >
-              <span className="text-sm" style={{ color: "#86868b" }}>kr</span>
-              <span className="text-sm font-semibold" style={{ color: "#86868b" }}>Gratis</span>
+            <div>
+              <div
+                className="flex items-center gap-2 rounded-xl px-3.5 py-2.5"
+                style={{ background: "#141414", border: "1px solid #2a2a2a", opacity: 0.5 }}
+              >
+                <span className="text-sm" style={{ color: "#86868b" }}>kr</span>
+                <span className="text-sm font-semibold" style={{ color: "#86868b" }}>Gratis</span>
+              </div>
+              <p className="mt-1.5 text-xs" style={{ color: "#86868b" }}>
+                <Link href="/profile" className="underline" style={{ color: "#ff9500" }}>Sett opp Stripe</Link> for å selge for penger.
+              </p>
             </div>
           ) : (
             <div className="relative">

@@ -1008,7 +1008,7 @@ export default function ProfilePage() {
                   <div className="min-w-0 flex-1">
                     <p className="truncate text-sm font-medium" style={{ color: "#f5f5f7" }}>{remake.title}</p>
                     <p className="text-xs mt-0.5" style={{ color: "#86868b" }}>
-                      {remake.original_song} &middot; {remake.bpm} BPM
+                      {profile.display_name ?? profile.username}{remake.bpm ? ` · ${remake.bpm} BPM` : ""}
                     </p>
                   </div>
                   <div className="flex items-center gap-1.5 md:gap-2 shrink-0">

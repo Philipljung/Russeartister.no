@@ -52,7 +52,13 @@ export async function POST(request: NextRequest) {
             currency: "nok",
             product_data: {
               name: remake.title,
-              description: `Remake av "${remake.original_song}" · ${producer.display_name} · ${remake.genre} · ${remake.bpm} BPM`,
+              description: [
+                remake.original_song && `Remake av "${remake.original_song}"`,
+                producer.display_name,
+                remake.genre,
+                remake.bpm && `${remake.bpm} BPM`,
+                remake.daw,
+              ].filter(Boolean).join(" · "),
               ...(remake.cover_url ? { images: [remake.cover_url] } : {}),
             },
             unit_amount: amountOre,
