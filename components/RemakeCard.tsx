@@ -116,11 +116,11 @@ export default function RemakeCard({ remake, isActive, isPlaying, isSelected = f
       </div>
 
       {/* Tags */}
-      <div className="hidden items-center gap-1.5 lg:flex" style={{ width: 200 }}>
+      <div className="hidden items-center gap-1.5 lg:flex overflow-hidden" style={{ width: 200, flexWrap: "nowrap" }}>
         {remake.tags.slice(0, 3).map((tag) => (
           <span
             key={tag}
-            className="rounded-full px-2.5 py-0.5 text-xs"
+            className="rounded-full px-2.5 py-0.5 text-xs whitespace-nowrap shrink-0"
             style={{ background: "rgba(255,255,255,0.06)", color: "#86868b" }}
           >
             {tag}
@@ -130,15 +130,17 @@ export default function RemakeCard({ remake, isActive, isPlaying, isSelected = f
 
       {/* Price + buy + share */}
       <div className="flex shrink-0 items-center gap-2">
-        <span className="text-sm font-semibold" style={{ color: "#f5f5f7", minWidth: 64, textAlign: "right" }}>
+        <span className="text-sm font-semibold text-right" style={{ color: "#f5f5f7", width: 72, flexShrink: 0 }}>
           {remake.price === 0 ? "Gratis" : `kr ${remake.price.toLocaleString("nb-NO")}`}
         </span>
         <button
-          className="rounded-lg px-4 py-1.5 text-xs font-semibold transition-all"
+          className="rounded-lg py-1.5 text-xs font-semibold transition-all text-center"
           style={{
             background: hovered ? "#f5f5f7" : "rgba(255,255,255,0.08)",
             color: hovered ? "#080808" : "#f5f5f7",
             cursor: "pointer",
+            width: 64,
+            flexShrink: 0,
           }}
           onClick={remake.price === 0 ? handleFreeDownload : (e) => { e.stopPropagation(); onBuy(remake); }}
         >

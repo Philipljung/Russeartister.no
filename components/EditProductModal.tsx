@@ -3,6 +3,7 @@
 import { useState, useRef, KeyboardEvent } from "react";
 import { X, ImagePlus } from "lucide-react";
 import { getSupabaseClient } from "@/lib/supabase/client";
+import ImageCropModal from "./ImageCropModal";
 import type { Beat, Sample, Remake } from "@/lib/supabase/types";
 
 const MUSICAL_KEYS = [
@@ -58,9 +59,17 @@ export default function EditProductModal(props: Props) {
     type === "beat" ? String((item as Beat).exclusive_price || "") : ""
   );
 
-  // Cover image
-  const [coverFile, setCoverFile] = useState<File | null>(null);
+  // VSTs (beats & remakes)
+  const [vsts, setVsts] = useState<string[]>(
+    type === "beat" ? ((item as Beat).vsts || []) :
+    type === "remake" ? ((item as Remake).vsts || []) : []
+  );
+  const [vstInput, setVstInput] = useState("");
+
+  // Cover image + cropper
+  const [coverBlob, setCoverBlob] = useState<Blob | null>(null);
   const [coverPreview, setCoverPreview] = useState<string | null>(item.cover_url || null);
+  const [cropSrc, setCropSrc] = useState<string | null>(null);
   const coverInputRef = useRef<HTMLInputElement>(null);
 
   const [saving, setSaving] = useState(false);
@@ -69,8 +78,19 @@ export default function EditProductModal(props: Props) {
   function handleCoverChange(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
     if (!file) return;
-    setCoverFile(file);
-    setCoverPreview(URL.createObjectURL(file));
+    setCropSrc(URL.createObjectURL(file));
+    e.target.value = "";
+  }
+
+  function addVst() {
+    const v = vstInput.trim();
+    if (v && !vsts.includes(v)) setVsts([...vsts, v]);
+    setVstInput("");
+  }
+
+  function handleVstKeyDown(e: KeyboardEvent<HTMLInputElement>) {
+    if (e.key === "Enter" || e.key === ",") { e.preventDefault(); addVst(); }
+    if (e.key === "Backspace" && !vstInput && vsts.length > 0) setVsts(vsts.slice(0, -1));
   }
 
   function addTag() {
@@ -95,13 +115,12 @@ export default function EditProductModal(props: Props) {
 
     // Upload new cover image if changed
     let newCoverUrl: string | null = null;
-    if (coverFile) {
+    if (coverBlob) {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) { setError("Ikke innlogget."); setSaving(false); return; }
-      const ext = coverFile.name.split(".").pop() ?? "bin";
       const bucket = "beat-covers";
-      const path = `${session.user.id}/${Date.now()}_cover.${ext}`;
-      const { error: uploadError } = await supabase.storage.from(bucket).upload(path, coverFile, { upsert: false });
+      const path = `${session.user.id}/${Date.now()}_cover.webp`;
+      const { error: uploadError } = await supabase.storage.from(bucket).upload(path, coverBlob, { contentType: "image/webp", upsert: false });
       if (uploadError) { setError("Kunne ikke laste opp bilde: " + uploadError.message); setSaving(false); return; }
       const { data } = supabase.storage.from(bucket).getPublicUrl(path);
       newCoverUrl = data.publicUrl;
@@ -116,10 +135,10 @@ export default function EditProductModal(props: Props) {
       const exPrice = exclusivePrice ? parseInt(exclusivePrice) : null;
       if (exPrice !== null && exPrice <= priceNum) { setError("Eksklusiv pris må være høyere enn vanlig pris."); setSaving(false); return; }
       table = "beats";
-      updateData = { title: title.trim(), description: description.trim(), price: priceNum, tags, genre, bpm: bpmNum, key, exclusive_price: exPrice, is_published: isPublished, ...(newCoverUrl && { cover_url: newCoverUrl }) };
+      updateData = { title: title.trim(), description: description.trim(), price: priceNum, tags, genre, bpm: bpmNum, key, exclusive_price: exPrice, vsts: vsts.length > 0 ? vsts : null, is_published: isPublished, ...(newCoverUrl && { cover_url: newCoverUrl }) };
     } else if (type === "remake") {
       table = "remakes";
-      updateData = { title: title.trim(), description: description.trim(), price: priceNum, tags, genre: genre || null, bpm: bpm ? parseInt(bpm) : null, key: key || null, is_published: isPublished, ...(newCoverUrl && { cover_url: newCoverUrl }) };
+      updateData = { title: title.trim(), description: description.trim(), price: priceNum, tags, genre: genre || null, bpm: bpm ? parseInt(bpm) : null, key: key || null, vsts: vsts.length > 0 ? vsts : null, is_published: isPublished, ...(newCoverUrl && { cover_url: newCoverUrl }) };
     } else {
       table = "samples";
       updateData = { title: title.trim(), description: description.trim(), price: priceNum, tags, genre: genre || null, bpm: bpm ? parseInt(bpm) : null, key: key || null, is_published: isPublished, ...(newCoverUrl && { cover_url: newCoverUrl }) };
@@ -177,7 +196,7 @@ export default function EditProductModal(props: Props) {
               </div>
             )}
             <span className="text-xs" style={{ color: "#86868b" }}>
-              {coverFile ? coverFile.name : "Klikk for å endre coverbilde"}
+              Klikk for å endre coverbilde
             </span>
           </button>
         </div>
@@ -255,6 +274,30 @@ export default function EditProductModal(props: Props) {
           )}
         </div>
 
+        {/* VSTs / Plugins (beats & remakes) */}
+        {(type === "beat" || type === "remake") && (
+          <div>
+            <Label>VST / Plugins</Label>
+            <div className="flex flex-wrap gap-1.5 mb-2">
+              {vsts.map((vst) => (
+                <span key={vst} className="flex items-center gap-1 rounded-full px-2.5 py-1 text-xs" style={{ background: "rgba(255,255,255,0.06)", color: "#f5f5f7" }}>
+                  {vst}
+                  <button type="button" onClick={() => setVsts(vsts.filter((v) => v !== vst))} className="hover:opacity-70" style={{ color: "#86868b" }}>×</button>
+                </span>
+              ))}
+            </div>
+            <input
+              type="text"
+              value={vstInput}
+              onChange={(e) => setVstInput(e.target.value)}
+              onKeyDown={handleVstKeyDown}
+              onBlur={addVst}
+              placeholder="Legg til VST..."
+              style={inputStyle}
+            />
+          </div>
+        )}
+
         {/* Published toggle */}
         <div className="flex items-center justify-between">
           <Label>Publisert</Label>
@@ -287,6 +330,19 @@ export default function EditProductModal(props: Props) {
           </button>
         </div>
       </div>
+
+      {cropSrc && (
+        <ImageCropModal
+          imageSrc={cropSrc}
+          aspect={1}
+          onCrop={(blob) => {
+            setCoverBlob(blob);
+            setCoverPreview(URL.createObjectURL(blob));
+            setCropSrc(null);
+          }}
+          onCancel={() => setCropSrc(null)}
+        />
+      )}
     </div>
   );
 }

@@ -143,11 +143,11 @@ export default function BeatCard({ beat, isSelected = false, onSelect }: Props) 
       </div>
 
       {/* Tags */}
-      <div className="hidden items-center gap-1.5 lg:flex" style={{ width: 220 }}>
+      <div className="hidden items-center gap-1.5 lg:flex overflow-hidden" style={{ width: 220, flexWrap: "nowrap" }}>
         {beat.tags.slice(0, 3).map((tag) => (
           <span
             key={tag}
-            className="rounded-full px-2.5 py-0.5 text-xs"
+            className="rounded-full px-2.5 py-0.5 text-xs whitespace-nowrap shrink-0"
             style={{ background: "rgba(255,255,255,0.06)", color: "#86868b" }}
           >
             {tag}
@@ -159,7 +159,7 @@ export default function BeatCard({ beat, isSelected = false, onSelect }: Props) 
       <div className="flex shrink-0 items-center gap-2">
         <span
           className="text-xs sm:text-sm font-semibold"
-          style={{ color: "#f5f5f7", minWidth: 48, textAlign: "right", flexShrink: 0 }}
+          style={{ color: "#f5f5f7", width: 72, textAlign: "right", flexShrink: 0 }}
         >
           {beat.price === 0 ? "Gratis" : `kr ${beat.price.toLocaleString("nb-NO")}`}
         </span>
