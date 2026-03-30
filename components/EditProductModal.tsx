@@ -1,7 +1,7 @@
 "use client";
 
-import { useState, KeyboardEvent } from "react";
-import { X } from "lucide-react";
+import { useState, useRef, KeyboardEvent } from "react";
+import { X, ImagePlus } from "lucide-react";
 import { getSupabaseClient } from "@/lib/supabase/client";
 import type { Beat, Sample, Remake } from "@/lib/supabase/types";
 
@@ -58,8 +58,20 @@ export default function EditProductModal(props: Props) {
     type === "beat" ? String((item as Beat).exclusive_price || "") : ""
   );
 
+  // Cover image
+  const [coverFile, setCoverFile] = useState<File | null>(null);
+  const [coverPreview, setCoverPreview] = useState<string | null>(item.cover_url || null);
+  const coverInputRef = useRef<HTMLInputElement>(null);
+
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  function handleCoverChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setCoverFile(file);
+    setCoverPreview(URL.createObjectURL(file));
+  }
 
   function addTag() {
     const t = tagInput.trim().toLowerCase().replace(/\s+/g, "-");
@@ -81,6 +93,20 @@ export default function EditProductModal(props: Props) {
     setError(null);
     const supabase = getSupabaseClient();
 
+    // Upload new cover image if changed
+    let newCoverUrl: string | null = null;
+    if (coverFile) {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) { setError("Ikke innlogget."); setSaving(false); return; }
+      const ext = coverFile.name.split(".").pop() ?? "bin";
+      const bucket = "beat-covers";
+      const path = `${session.user.id}/${Date.now()}_cover.${ext}`;
+      const { error: uploadError } = await supabase.storage.from(bucket).upload(path, coverFile, { upsert: false });
+      if (uploadError) { setError("Kunne ikke laste opp bilde: " + uploadError.message); setSaving(false); return; }
+      const { data } = supabase.storage.from(bucket).getPublicUrl(path);
+      newCoverUrl = data.publicUrl;
+    }
+
     let updateData: Record<string, unknown>;
     let table: string;
 
@@ -90,13 +116,13 @@ export default function EditProductModal(props: Props) {
       const exPrice = exclusivePrice ? parseInt(exclusivePrice) : null;
       if (exPrice !== null && exPrice <= priceNum) { setError("Eksklusiv pris må være høyere enn vanlig pris."); setSaving(false); return; }
       table = "beats";
-      updateData = { title: title.trim(), description: description.trim(), price: priceNum, tags, genre, bpm: bpmNum, key, exclusive_price: exPrice, is_published: isPublished };
+      updateData = { title: title.trim(), description: description.trim(), price: priceNum, tags, genre, bpm: bpmNum, key, exclusive_price: exPrice, is_published: isPublished, ...(newCoverUrl && { cover_url: newCoverUrl }) };
     } else if (type === "remake") {
       table = "remakes";
-      updateData = { title: title.trim(), description: description.trim(), price: priceNum, tags, genre: genre || null, bpm: bpm ? parseInt(bpm) : null, key: key || null, is_published: isPublished };
+      updateData = { title: title.trim(), description: description.trim(), price: priceNum, tags, genre: genre || null, bpm: bpm ? parseInt(bpm) : null, key: key || null, is_published: isPublished, ...(newCoverUrl && { cover_url: newCoverUrl }) };
     } else {
       table = "samples";
-      updateData = { title: title.trim(), description: description.trim(), price: priceNum, tags, genre: genre || null, bpm: bpm ? parseInt(bpm) : null, key: key || null, is_published: isPublished };
+      updateData = { title: title.trim(), description: description.trim(), price: priceNum, tags, genre: genre || null, bpm: bpm ? parseInt(bpm) : null, key: key || null, is_published: isPublished, ...(newCoverUrl && { cover_url: newCoverUrl }) };
     }
 
     const { error: dbError } = await supabase.from(table).update(updateData).eq("id", item.id);
@@ -125,6 +151,36 @@ export default function EditProductModal(props: Props) {
         </div>
 
         {error && <p className="text-xs font-medium" style={{ color: "#ff3b30" }}>{error}</p>}
+
+        {/* Cover image */}
+        <div>
+          <Label>Coverbilde</Label>
+          <input ref={coverInputRef} type="file" accept="image/*" onChange={handleCoverChange} className="hidden" />
+          <button
+            type="button"
+            onClick={() => coverInputRef.current?.click()}
+            className="flex items-center gap-3 w-full rounded-xl p-3 transition-opacity hover:opacity-80"
+            style={{ background: "#0a0a0a", border: "1px solid #2a2a2a" }}
+          >
+            {coverPreview ? (
+              <div
+                className="shrink-0 rounded-lg"
+                style={{
+                  width: 48, height: 48,
+                  backgroundImage: `url(${coverPreview})`,
+                  backgroundSize: "cover", backgroundPosition: "center",
+                }}
+              />
+            ) : (
+              <div className="shrink-0 flex items-center justify-center rounded-lg" style={{ width: 48, height: 48, background: "#1e1e1e" }}>
+                <ImagePlus size={20} style={{ color: "#86868b" }} />
+              </div>
+            )}
+            <span className="text-xs" style={{ color: "#86868b" }}>
+              {coverFile ? coverFile.name : "Klikk for å endre coverbilde"}
+            </span>
+          </button>
+        </div>
 
         {/* Title */}
         <div>

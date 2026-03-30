@@ -23,8 +23,6 @@ export default function InnstillingerPage() {
   const [loading, setLoading] = useState(true);
 
   // Change password
-  const [newPassword, setNewPassword] = useState("");
-  const [confirmPassword, setConfirmPassword] = useState("");
   const [pwLoading, setPwLoading] = useState(false);
   const [pwMessage, setPwMessage] = useState<{ text: string; ok: boolean } | null>(null);
 
@@ -37,27 +35,25 @@ export default function InnstillingerPage() {
     });
   }, [router]);
 
-  async function handleChangePassword(e: React.FormEvent) {
-    e.preventDefault();
+  async function handleResetPassword() {
     setPwMessage(null);
-    if (newPassword.length < 6) {
-      setPwMessage({ text: "Passordet må være minst 6 tegn.", ok: false });
-      return;
-    }
-    if (newPassword !== confirmPassword) {
-      setPwMessage({ text: "Passordene stemmer ikke overens.", ok: false });
-      return;
-    }
     setPwLoading(true);
     const supabase = getSupabaseClient();
-    const { error } = await supabase.auth.updateUser({ password: newPassword });
+    const { data: { session } } = await supabase.auth.getSession();
+    const email = session?.user?.email;
+    if (!email) {
+      setPwMessage({ text: "Kunne ikke finne e-postadressen din.", ok: false });
+      setPwLoading(false);
+      return;
+    }
+    const { error } = await supabase.auth.resetPasswordForEmail(email, {
+      redirectTo: `${window.location.origin}/innstillinger`,
+    });
     setPwLoading(false);
     if (error) {
-      setPwMessage({ text: "Kunne ikke oppdatere passord: " + error.message, ok: false });
+      setPwMessage({ text: "Kunne ikke sende e-post: " + error.message, ok: false });
     } else {
-      setPwMessage({ text: "Passord oppdatert!", ok: true });
-      setNewPassword("");
-      setConfirmPassword("");
+      setPwMessage({ text: "Vi har sendt en lenke til " + email + ". Sjekk innboksen din.", ok: true });
     }
   }
 
@@ -102,38 +98,24 @@ export default function InnstillingerPage() {
           <h2 className="text-sm font-semibold" style={{ color: "#f5f5f7" }}>Endre passord</h2>
         </div>
 
-        <form onSubmit={handleChangePassword} className="flex flex-col gap-3">
-          <input
-            type="password"
-            placeholder="Nytt passord"
-            value={newPassword}
-            onChange={(e) => setNewPassword(e.target.value)}
-            required
-            minLength={6}
-            style={inputStyle}
-          />
-          <input
-            type="password"
-            placeholder="Bekreft nytt passord"
-            value={confirmPassword}
-            onChange={(e) => setConfirmPassword(e.target.value)}
-            required
-            style={inputStyle}
-          />
+        <div className="flex flex-col gap-3">
+          <p className="text-xs" style={{ color: "#86868b" }}>
+            Vi sender en lenke til e-postadressen din for å bekrefte endringen.
+          </p>
           {pwMessage && (
             <p className="text-xs" style={{ color: pwMessage.ok ? "#34c759" : "#ff453a" }}>
               {pwMessage.text}
             </p>
           )}
           <button
-            type="submit"
+            onClick={handleResetPassword}
             disabled={pwLoading}
             className="rounded-xl py-2.5 text-sm font-semibold transition-opacity disabled:opacity-50"
             style={{ background: "#6366f1", color: "#fff" }}
           >
-            {pwLoading ? "Lagrer..." : "Oppdater passord"}
+            {pwLoading ? "Sender..." : "Send e-post for å endre passord"}
           </button>
-        </form>
+        </div>
       </section>
 
       {/* ── Sign out ── */}

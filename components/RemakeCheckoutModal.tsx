@@ -115,7 +115,7 @@ export default function RemakeCheckoutModal({ remake, onClose }: Props) {
               <div className="min-w-0 flex-1">
                 <h2 className="truncate text-base font-bold tracking-tight" style={{ color: "#f5f5f7" }}>{remake.title}</h2>
                 <p className="text-xs mt-0.5" style={{ color: "#86868b" }}>
-                  {remake.producer?.display_name ?? "Ukjent"} &middot; remake av {remake.original_song}
+                  {remake.producer?.display_name ?? "Ukjent"} &middot; {remake.original_song}
                 </p>
                 <p className="text-sm font-bold mt-1" style={{ color: "#f5f5f7" }}>kr {remake.price.toLocaleString("nb-NO")}</p>
               </div>
@@ -134,7 +134,7 @@ export default function RemakeCheckoutModal({ remake, onClose }: Props) {
               </div>
 
               <h2 className="mb-1 text-xl font-bold tracking-tight" style={{ color: "#f5f5f7" }}>{remake.title}</h2>
-              <p className="mb-1 text-sm" style={{ color: "#86868b" }}>Remake av <span style={{ color: "#f5f5f7" }}>{remake.original_song}</span></p>
+              <p className="mb-1 text-sm" style={{ color: "#86868b" }}><span style={{ color: "#f5f5f7" }}>{remake.original_song}</span></p>
 
               <Link
                 href={`/profile/${slugifyName(remake.producer?.display_name ?? remake.producer?.username ?? "")}`}

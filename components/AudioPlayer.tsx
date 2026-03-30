@@ -197,7 +197,7 @@ export default function AudioPlayer() {
 
       {/* Close */}
       <button
-        onClick={stopPlayer}
+        onClick={clearPlayer}
         className="shrink-0 flex items-center justify-center rounded-lg transition-opacity hover:opacity-60"
         style={{ color: "#3a3a3a" }}
       >

@@ -15,3 +15,11 @@
 - [x] Add artist name on remake card
 - [x] Change "Kontakt oss" to link to /kontaktoss page with "Kontakt oss på russeartister@gmail.com"
 - [x] Allow multi-select VST filtering on remakes page (currently single-select only), and add option to exclude VSTs
+- [x] Fix reusable image cropper modal component
+- [x] Make the audioplayer x actually work so it closes the audioplayer
+- [ ] Let artists change their banner photo
+- [x] Let artists edit the cover image of a card
+- [x] Remove "remake av" on remake cards
+- [x] Send an email verification if you want to change the password of your user
+- [x] Make all links a pointer so the mouse turns into a pointer
+- [ ] Set DAW in checkoutpage
