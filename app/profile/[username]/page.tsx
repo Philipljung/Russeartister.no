@@ -150,7 +150,7 @@ export default function ProfilePage() {
   function deleteRemake(remakeId: string) { setPendingDelete({ type: "remake", id: remakeId }); }
 
   async function shareProfile() {
-    const url = `${window.location.origin}/profile/${encodeURIComponent(displayName || profile!.username)}`;
+    const url = `${window.location.origin}/profile/${encodeURIComponent((displayName || profile!.username).trim())}`;
     await navigator.clipboard.writeText(url);
     toast("Lenken er kopiert!", "success");
   }

@@ -3,12 +3,13 @@ import type { Profile } from "./supabase/types";
 
 export async function fetchProfileByUsername(identifier: string): Promise<Profile | null> {
   const supabase = getSupabaseClient();
+  const trimmed = decodeURIComponent(identifier).trim();
 
   // Try username first
   const { data, error } = await supabase
     .from("profiles")
     .select("*")
-    .ilike("username", identifier)
+    .ilike("username", trimmed)
     .single();
 
   if (data) return data as Profile;
@@ -18,7 +19,7 @@ export async function fetchProfileByUsername(identifier: string): Promise<Profil
     const { data: byName, error: nameError } = await supabase
       .from("profiles")
       .select("*")
-      .ilike("display_name", identifier)
+      .ilike("display_name", trimmed)
       .single();
 
     if (byName) return byName as Profile;

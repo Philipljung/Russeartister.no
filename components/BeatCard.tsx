@@ -120,7 +120,7 @@ export default function BeatCard({ beat, isSelected = false, onSelect }: Props) 
         </p>
         <p className="text-xs mt-0.5 truncate" style={{ color: "#86868b" }}>
           <Link
-            href={`/profile/${encodeURIComponent(beat.producer?.display_name ?? beat.producer?.username ?? "")}`}
+            href={`/profile/${encodeURIComponent((beat.producer?.display_name ?? beat.producer?.username ?? "").trim())}`}
             onClick={(e) => e.stopPropagation()}
             className="hover:underline"
             style={{ color: "#86868b" }}

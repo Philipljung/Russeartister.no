@@ -86,7 +86,7 @@ function SampleCard({
 
       {/* Cover */}
       <Link
-        href={`/profile/${encodeURIComponent(sample.producer?.display_name ?? sample.producer?.username ?? "")}`}
+        href={`/profile/${encodeURIComponent((sample.producer?.display_name ?? sample.producer?.username ?? "").trim())}`}
         onClick={(e) => e.stopPropagation()}
         className="shrink-0 rounded-lg transition-opacity hover:opacity-80"
         style={{
@@ -105,7 +105,7 @@ function SampleCard({
           {sample.title}
         </p>
         <p className="text-xs mt-0.5 truncate" style={{ color: "#86868b" }}>
-          <Link href={`/profile/${encodeURIComponent(sample.producer?.display_name ?? sample.producer?.username ?? "")}`} onClick={(e) => e.stopPropagation()} className="hover:underline" style={{ color: "#86868b" }}>
+          <Link href={`/profile/${encodeURIComponent((sample.producer?.display_name ?? sample.producer?.username ?? "").trim())}`} onClick={(e) => e.stopPropagation()} className="hover:underline" style={{ color: "#86868b" }}>
             {sample.producer?.display_name ?? "Ukjent"}
           </Link>
           {!isPreset && sample.bpm ? ` · ${sample.bpm} BPM` : ""}
@@ -255,7 +255,7 @@ function PackCard({
         <div className="min-w-0 flex-1">
           <p className="truncate text-sm font-semibold tracking-wide" style={{ color: "#f5f5f7" }}>{sample.title}</p>
           <p className="text-xs mt-0.5 truncate" style={{ color: "#86868b" }}>
-            <Link href={`/profile/${encodeURIComponent(sample.producer?.display_name ?? sample.producer?.username ?? "")}`} className="hover:underline" style={{ color: "#86868b" }}>
+            <Link href={`/profile/${encodeURIComponent((sample.producer?.display_name ?? sample.producer?.username ?? "").trim())}`} className="hover:underline" style={{ color: "#86868b" }}>
               {sample.producer?.display_name ?? "Ukjent"}
             </Link>
             {sample.pack_files ? ` · ${sample.pack_files.length} filer` : ""}

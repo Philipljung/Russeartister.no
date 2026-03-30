@@ -69,7 +69,7 @@ export default function RemakeCard({ remake, isActive, isPlaying, isSelected = f
 
       {/* Cover */}
       <Link
-        href={`/profile/${encodeURIComponent(remake.producer?.display_name ?? remake.producer?.username ?? "")}`}
+        href={`/profile/${encodeURIComponent((remake.producer?.display_name ?? remake.producer?.username ?? "").trim())}`}
         onClick={(e) => e.stopPropagation()}
         className="shrink-0 rounded-lg transition-opacity hover:opacity-80"
         style={{
@@ -89,7 +89,7 @@ export default function RemakeCard({ remake, isActive, isPlaying, isSelected = f
         </p>
         <p className="text-xs mt-0.5 truncate" style={{ color: "#86868b" }}>
           <Link
-            href={`/profile/${encodeURIComponent(remake.producer?.display_name ?? remake.producer?.username ?? "")}`}
+            href={`/profile/${encodeURIComponent((remake.producer?.display_name ?? remake.producer?.username ?? "").trim())}`}
             onClick={(e) => e.stopPropagation()}
             className="hover:underline"
             style={{ color: "#86868b" }}

@@ -292,7 +292,7 @@ export default function SampleDetailClient({
               {sample.title}
             </h1>
             <Link
-              href={`/profile/${producer?.username ?? ""}`}
+              href={`/profile/${encodeURIComponent((producer?.display_name ?? producer?.username ?? "").trim())}`}
               className="text-sm hover:underline"
               style={{ color: "#86868b" }}
             >

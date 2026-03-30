@@ -138,7 +138,7 @@ export default function BeatDetailClient({
               {beat.title}
             </h1>
             <Link
-              href={`/profile/${encodeURIComponent(producer?.display_name ?? producer?.username ?? "")}`}
+              href={`/profile/${encodeURIComponent((producer?.display_name ?? producer?.username ?? "").trim())}`}
               className="text-sm hover:underline"
               style={{ color: "#86868b" }}
             >

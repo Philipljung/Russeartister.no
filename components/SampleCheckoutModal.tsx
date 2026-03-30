@@ -135,7 +135,7 @@ export default function SampleCheckoutModal({ sample, onClose }: Props) {
               <h2 className="mb-1 text-xl font-bold tracking-tight" style={{ color: "#f5f5f7" }}>{sample.title}</h2>
 
               <Link
-                href={`/profile/${encodeURIComponent(sample.producer?.display_name ?? sample.producer?.username ?? "")}`}
+                href={`/profile/${encodeURIComponent((sample.producer?.display_name ?? sample.producer?.username ?? "").trim())}`}
                 onClick={onClose}
                 className="mb-5 text-sm hover:underline"
                 style={{ color: "#86868b" }}
