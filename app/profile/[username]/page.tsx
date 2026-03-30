@@ -17,6 +17,7 @@ import ImageCropModal from "@/components/ImageCropModal";
 import EditProductModal from "@/components/EditProductModal";
 import { CATEGORY_LABELS } from "@/lib/sampleCategories";
 import type { Profile, Beat, Sample, Remake } from "@/lib/supabase/types";
+import { slugifyName } from "@/lib/slugify";
 
 function genreColor(genre: string): string {
   const palette = ["#1a1040", "#001a2e", "#1a2e00", "#2e1a00", "#001e14", "#14001e", "#1e0a0a", "#00141e"];
@@ -150,7 +151,7 @@ export default function ProfilePage() {
   function deleteRemake(remakeId: string) { setPendingDelete({ type: "remake", id: remakeId }); }
 
   async function shareProfile() {
-    const url = `${window.location.origin}/profile/${encodeURIComponent((displayName || profile!.username).trim())}`;
+    const url = `${window.location.origin}/profile/${slugifyName(displayName || profile!.username)}`;
     await navigator.clipboard.writeText(url);
     toast("Lenken er kopiert!", "success");
   }

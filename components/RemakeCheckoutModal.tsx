@@ -7,6 +7,7 @@ import { X, Music } from "lucide-react";
 import Link from "next/link";
 import Image from "next/image";
 import type { Remake } from "@/lib/supabase/types";
+import { slugifyName } from "@/lib/slugify";
 
 const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY!);
 
@@ -136,7 +137,7 @@ export default function RemakeCheckoutModal({ remake, onClose }: Props) {
               <p className="mb-1 text-sm" style={{ color: "#86868b" }}>Remake av <span style={{ color: "#f5f5f7" }}>{remake.original_song}</span></p>
 
               <Link
-                href={`/profile/${encodeURIComponent((remake.producer?.display_name ?? remake.producer?.username ?? "").trim())}`}
+                href={`/profile/${slugifyName(remake.producer?.display_name ?? remake.producer?.username ?? "")}`}
                 onClick={onClose}
                 className="mb-5 text-sm hover:underline"
                 style={{ color: "#86868b" }}

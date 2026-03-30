@@ -8,6 +8,7 @@ import { usePlayer } from "@/lib/player-context";
 import { useToast } from "@/lib/toast-context";
 import BeatCheckoutModal from "@/components/BeatCheckoutModal";
 import BeatCard from "@/components/BeatCard";
+import { slugifyName } from "@/lib/slugify";
 
 function genreColor(genre: string): string {
   const palette = ["#1a1040", "#001a2e", "#1a2e00", "#2e1a00", "#001e14", "#14001e", "#1e0a0a", "#00141e"];
@@ -138,7 +139,7 @@ export default function BeatDetailClient({
               {beat.title}
             </h1>
             <Link
-              href={`/profile/${encodeURIComponent((producer?.display_name ?? producer?.username ?? "").trim())}`}
+              href={`/profile/${slugifyName(producer?.display_name ?? producer?.username ?? "")}`}
               className="text-sm hover:underline"
               style={{ color: "#86868b" }}
             >

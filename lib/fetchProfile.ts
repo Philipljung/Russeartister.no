@@ -1,11 +1,13 @@
 import { getSupabaseClient } from "./supabase/client";
+import { slugifyName } from "./slugify";
 import type { Profile } from "./supabase/types";
 
 export async function fetchProfileByUsername(identifier: string): Promise<Profile | null> {
   const supabase = getSupabaseClient();
   const trimmed = decodeURIComponent(identifier).trim();
+  const slug = slugifyName(trimmed);
 
-  // Try display_name first (preferred identifier)
+  // Try display_name exact match
   const { data: byName } = await supabase
     .from("profiles")
     .select("*")
@@ -13,7 +15,7 @@ export async function fetchProfileByUsername(identifier: string): Promise<Profil
     .single();
   if (byName) return byName as Profile;
 
-  // Try username
+  // Try username exact match
   const { data: byUsername } = await supabase
     .from("profiles")
     .select("*")
@@ -21,15 +23,27 @@ export async function fetchProfileByUsername(identifier: string): Promise<Profil
     .single();
   if (byUsername) return byUsername as Profile;
 
-  // Fuzzy: handle display_names with trailing whitespace in DB
-  const { data: fuzzyResults } = await supabase
+  // Try deslugified (hyphens → spaces)
+  const deslugified = trimmed.replace(/-/g, " ");
+  if (deslugified !== trimmed) {
+    const { data: byDeslug } = await supabase
+      .from("profiles")
+      .select("*")
+      .ilike("display_name", deslugified)
+      .single();
+    if (byDeslug) return byDeslug as Profile;
+  }
+
+  // Fuzzy: fetch candidates by prefix and compare slugified display_names
+  const prefix = trimmed.split("-")[0] || trimmed.substring(0, 3);
+  const { data: candidates } = await supabase
     .from("profiles")
     .select("*")
-    .ilike("display_name", `${trimmed}%`);
+    .ilike("display_name", `${prefix}%`);
 
-  if (fuzzyResults) {
-    const match = fuzzyResults.find(
-      (r: Profile) => r.display_name?.trim().toLowerCase() === trimmed.toLowerCase()
+  if (candidates) {
+    const match = candidates.find(
+      (r: Profile) => slugifyName(r.display_name ?? "") === slug
     );
     if (match) return match as Profile;
   }

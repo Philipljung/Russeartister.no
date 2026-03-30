@@ -7,6 +7,7 @@ import { X, Music } from "lucide-react";
 import Link from "next/link";
 import Image from "next/image";
 import type { Sample } from "@/lib/supabase/types";
+import { slugifyName } from "@/lib/slugify";
 
 const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY!);
 
@@ -135,7 +136,7 @@ export default function SampleCheckoutModal({ sample, onClose }: Props) {
               <h2 className="mb-1 text-xl font-bold tracking-tight" style={{ color: "#f5f5f7" }}>{sample.title}</h2>
 
               <Link
-                href={`/profile/${encodeURIComponent((sample.producer?.display_name ?? sample.producer?.username ?? "").trim())}`}
+                href={`/profile/${slugifyName(sample.producer?.display_name ?? sample.producer?.username ?? "")}`}
                 onClick={onClose}
                 className="mb-5 text-sm hover:underline"
                 style={{ color: "#86868b" }}

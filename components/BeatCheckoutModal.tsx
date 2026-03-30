@@ -8,6 +8,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { getSupabaseClient } from "@/lib/supabase/client";
 import type { Beat } from "@/lib/supabase/types";
+import { slugifyName } from "@/lib/slugify";
 
 const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY!);
 
@@ -274,7 +275,7 @@ export default function BeatCheckoutModal({ beat, onClose, initialExclusive = fa
 
               {/* Producer */}
               <Link
-                href={`/profile/${encodeURIComponent((beat.producer?.display_name ?? beat.producer?.username ?? "").trim())}`}
+                href={`/profile/${slugifyName(beat.producer?.display_name ?? beat.producer?.username ?? "")}`}
                 onClick={onClose}
                 className="mb-5 text-sm hover:underline"
                 style={{ color: "#86868b" }}

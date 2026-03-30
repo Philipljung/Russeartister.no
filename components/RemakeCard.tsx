@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { Play, Pause, Share2 } from "lucide-react";
 import type { Remake } from "@/lib/supabase/types";
 import { useToast } from "@/lib/toast-context";
+import { slugifyName } from "@/lib/slugify";
 
 function genreColor(seed: string): string {
   const palette = ["#1a1040","#001a2e","#1a2e00","#2e1a00","#001e14","#14001e","#1e0a0a","#00141e"];
@@ -69,7 +70,7 @@ export default function RemakeCard({ remake, isActive, isPlaying, isSelected = f
 
       {/* Cover */}
       <Link
-        href={`/profile/${encodeURIComponent((remake.producer?.display_name ?? remake.producer?.username ?? "").trim())}`}
+        href={`/profile/${slugifyName(remake.producer?.display_name ?? remake.producer?.username ?? "")}`}
         onClick={(e) => e.stopPropagation()}
         className="shrink-0 rounded-lg transition-opacity hover:opacity-80"
         style={{
@@ -89,7 +90,7 @@ export default function RemakeCard({ remake, isActive, isPlaying, isSelected = f
         </p>
         <p className="text-xs mt-0.5 truncate" style={{ color: "#86868b" }}>
           <Link
-            href={`/profile/${encodeURIComponent((remake.producer?.display_name ?? remake.producer?.username ?? "").trim())}`}
+            href={`/profile/${slugifyName(remake.producer?.display_name ?? remake.producer?.username ?? "")}`}
             onClick={(e) => e.stopPropagation()}
             className="hover:underline"
             style={{ color: "#86868b" }}

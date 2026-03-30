@@ -8,6 +8,7 @@ import type { Remake } from "@/lib/supabase/types";
 import { useToast } from "@/lib/toast-context";
 import RemakeCheckoutModal from "@/components/RemakeCheckoutModal";
 import RemakeCard from "@/components/RemakeCard";
+import { slugifyName } from "@/lib/slugify";
 
 function genreColor(seed: string): string {
   const palette = ["#1a1040", "#001a2e", "#1a2e00", "#2e1a00", "#001e14", "#14001e", "#1e0a0a", "#00141e"];
@@ -163,7 +164,7 @@ export default function RemakeDetailClient({
               {remake.title}
             </h1>
             <Link
-              href={`/profile/${encodeURIComponent((producer?.display_name ?? producer?.username ?? "").trim())}`}
+              href={`/profile/${slugifyName(producer?.display_name ?? producer?.username ?? "")}`}
               className="text-sm hover:underline"
               style={{ color: "#86868b" }}
             >

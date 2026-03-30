@@ -7,6 +7,7 @@ import { usePathname, useRouter } from "next/navigation";
 import { Menu, X } from "lucide-react";
 import { getSupabaseClient } from "@/lib/supabase/client";
 import type { Session, AuthChangeEvent } from "@supabase/supabase-js";
+import { slugifyName } from "@/lib/slugify";
 
 const navLinks = [
   { label: "Låter", href: "/later", active: true },
@@ -135,7 +136,7 @@ export default function Navbar() {
                 Mine nedlastninger
               </Link>
               <Link
-                href={`/profile/${encodeURIComponent((displayName ?? username ?? "").trim())}`}
+                href={`/profile/${slugifyName(displayName ?? username ?? "")}`}
                 className="flex items-center gap-2 rounded-lg px-3 py-1.5 text-sm font-medium transition-opacity hover:opacity-80"
                 style={{ color: "#f5f5f7", background: "rgba(255,255,255,0.06)" }}
               >
@@ -233,7 +234,7 @@ export default function Navbar() {
                 {session && username ? (
                   <>
                     <Link
-                      href={`/profile/${encodeURIComponent((displayName ?? username ?? "").trim())}`}
+                      href={`/profile/${slugifyName(displayName ?? username ?? "")}`}
                       className="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors"
                       style={{ color: "#f5f5f7", background: "rgba(255,255,255,0.04)" }}
                     >

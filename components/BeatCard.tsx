@@ -7,6 +7,7 @@ import { Play, Pause, Share2 } from "lucide-react";
 import type { Beat } from "@/lib/supabase/types";
 import { usePlayer } from "@/lib/player-context";
 import { useToast } from "@/lib/toast-context";
+import { slugifyName } from "@/lib/slugify";
 import BeatCheckoutModal from "./BeatCheckoutModal";
 
 type Props = {
@@ -120,7 +121,7 @@ export default function BeatCard({ beat, isSelected = false, onSelect }: Props) 
         </p>
         <p className="text-xs mt-0.5 truncate" style={{ color: "#86868b" }}>
           <Link
-            href={`/profile/${encodeURIComponent((beat.producer?.display_name ?? beat.producer?.username ?? "").trim())}`}
+            href={`/profile/${slugifyName(beat.producer?.display_name ?? beat.producer?.username ?? "")}`}
             onClick={(e) => e.stopPropagation()}
             className="hover:underline"
             style={{ color: "#86868b" }}
