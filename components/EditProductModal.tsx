@@ -108,6 +108,7 @@ export default function EditProductModal(props: Props) {
     if (!title.trim()) { setError("Tittel er påkrevd."); return; }
     const priceNum = parseInt(price);
     if (isNaN(priceNum) || priceNum < 0) { setError("Ugyldig pris."); return; }
+    if (priceNum > 0 && priceNum < 15) { setError("Minimumspris er 15 kr (eller gratis)."); return; }
 
     setSaving(true);
     setError(null);

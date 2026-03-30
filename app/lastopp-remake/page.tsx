@@ -112,6 +112,7 @@ export default function LastOppRemakePage() {
 
     const priceNum = stripeReady ? parseInt(price) : 0;
     if (stripeReady && (isNaN(priceNum) || priceNum < 0)) { setError("Ugyldig pris."); return; }
+    if (stripeReady && priceNum > 0 && priceNum < 15) { setError("Minimumspris er 15 kr (eller gratis)."); return; }
 
     setSubmitting(true);
     const supabase = getSupabaseClient();

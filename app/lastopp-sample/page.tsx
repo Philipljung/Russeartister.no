@@ -172,6 +172,7 @@ export default function LastOppSamplePage() {
 
     const priceNum = stripeReady ? parseInt(price) : 0;
     if (stripeReady && (isNaN(priceNum) || priceNum < 0)) { setError("Ugyldig pris."); return; }
+    if (stripeReady && priceNum > 0 && priceNum < 15) { setError("Minimumspris er 15 kr (eller gratis)."); return; }
 
     const bpmNum = bpm ? parseInt(bpm) : null;
     if (bpmNum !== null && (bpmNum < 40 || bpmNum > 300)) { setError("BPM må være mellom 40 og 300."); return; }

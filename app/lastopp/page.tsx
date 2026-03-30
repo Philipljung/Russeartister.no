@@ -156,6 +156,10 @@ export default function LastOppPage() {
       setError("Ugyldig pris.");
       return;
     }
+    if (stripeReady && priceNum > 0 && priceNum < 15) {
+      setError("Minimumspris er 15 kr (eller gratis).");
+      return;
+    }
 
     let exclusivePriceNum: number | null = null;
     if (stripeReady && exclusiveEnabled) {
