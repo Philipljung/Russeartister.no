@@ -34,15 +34,14 @@ export async function fetchProfileByUsername(identifier: string): Promise<Profil
     if (byDeslug) return byDeslug as Profile;
   }
 
-  // Fuzzy: fetch candidates by prefix and compare slugified display_names
-  const prefix = trimmed.split("-")[0] || trimmed.substring(0, 3);
-  const { data: candidates } = await supabase
+  // Fallback: slugify is lossy (ø→o, æ→ae, å→a), so we can't reverse it.
+  // Fetch all profiles and compare their slugified display_names against the slug.
+  const { data: allProfiles } = await supabase
     .from("profiles")
-    .select("*")
-    .ilike("display_name", `${prefix}%`);
+    .select("*");
 
-  if (candidates) {
-    const match = candidates.find(
+  if (allProfiles) {
+    const match = allProfiles.find(
       (r: Profile) => slugifyName(r.display_name ?? "") === slug
     );
     if (match) return match as Profile;
