@@ -4,6 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { getSupabaseClient } from "@/lib/supabase/client";
+import { slugifyName } from "@/lib/slugify";
 
 const inputStyle: React.CSSProperties = {
   background: "#141414",
@@ -23,7 +24,6 @@ function slugify(val: string) {
 export default function RegistrerPage() {
   const router = useRouter();
   const [displayName, setDisplayName] = useState("");
-  const [username, setUsername] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
@@ -34,16 +34,36 @@ export default function RegistrerPage() {
     setError(null);
     setLoading(true);
 
+    const trimmedName = displayName.trim();
+    if (!trimmedName) {
+      setLoading(false);
+      setError("Du må oppgi et artistnavn.");
+      return;
+    }
+
+    // Check for duplicate display_name
     const supabase = getSupabaseClient();
+    const { data: existing } = await supabase
+      .from("profiles")
+      .select("id")
+      .ilike("display_name", trimmedName)
+      .maybeSingle();
+
+    if (existing) {
+      setLoading(false);
+      setError("Navnet er allerede i bruk. Velg et annet artistnavn.");
+      return;
+    }
+
+    const username = slugify(trimmedName);
+
     const { data, error: signUpError } = await supabase.auth.signUp({
       email,
       password,
       options: {
-        // These values are written to auth.users.raw_user_meta_data.
-        // The handle_new_user() DB trigger reads them to create the profile row.
         data: {
           username,
-          display_name: displayName,
+          display_name: trimmedName,
         },
       },
     });
@@ -72,7 +92,7 @@ export default function RegistrerPage() {
     // If email confirmation is DISABLED in Supabase: data.session is non-null → redirect now.
     // If email confirmation is ENABLED: data.session is null → ask user to check email.
     if (data.session) {
-      router.push(`/profile/${username}`);
+      router.push(`/profile/${slugifyName(trimmedName)}`);
       return;
     }
 
@@ -130,29 +150,12 @@ export default function RegistrerPage() {
         <form onSubmit={handleSubmit} className="flex flex-col gap-3">
           <input
             type="text"
-            placeholder="Artistnavn / visningsnavn"
+            placeholder="Artistnavn"
             value={displayName}
-            onChange={(e) => {
-              setDisplayName(e.target.value);
-              if (!username) setUsername(slugify(e.target.value));
-            }}
+            onChange={(e) => setDisplayName(e.target.value)}
             required
             style={inputStyle}
           />
-
-          <div>
-            <input
-              type="text"
-              placeholder="Brukernavn"
-              value={username}
-              onChange={(e) => setUsername(slugify(e.target.value))}
-              required
-              style={inputStyle}
-            />
-            <p className="mt-1 text-xs" style={{ color: "#86868b" }}>
-              russeartister.no/profile/{username || "brukernavn"}
-            </p>
-          </div>
 
           <input
             type="email"

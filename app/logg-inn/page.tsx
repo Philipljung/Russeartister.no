@@ -4,6 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { getSupabaseClient } from "@/lib/supabase/client";
+import { slugifyName } from "@/lib/slugify";
 
 const inputStyle: React.CSSProperties = {
   background: "#141414",
@@ -46,13 +47,11 @@ export default function LoggInnPage() {
       return;
     }
 
-    // Use the username stored in auth metadata — no extra DB call needed.
-    const username = data.user.user_metadata?.username as string | undefined;
+    const name = (data.user.user_metadata?.display_name ?? data.user.user_metadata?.username) as string | undefined;
 
-    if (username) {
-      router.push(`/profile/${username}`);
+    if (name) {
+      router.push(`/profile/${slugifyName(name)}`);
     } else {
-      console.warn("[logg-inn] No username in metadata, redirecting to /beats");
       router.push("/beats");
     }
   }

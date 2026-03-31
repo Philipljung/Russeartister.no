@@ -165,6 +165,20 @@ export default function ProfilePage() {
     }
 
     const supabase = getSupabaseClient();
+
+    // Check for duplicate display_name (case-insensitive, exclude self)
+    const { data: existing } = await supabase
+      .from("profiles")
+      .select("id")
+      .ilike("display_name", trimmed)
+      .neq("id", profile!.id)
+      .maybeSingle();
+
+    if (existing) {
+      toast("Navnet er allerede i bruk. Velg et annet artistnavn.", "error");
+      return;
+    }
+
     const { error } = await supabase
       .from("profiles")
       .update({ display_name: trimmed })
@@ -283,7 +297,7 @@ export default function ProfilePage() {
           Profil ikke funnet
         </p>
         <p className="text-sm" style={{ color: "#86868b" }}>
-          @{usernameParam} eksisterer ikke
+          «{decodeURIComponent(usernameParam)}» eksisterer ikke
         </p>
         <Link
           href="/beats"
@@ -477,9 +491,6 @@ export default function ProfilePage() {
           )}
         </div>
 
-        <p className="text-xs mt-0.5" style={{ color: "#3a3a3a" }}>
-          @{profile.username}
-        </p>
 
         {/* Bio */}
         <div className="mt-3 max-w-xl">

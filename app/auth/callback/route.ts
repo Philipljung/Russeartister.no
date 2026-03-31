@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { createServerClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
+import { slugifyName } from "@/lib/slugify";
 
 export async function GET(request: Request) {
   const { searchParams, origin } = new URL(request.url);
@@ -25,8 +26,8 @@ export async function GET(request: Request) {
 
     const { data, error } = await supabase.auth.exchangeCodeForSession(code);
     if (!error && data.user) {
-      const username = data.user.user_metadata?.username as string | undefined;
-      if (username) return NextResponse.redirect(`${origin}/profile/${username}`);
+      const name = (data.user.user_metadata?.display_name ?? data.user.user_metadata?.username) as string | undefined;
+      if (name) return NextResponse.redirect(`${origin}/profile/${slugifyName(name)}`);
       return NextResponse.redirect(`${origin}/later`);
     }
   }

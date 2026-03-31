@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { getSupabaseClient } from "@/lib/supabase/client";
+import { slugifyName } from "@/lib/slugify";
 import { KeyRound, LogOut, Trash2, ChevronLeft } from "lucide-react";
 import Link from "next/link";
 
@@ -19,7 +20,7 @@ const inputStyle: React.CSSProperties = {
 
 export default function InnstillingerPage() {
   const router = useRouter();
-  const [username, setUsername] = useState<string | null>(null);
+  const [profileName, setProfileName] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
   // Change password
@@ -30,7 +31,7 @@ export default function InnstillingerPage() {
     const supabase = getSupabaseClient();
     supabase.auth.getSession().then(({ data: { session } }: { data: { session: import("@supabase/supabase-js").Session | null } }) => {
       if (!session) { router.replace("/logg-inn"); return; }
-      setUsername(session.user.user_metadata?.username as string ?? null);
+      setProfileName((session.user.user_metadata?.display_name ?? session.user.user_metadata?.username) as string ?? null);
       setLoading(false);
     });
   }, [router]);
@@ -74,9 +75,9 @@ export default function InnstillingerPage() {
   return (
     <div className="mx-auto max-w-lg px-6 py-10">
       {/* Back link */}
-      {username && (
+      {profileName && (
         <Link
-          href={`/profile/${username}`}
+          href={`/profile/${slugifyName(profileName)}`}
           className="mb-6 flex items-center gap-1.5 text-sm transition-opacity hover:opacity-70"
           style={{ color: "#86868b" }}
         >
