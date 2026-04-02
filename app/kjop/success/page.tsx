@@ -147,7 +147,7 @@ function SuccessContent() {
               {beat.title}
             </p>
             <p className="text-sm mt-0.5" style={{ color: "#86868b" }}>
-              {beat.producer_name} &middot; {beat.genre} &middot; {beat.bpm} BPM
+              {[beat.producer_name, beat.genre, beat.bpm ? `${beat.bpm} BPM` : null].filter(Boolean).join(" · ")}
             </p>
           </div>
         </div>

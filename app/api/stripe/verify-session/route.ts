@@ -32,13 +32,53 @@ export async function GET(request: NextRequest) {
   const beatId = session.metadata?.beat_id;
   const remakeId = session.metadata?.remake_id;
   const sampleId = session.metadata?.sample_id;
+  const packId = session.metadata?.pack_id;
   const isExclusive = session.metadata?.exclusive === "true";
 
-  if (!beatId && !remakeId && !sampleId) {
+  if (!beatId && !remakeId && !sampleId && !packId) {
     return NextResponse.json({ error: "Metadata mangler" }, { status: 400 });
   }
 
   const supabase = createServiceClient();
+
+  // --- Pack path ---
+  if (packId) {
+    const { data: pack, error: packError } = await supabase
+      .from("packs")
+      .select("id, title, cover_url, file_url, producer:profiles(display_name)")
+      .eq("id", packId)
+      .single();
+
+    if (packError || !pack) {
+      return NextResponse.json({ error: "Pakke ikke funnet" }, { status: 404 });
+    }
+
+    let downloadUrl: string | null = null;
+    if (pack.file_url) {
+      const ext = pack.file_url.split(".").pop();
+      const dlName = ext && ext.length <= 8 ? `${pack.title}.${ext}` : pack.title;
+      const { data: signed } = await supabase.storage
+        .from("beat-files")
+        .createSignedUrl(pack.file_url, 60 * 60, { download: dlName });
+      if (signed) downloadUrl = signed.signedUrl;
+    }
+
+    const producer = pack.producer as unknown as { display_name: string } | null;
+
+    return NextResponse.json({
+      beat: {
+        id: pack.id,
+        title: pack.title,
+        genre: "Pakke",
+        bpm: null,
+        key: null,
+        cover_url: pack.cover_url,
+        producer_name: producer?.display_name ?? "Ukjent",
+      },
+      customerEmail: session.customer_details?.email ?? null,
+      downloadUrl,
+    });
+  }
 
   // --- Remake path ---
   if (remakeId) {
