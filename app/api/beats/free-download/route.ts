@@ -29,7 +29,7 @@ export async function GET(req: NextRequest) {
   if (!filePath) return NextResponse.json({ error: "Invalid file path" }, { status: 500 });
 
   const ext = filePath.split(".").pop();
-  const downloadName = ext && ext.length <= 8 ? `${beat.title}.${ext}` : (beat.title ?? "beat");
+  const downloadName = ext && ext.length <= 20 ? `${beat.title}.${ext}` : (beat.title ?? "beat");
   const { data: signed, error } = await supabase.storage
     .from("beat-files")
     .createSignedUrl(filePath, 3600, { download: downloadName });

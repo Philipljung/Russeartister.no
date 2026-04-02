@@ -37,18 +37,18 @@ export async function GET(
   }
 
   let fileRawPath: string | null = null;
+  let projectRawPath: string | null = null;
   let filename = "fil";
-  let beatAudioUrl: string | null = null;
 
   if (purchase.item_type === "beat" && purchase.beat_id) {
     const { data: beat } = await service
       .from("beats")
-      .select("project_file_url, audio_preview_url, title")
+      .select("full_song_url, project_file_url, title")
       .eq("id", purchase.beat_id)
       .single();
-    fileRawPath = beat?.project_file_url ?? null;
+    fileRawPath = beat?.full_song_url ?? null;
+    projectRawPath = beat?.project_file_url ?? null;
     filename = beat?.title ?? "beat";
-    beatAudioUrl = beat?.audio_preview_url ?? null;
   } else if (purchase.item_type === "remake" && purchase.remake_id) {
     const { data: remake } = await service
       .from("remakes")
@@ -78,48 +78,42 @@ export async function GET(
   }
 
   if (!fileRawPath) {
-    if (beatAudioUrl) {
-      // Beat with only audio preview (no project file)
-      return NextResponse.json({ url: beatAudioUrl, audioUrl: null });
-    }
     console.error("[downloads] fileRawPath is null for purchase:", purchase.id, "item_type:", purchase.item_type);
     return NextResponse.json({ error: "Fil ikke funnet" }, { status: 404 });
   }
 
-  // Resolve to a final storage path, then sign it.
-  // Handles: raw beat-files path, full beat-files https URL, legacy sample-previews public URL.
   function withExt(name: string, path: string): string {
     const ext = path.split(".").pop();
-    return ext && ext.length <= 8 ? `${name}.${ext}` : name;
+    return ext && ext.length <= 20 ? `${name}.${ext}` : name;
   }
 
-  if (fileRawPath.startsWith("http")) {
-    const beatPath = fileRawPath.split("/beat-files/")[1]?.split("?")[0];
-    if (beatPath) {
-      const downloadName = withExt(filename, beatPath);
-      const { data: signed, error: signError } = await service.storage
-        .from("beat-files")
-        .createSignedUrl(beatPath, 60 * 10, { download: downloadName });
-      if (signError || !signed) {
-        console.error("[downloads] Failed to create signed URL:", signError?.message);
-        return NextResponse.json({ error: "Kunne ikke generere nedlastningslenke" }, { status: 500 });
+  async function signPath(rawPath: string, name: string): Promise<string | null> {
+    if (rawPath.startsWith("http")) {
+      const beatPath = rawPath.split("/beat-files/")[1]?.split("?")[0];
+      if (beatPath) {
+        const { data: signed, error: signError } = await service.storage
+          .from("beat-files")
+          .createSignedUrl(beatPath, 60 * 10, { download: withExt(name, beatPath) });
+        if (signError || !signed) return null;
+        return signed.signedUrl;
       }
-      return NextResponse.json({ url: signed.signedUrl, audioUrl: beatAudioUrl ?? null });
+      // Public URL from another bucket (e.g. sample-previews)
+      return rawPath;
     }
-    // Fallback: public URL from another bucket (e.g. sample-previews) — return directly
-    return NextResponse.json({ url: fileRawPath, audioUrl: beatAudioUrl ?? null });
+    const { data: signed, error: signError } = await service.storage
+      .from("beat-files")
+      .createSignedUrl(rawPath, 60 * 10, { download: withExt(name, rawPath) });
+    if (signError || !signed) return null;
+    return signed.signedUrl;
   }
 
-  // Raw path → sign from beat-files
-  const downloadName = withExt(filename, fileRawPath);
-  const { data: signed, error: signError } = await service.storage
-    .from("beat-files")
-    .createSignedUrl(fileRawPath, 60 * 10, { download: downloadName });
-
-  if (signError || !signed) {
-    console.error("[downloads] Failed to create signed URL:", signError?.message);
+  const url = await signPath(fileRawPath, filename);
+  if (!url) {
+    console.error("[downloads] Failed to create signed URL for:", fileRawPath);
     return NextResponse.json({ error: "Kunne ikke generere nedlastningslenke" }, { status: 500 });
   }
 
-  return NextResponse.json({ url: signed.signedUrl, audioUrl: beatAudioUrl ?? null });
+  const projectUrl = projectRawPath ? await signPath(projectRawPath, `${filename}_prosjekt`) : null;
+
+  return NextResponse.json({ url, audioUrl: projectUrl });
 }

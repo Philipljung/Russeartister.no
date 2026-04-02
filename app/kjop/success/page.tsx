@@ -19,6 +19,7 @@ type SessionData = {
   beat: BeatInfo;
   customerEmail: string | null;
   downloadUrl: string | null;
+  projectFileUrl: string | null;
 };
 
 function genreColor(genre: string): string {
@@ -80,7 +81,7 @@ function SuccessContent() {
     );
   }
 
-  const { beat, customerEmail, downloadUrl } = data;
+  const { beat, customerEmail, downloadUrl, projectFileUrl } = data;
   const coverBg = beat.cover_url ? undefined : genreColor(beat.genre);
 
   return (
@@ -152,30 +153,44 @@ function SuccessContent() {
           </div>
         </div>
 
-        {/* Download button */}
-        {downloadUrl ? (
-          <a
-            href={downloadUrl}
-            download
-            className="flex w-full items-center justify-center gap-2 rounded-2xl py-3 text-sm font-semibold transition-opacity hover:opacity-80"
-            style={{ background: "#0071e3", color: "#fff" }}
-          >
-            <Download size={16} />
-            Last ned
-          </a>
-        ) : (
-          <div
-            className="flex w-full items-center justify-center rounded-2xl py-3 text-sm"
-            style={{ background: "rgba(255,255,255,0.04)", color: "#86868b" }}
-          >
-            Prosjektfil ikke tilgjengelig
-          </div>
-        )}
+        {/* Download buttons */}
+        <div className="flex flex-col gap-2">
+          {downloadUrl ? (
+            <a
+              href={downloadUrl}
+              download
+              className="flex w-full items-center justify-center gap-2 rounded-2xl py-3 text-sm font-semibold transition-opacity hover:opacity-80"
+              style={{ background: "#0071e3", color: "#fff" }}
+            >
+              <Download size={16} />
+              Last ned sang
+            </a>
+          ) : (
+            <div
+              className="flex w-full items-center justify-center rounded-2xl py-3 text-sm"
+              style={{ background: "rgba(255,255,255,0.04)", color: "#86868b" }}
+            >
+              Fil ikke tilgjengelig
+            </div>
+          )}
+
+          {projectFileUrl && (
+            <a
+              href={projectFileUrl}
+              download
+              className="flex w-full items-center justify-center gap-2 rounded-2xl py-3 text-sm font-semibold transition-opacity hover:opacity-80"
+              style={{ background: "rgba(255,255,255,0.06)", color: "#f5f5f7" }}
+            >
+              <Download size={16} />
+              Last ned prosjektfil
+            </a>
+          )}
+        </div>
 
         {/* Note about expiry */}
-        {downloadUrl && (
+        {(downloadUrl || projectFileUrl) && (
           <p className="mt-3 text-center text-xs" style={{ color: "#3a3a3a" }}>
-            Nedlastningslenken er gyldig i 1 time. Du kan også laste ned via Mine Nedlastninger.
+            Nedlastningslenker er gyldige i 1 time. Du kan også laste ned via Mine Nedlastninger.
           </p>
         )}
 

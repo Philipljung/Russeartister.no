@@ -62,7 +62,7 @@ export async function GET(req: NextRequest) {
   if (!filePath) return NextResponse.json({ url: rawPath }); // legacy public URL fallback
 
   const ext = filePath.split(".").pop();
-  const downloadName = ext && ext.length <= 8 ? `${title}.${ext}` : title;
+  const downloadName = ext && ext.length <= 20 ? `${title}.${ext}` : title;
 
   const { data: signed, error } = await service.storage
     .from("beat-files")

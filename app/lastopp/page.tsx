@@ -67,6 +67,7 @@ export default function LastOppPage() {
   const [cover, setCover] = useState<UploadFile>(null);
   const [cropSrc, setCropSrc] = useState<string | null>(null);
   const [audioPreview, setAudioPreview] = useState<UploadFile>(null);
+  const [fullSong, setFullSong] = useState<UploadFile>(null);
   const [projectFile, setProjectFile] = useState<UploadFile>(null);
 
   const [existingGenres, setExistingGenres] = useState<string[]>([]);
@@ -75,6 +76,7 @@ export default function LastOppPage() {
 
   const coverInputRef = useRef<HTMLInputElement>(null);
   const audioInputRef = useRef<HTMLInputElement>(null);
+  const fullSongInputRef = useRef<HTMLInputElement>(null);
   const projectInputRef = useRef<HTMLInputElement>(null);
 
   function addTag() {
@@ -128,6 +130,19 @@ export default function LastOppPage() {
     setAudioPreview({ file });
   }
 
+  function handleFullSongChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const name = file.name.toLowerCase();
+    if (!name.endsWith(".wav") && !name.endsWith(".mp3")) {
+      setError("Full sang må være WAV eller MP3.");
+      if (fullSongInputRef.current) fullSongInputRef.current.value = "";
+      return;
+    }
+    setError(null);
+    setFullSong({ file });
+  }
+
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError(null);
@@ -138,6 +153,10 @@ export default function LastOppPage() {
     }
     if (!audioPreview?.file) {
       setError("Du må laste opp en lydforhåndsvisning.");
+      return;
+    }
+    if (!fullSong?.file) {
+      setError("Du må laste opp full sang.");
       return;
     }
     if (stripeReady && !price) {
@@ -211,9 +230,24 @@ export default function LastOppPage() {
       return data.publicUrl;
     }
 
-    // 2. Upload files (cover + audio preview are public; project file is private)
+    // 2. Upload files (cover + audio preview are public; full song + project file are private)
     const coverUrl = cover?.file ? await uploadFile("beat-covers", cover.file, "cover") : null;
     const audioUrl = audioPreview?.file ? await uploadFile("beat-previews", audioPreview.file, "preview") : null;
+
+    // Full song: private bucket, store path only
+    let fullSongUrl: string | null = null;
+    if (fullSong?.file) {
+      const ext = fullSong.file.name.split(".").pop() ?? "bin";
+      const path = `${userId}/${timestamp}_full.${ext}`;
+      const { error } = await supabase.storage.from("beat-files").upload(path, fullSong.file, { upsert: false });
+      if (error) {
+        console.error("[lastopp] Full song upload failed:", error.message);
+        setError("Kunne ikke laste opp full sang.");
+        setSubmitting(false);
+        return;
+      }
+      fullSongUrl = path;
+    }
 
     // Project file: private bucket, store path only (not a public URL)
     let projectFileUrl: string | null = null;
@@ -224,7 +258,7 @@ export default function LastOppPage() {
       if (error) {
         console.error("[lastopp] Project file upload failed:", error.message);
       } else {
-        projectFileUrl = path; // store path, not public URL
+        projectFileUrl = path;
       }
     }
 
@@ -246,6 +280,7 @@ export default function LastOppPage() {
         vsts: selectedVsts.length > 0 ? selectedVsts : null,
         cover_url: coverUrl,
         audio_preview_url: audioUrl,
+        full_song_url: fullSongUrl,
         project_file_url: projectFileUrl,
         is_published: true,
       })
@@ -637,7 +672,17 @@ export default function LastOppPage() {
           />
 
           <FileRow
-            label="Prosjektfil"
+            label="Full sang *"
+            hint="WAV eller MP3 — filen kunden laster ned etter kjøp"
+            accept=".wav,.mp3,audio/wav,audio/mpeg"
+            icon={<Music size={15} style={{ color: "#86868b" }} />}
+            file={fullSong?.file ?? null}
+            inputRef={fullSongInputRef}
+            onChange={handleFullSongChange}
+          />
+
+          <FileRow
+            label="Prosjektfil (valgfritt)"
             hint="Alle filtyper — maks 500 MB"
             accept="*"
             icon={<FileArchive size={15} style={{ color: "#86868b" }} />}

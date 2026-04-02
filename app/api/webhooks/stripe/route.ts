@@ -310,7 +310,7 @@ export async function POST(request: NextRequest) {
     // ── Send emails ──
     // Build download filename with extension extracted from the stored path
     const _ext = fileRawPath?.split(".").pop();
-    const downloadFilename = _ext && _ext.length <= 8 ? `${itemTitle}.${_ext}` : itemTitle;
+    const downloadFilename = _ext && _ext.length <= 20 ? `${itemTitle}.${_ext}` : itemTitle;
     const downloadUrl = await makeSignedUrl(supabase, fileRawPath, downloadFilename, 60 * 60 * 24 * 7);
 
     const emails = [];

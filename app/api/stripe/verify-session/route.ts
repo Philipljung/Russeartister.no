@@ -56,7 +56,7 @@ export async function GET(request: NextRequest) {
     let downloadUrl: string | null = null;
     if (pack.file_url) {
       const ext = pack.file_url.split(".").pop();
-      const dlName = ext && ext.length <= 8 ? `${pack.title}.${ext}` : pack.title;
+      const dlName = ext && ext.length <= 20 ? `${pack.title}.${ext}` : pack.title;
       const { data: signed } = await supabase.storage
         .from("beat-files")
         .createSignedUrl(pack.file_url, 60 * 60, { download: dlName });
@@ -95,7 +95,7 @@ export async function GET(request: NextRequest) {
     let downloadUrl: string | null = null;
     if (remake.file_url) {
       const ext = remake.file_url.split(".").pop();
-      const dlName = ext && ext.length <= 8 ? `${remake.title}.${ext}` : remake.title;
+      const dlName = ext && ext.length <= 20 ? `${remake.title}.${ext}` : remake.title;
       const { data: signed, error: signError } = await supabase.storage
         .from("beat-files")
         .createSignedUrl(remake.file_url, 60 * 60, { download: dlName });
@@ -139,7 +139,7 @@ export async function GET(request: NextRequest) {
       } else {
         // New: raw path in beat-files — sign it
         const ext = sample.file_url.split(".").pop();
-        const dlName = ext && ext.length <= 8 ? `${sample.title}.${ext}` : sample.title;
+        const dlName = ext && ext.length <= 20 ? `${sample.title}.${ext}` : sample.title;
         const { data: signed } = await supabase.storage
           .from("beat-files")
           .createSignedUrl(sample.file_url, 60 * 60, { download: dlName });
@@ -178,7 +178,7 @@ export async function GET(request: NextRequest) {
 
   const { data: beat, error: beatError } = await supabase
     .from("beats")
-    .select("id, title, genre, bpm, key, cover_url, project_file_url, producer:profiles(display_name)")
+    .select("id, title, genre, bpm, key, cover_url, full_song_url, project_file_url, producer:profiles(display_name)")
     .eq("id", beatId!)
     .single();
 
@@ -187,21 +187,22 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: "Låt ikke funnet" }, { status: 404 });
   }
 
-  // 3. Generate signed download URL (valid 1 hour)
-  let downloadUrl: string | null = null;
-  if (beat.project_file_url) {
-    const ext = beat.project_file_url.split(".").pop();
-    const dlName = ext && ext.length <= 8 ? `${beat.title}.${ext}` : beat.title;
+  // 3. Generate signed download URLs (valid 1 hour)
+  async function signUrl(path: string, name: string): Promise<string | null> {
+    const ext = path.split(".").pop();
+    const dlName = ext && ext.length <= 20 ? `${name}.${ext}` : name;
     const { data: signed, error: signError } = await supabase.storage
       .from("beat-files")
-      .createSignedUrl(beat.project_file_url, 60 * 60, { download: dlName });
-
+      .createSignedUrl(path, 60 * 60, { download: dlName });
     if (signError) {
       console.error("[verify-session] Failed to create signed URL:", signError.message);
-    } else {
-      downloadUrl = signed.signedUrl;
+      return null;
     }
+    return signed.signedUrl;
   }
+
+  const fullSongUrl = beat.full_song_url ? await signUrl(beat.full_song_url, beat.title) : null;
+  const projectFileUrl = beat.project_file_url ? await signUrl(beat.project_file_url, `${beat.title}_project`) : null;
 
   const producer = beat.producer as unknown as { display_name: string } | null;
 
@@ -216,6 +217,7 @@ export async function GET(request: NextRequest) {
       producer_name: producer?.display_name ?? "Ukjent",
     },
     customerEmail: session.customer_details?.email ?? null,
-    downloadUrl,
+    downloadUrl: fullSongUrl,
+    projectFileUrl,
   });
 }
