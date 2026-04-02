@@ -178,6 +178,18 @@ export default function StripeOnboardingModal({ onClose, onComplete }: Props) {
               </select>
             </div>
 
+            {/* Warning */}
+            <div
+              className="mb-6 rounded-2xl px-4 py-3.5"
+              style={{ background: "rgba(255,179,0,0.06)", border: "1px solid rgba(255,179,0,0.15)" }}
+            >
+              <p className="text-sm font-medium" style={{ color: "#ffb300" }}>Ha BankID klar</p>
+              <p className="mt-0.5 text-xs leading-relaxed" style={{ color: "#86868b" }}>
+                Stripe krever at du verifiserer identiteten din med BankID eller pass under oppsett.
+                Ha dette klart for deg slik at du slipper å avbryte underveis.
+              </p>
+            </div>
+
             {/* What you'll need */}
             <div className="mb-6">
               <p className="mb-3 text-xs font-semibold uppercase tracking-wider" style={{ color: "#3a3a3a" }}>
