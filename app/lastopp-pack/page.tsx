@@ -359,7 +359,7 @@ export default function LastOppPackPage() {
 
       toast("Pakke publisert!", "success");
       const profileSlug = slugifyName(displayName ?? username ?? "");
-      router.push(profileSlug ? `/profile/${profileSlug}` : "/packs");
+      router.push(profileSlug ? `/profile/${profileSlug}` : "/samples");
     } catch (err) {
       console.error("[lastopp-pack] Unexpected error:", err);
       setError("Noe gikk galt. Prøv igjen.");
