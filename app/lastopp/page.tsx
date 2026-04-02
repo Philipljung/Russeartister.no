@@ -662,7 +662,7 @@ export default function LastOppPage() {
           </p>
 
           <FileRow
-            label="Lydforhåndsvisning *"
+            label="Preview (15-45 sek) *"
             hint="MP3 eller WAV, maks 30 MB"
             accept=".wav,.mp3,audio/wav,audio/mpeg"
             icon={<Music size={15} style={{ color: "#86868b" }} />}
