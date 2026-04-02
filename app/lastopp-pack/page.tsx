@@ -18,7 +18,7 @@ const MUSICAL_KEYS = [
 ];
 
 const VSTS = [
-  "Serum","Sylenth1","Massive","Massive X","Nexus","Omnisphere",
+  "Serum","Serum 2","Sylenth1","Massive","Massive X","Nexus","Omnisphere",
   "Spire","Vital","Pigments","Phase Plant","Diva","FM8","FM9",
   "Kontakt","Analog Lab","Roland Cloud","Annet",
 ];
