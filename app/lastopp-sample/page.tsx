@@ -446,7 +446,7 @@ export default function LastOppSamplePage() {
             <FileRow
               label={isPreset ? "Presetfil *" : "Samplefil *"}
               hint={isPreset ? "Alle filtyper" : "WAV eller MP3"}
-              accept={isSample ? ".wav,.mp3,audio/wav,audio/mpeg" : "*"}
+              accept={isSample ? ".wav,.mp3,audio/wav,audio/mpeg" : "*/*"}
               icon={<Package size={15} style={{ color: "#86868b" }} />}
               file={sampleFile?.file ?? null}
               inputRef={fileInputRef}

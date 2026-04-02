@@ -883,7 +883,7 @@ function ItemRow({
                   {item.mainFile ? "Bytt" : "Velg fil"}
                 </button>
               </div>
-              <input ref={fileInputRef} type="file" accept="*" className="hidden" onChange={(e) => {
+              <input ref={fileInputRef} type="file" accept="*/*" className="hidden" onChange={(e) => {
                 const f = e.target.files?.[0];
                 if (f) onUpdate({ mainFile: f });
               }} />
@@ -1032,7 +1032,7 @@ function NewItemForm({
               {item.mainFile ? "Bytt" : "Velg"}
             </button>
           </div>
-          <input ref={fileRef} type="file" accept="*" className="hidden" onChange={(e) => {
+          <input ref={fileRef} type="file" accept="*/*" className="hidden" onChange={(e) => {
             const f = e.target.files?.[0];
             if (f) setItem({ ...item, mainFile: f });
           }} />
