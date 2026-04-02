@@ -103,6 +103,104 @@ create policy "Service role kan opprette kjøp"
   with check (true);
 
 
+-- ── packs ───────────────────────────────────────────────────
+create table public.packs (
+  id                uuid not null default gen_random_uuid() primary key,
+  producer_id       uuid not null references public.profiles(id) on delete cascade,
+  title             text not null,
+  description       text not null default '',
+  tags              text[] not null default '{}',
+  price             integer not null,
+  cover_url         text,
+  preview_url       text,                  -- audio preview of entire pack
+  file_url          text,
+  is_published      boolean not null default false,
+  deleted_at        timestamptz,
+  created_at        timestamptz not null default now()
+);
+
+alter table public.packs enable row level security;
+
+create policy "Publiserte packs er synlige for alle"
+  on public.packs for select
+  using (is_published = true or producer_id = auth.uid());
+
+create policy "Produsenter kan laste opp sine egne packs"
+  on public.packs for insert
+  with check (producer_id = auth.uid());
+
+create policy "Produsenter kan oppdatere sine egne packs"
+  on public.packs for update
+  using (producer_id = auth.uid());
+
+create policy "Produsenter kan slette sine egne packs"
+  on public.packs for delete
+  using (producer_id = auth.uid());
+
+
+-- ── pack_items ──────────────────────────────────────────────
+create table public.pack_items (
+  id                uuid not null default gen_random_uuid() primary key,
+  pack_id           uuid not null references public.packs(id) on delete cascade,
+  name              text not null,
+  item_type         text not null,          -- 'sample' eller 'preset'
+  sub_type          text,                   -- 'one-shot' eller 'loop' (kun for samples)
+  audio_url         text,
+  file_url          text,
+  vst               text,
+  bpm               integer,
+  key               text,
+  tags              text[] not null default '{}',
+  position          integer not null default 0,
+  is_preview         boolean not null default false,
+  sell_individually  boolean not null default false,
+  individual_price   integer,
+  created_at        timestamptz not null default now()
+);
+
+alter table public.pack_items enable row level security;
+
+create policy "Pack items synlige med pack"
+  on public.pack_items for select
+  using (
+    exists (
+      select 1 from public.packs
+      where packs.id = pack_items.pack_id
+        and (packs.is_published = true or packs.producer_id = auth.uid())
+    )
+  );
+
+create policy "Produsenter kan legge til items i egne packs"
+  on public.pack_items for insert
+  with check (
+    exists (
+      select 1 from public.packs
+      where packs.id = pack_items.pack_id
+        and packs.producer_id = auth.uid()
+    )
+  );
+
+create policy "Produsenter kan oppdatere items i egne packs"
+  on public.pack_items for update
+  using (
+    exists (
+      select 1 from public.packs
+      where packs.id = pack_items.pack_id
+        and packs.producer_id = auth.uid()
+    )
+  );
+
+create policy "Produsenter kan slette items fra egne packs"
+  on public.pack_items for delete
+  using (
+    exists (
+      select 1 from public.packs
+      where packs.id = pack_items.pack_id
+        and packs.producer_id = auth.uid()
+    )
+  );
+
+
 -- ── Storage ──────────────────────────────────────────────────
 -- Kjør dette i Supabase Dashboard → Storage → New bucket:
 --   Navn: beat-covers    | Public: ja

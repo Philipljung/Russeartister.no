@@ -18,6 +18,7 @@ export default function RemakesPage() {
   const [excludeVsts, setExcludeVsts] = useState<string[]>([]);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [checkoutRemake, setCheckoutRemake] = useState<Remake | null>(null);
+  const [visibleCount, setVisibleCount] = useState(25);
   const { currentBeat, isPlaying, toggleBeat } = usePlayer();
 
   const toggleRemake = useCallback((remake: Remake) => {
@@ -65,6 +66,9 @@ export default function RemakesPage() {
     }
     return result;
   }, [remakes, debouncedQuery, activeDaw, includeVsts, excludeVsts]);
+
+  // Reset visible count when filters change
+  useEffect(() => { setVisibleCount(25); }, [debouncedQuery, activeDaw, includeVsts, excludeVsts]);
 
   // Keyboard navigation
   const handleKeyDown = useCallback((e: KeyboardEvent) => {
@@ -247,7 +251,7 @@ export default function RemakesPage() {
             </div>
 
             <div>
-              {filtered.map((remake) => (
+              {filtered.slice(0, visibleCount).map((remake) => (
                 <RemakeCard
                   key={remake.id}
                   remake={remake}
@@ -259,6 +263,17 @@ export default function RemakesPage() {
                 />
               ))}
             </div>
+            {filtered.length > visibleCount && (
+              <div className="mt-8 flex justify-center">
+                <button
+                  onClick={() => setVisibleCount((v) => v + 25)}
+                  className="rounded-xl px-6 py-2.5 text-sm font-medium transition-opacity hover:opacity-80"
+                  style={{ background: "rgba(255,255,255,0.06)", color: "#f5f5f7", border: "1px solid #2a2a2a" }}
+                >
+                  Last inn flere
+                </button>
+              </div>
+            )}
           </>
         )}
       </div>

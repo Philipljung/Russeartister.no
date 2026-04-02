@@ -26,7 +26,7 @@ export async function GET(
   const service = createServiceClient();
   const { data: purchase, error } = await service
     .from("purchases")
-    .select("id, buyer_id, item_type, beat_id, remake_id, sample_id, order_number")
+    .select("id, buyer_id, item_type, beat_id, remake_id, sample_id, pack_id, order_number")
     .eq("id", purchaseId)
     .eq("buyer_id", user.id)
     .maybeSingle();
@@ -65,6 +65,14 @@ export async function GET(
       .single();
     fileRawPath = sample?.file_url ?? null;
     filename = sample?.title ?? "sample";
+  } else if (purchase.item_type === "pack" && purchase.pack_id) {
+    const { data: pack } = await service
+      .from("packs")
+      .select("file_url, title")
+      .eq("id", purchase.pack_id)
+      .single();
+    fileRawPath = pack?.file_url ?? null;
+    filename = pack?.title ?? "pakke";
   } else {
     console.error("[downloads] Unhandled item_type or missing id:", purchase.item_type, "beat_id:", purchase.beat_id, "sample_id:", purchase.sample_id);
   }

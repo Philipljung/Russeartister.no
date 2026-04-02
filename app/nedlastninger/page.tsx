@@ -29,6 +29,12 @@ type PurchaseWithDetails = Purchase & {
     item_type: string;
     producer: { display_name: string } | null;
   };
+  pack?: {
+    id: string;
+    title: string;
+    cover_url: string | null;
+    producer: { display_name: string } | null;
+  };
 };
 
 export default function NedlastningerPage() {
@@ -51,7 +57,8 @@ export default function NedlastningerPage() {
           *,
           beat:beats(id, title, cover_url, genre, bpm, producer:profiles(display_name)),
           remake:remakes(id, title, cover_url, genre, bpm, producer:profiles(display_name)),
-          sample:samples(id, title, cover_url, item_type, producer:profiles(display_name))
+          sample:samples(id, title, cover_url, item_type, producer:profiles(display_name)),
+          pack:packs(id, title, cover_url, producer:profiles(display_name))
         `)
         .eq("buyer_id", user.id)
         .order("created_at", { ascending: false });
@@ -91,6 +98,7 @@ export default function NedlastningerPage() {
   const beats = purchases.filter((p) => p.item_type === "beat");
   const remakes = purchases.filter((p) => p.item_type === "remake");
   const samples = purchases.filter((p) => p.item_type === "sample");
+  const packs = purchases.filter((p) => p.item_type === "pack");
 
   if (!loading && authed === false) {
     return (
@@ -106,7 +114,7 @@ export default function NedlastningerPage() {
         Mine nedlastninger
       </h1>
       <p className="mb-10 text-sm" style={{ color: "#86868b" }}>
-        Låter, remakes og samples du har kjøpt
+        Låter, remakes, samples og pakker du har kjøpt
       </p>
 
       {loading ? (
@@ -161,6 +169,24 @@ export default function NedlastningerPage() {
                   title={p.sample?.title ?? "Ukjent"}
                   subtitle={[p.sample?.producer?.display_name, p.sample?.item_type].filter(Boolean).join(" · ")}
                   coverUrl={p.sample?.cover_url ?? null}
+                  orderNumber={p.order_number}
+                  amountNok={p.amount_paid}
+                  createdAt={p.created_at}
+                  downloading={downloadingId === p.id}
+                  onDownload={() => handleDownload(p)}
+                />
+              ))}
+            </Section>
+          )}
+
+          {packs.length > 0 && (
+            <Section icon={<Package size={16} style={{ color: "#86868b" }} />} label="Kjøpte pakker">
+              {packs.map((p) => (
+                <PurchaseRow
+                  key={p.id}
+                  title={p.pack?.title ?? "Ukjent"}
+                  subtitle={p.pack?.producer?.display_name ?? ""}
+                  coverUrl={p.pack?.cover_url ?? null}
                   orderNumber={p.order_number}
                   amountNok={p.amount_paid}
                   createdAt={p.created_at}
@@ -289,7 +315,7 @@ function EmptyAll() {
     >
       <AlertCircle size={28} style={{ color: "#3a3a3a", marginBottom: 12 }} />
       <p className="text-sm font-medium" style={{ color: "#3a3a3a" }}>
-        Ingen kjøp enda
+        Ingen kjøp enda, kontakt oss hvis dette er feil
       </p>
     </div>
   );

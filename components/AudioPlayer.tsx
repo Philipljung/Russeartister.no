@@ -36,6 +36,7 @@ export default function AudioPlayer() {
     pathname.startsWith("/profile") ||
     pathname.startsWith("/remakes") ||
     pathname.startsWith("/samples") ||
+    pathname.startsWith("/packs") ||
     pathname.startsWith("/presets") ||
     pathname.startsWith("/preset-packs") ||
     pathname.startsWith("/sample-packs");

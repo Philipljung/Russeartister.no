@@ -12,7 +12,7 @@ interface PurchaseEmailData {
   orderNumber: string;
   itemTitle: string;
   producerName: string;
-  itemType: "beat" | "remake" | "sample";
+  itemType: "beat" | "remake" | "sample" | "pack";
   amountNok: number;
   customerEmail: string;
   downloadUrl: string;
@@ -26,6 +26,7 @@ type EmailPayload = { from: string; to: string; subject: string; html: string };
 function itemTypeLabel(t: string) {
   if (t === "remake") return "Prosjekt";
   if (t === "sample") return "Sample / Preset";
+  if (t === "pack") return "Pakke";
   return "Låt";
 }
 
@@ -100,7 +101,7 @@ export function buildProducerSaleEmail({
   producerEmail: string;
   orderNumber: string;
   itemTitle: string;
-  itemType: "beat" | "remake" | "sample";
+  itemType: "beat" | "remake" | "sample" | "pack";
   amountNok: number;
   platformFeeNok: number;
 }): EmailPayload {
@@ -150,7 +151,7 @@ export function buildAdminSaleEmail({
 }: {
   orderNumber: string;
   itemTitle: string;
-  itemType: "beat" | "remake" | "sample";
+  itemType: "beat" | "remake" | "sample" | "pack";
   producerName: string;
   customerEmail: string;
   amountNok: number;

@@ -1,18 +1,20 @@
 "use client";
 
-import { useState, useEffect, useMemo, useCallback } from "react";
+import { useState, useEffect, useMemo, useCallback, useRef, Suspense } from "react";
 import { Search, X, Package, Sliders, Play, Pause, FolderArchive, ChevronDown, ChevronUp, Share2 } from "lucide-react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
+import Image from "next/image";
 import { fetchPublicSamples } from "@/lib/fetchSamples";
+import { fetchPublicPacks } from "@/lib/fetchPacks";
 import { SAMPLE_CATEGORIES, PRESET_CATEGORIES, CATEGORY_LABELS } from "@/lib/sampleCategories";
-import type { Sample } from "@/lib/supabase/types";
+import type { Sample, Pack } from "@/lib/supabase/types";
 import SampleCheckoutModal from "@/components/SampleCheckoutModal";
 import { useToast } from "@/lib/toast-context";
 import { usePlayer } from "@/lib/player-context";
 import { slugifyName } from "@/lib/slugify";
 
-type ActiveType = "sample" | "preset" | "sample-pack" | "preset-pack";
+type ActiveType = "sample" | "preset" | "pack";
 
 function genreColor(cat: string): string {
   const palette = ["#1a1040","#001a2e","#1a2e00","#2e1a00","#001e14","#14001e","#1e0a0a","#00141e"];
@@ -124,7 +126,7 @@ function SampleCard({
           </div>
           <div className="hidden sm:block shrink-0" style={{ width: 110 }}>
             {sample.vst && (
-              <span className="rounded-full px-2 py-0.5 text-xs" style={{ background: "rgba(99,102,241,0.08)", color: "#818cf8" }}>
+              <span className="rounded-full px-2 py-0.5 text-xs" style={{ background: "rgba(255,255,255,0.08)", color: "#f5f5f7" }}>
                 {sample.vst}
               </span>
             )}
@@ -274,7 +276,7 @@ function PackCard({
         {isPresetPack && (
           <div className="hidden sm:block shrink-0" style={{ width: 110 }}>
             {sample.vst && (
-              <span className="rounded-full px-2 py-0.5 text-xs" style={{ background: "rgba(99,102,241,0.08)", color: "#818cf8" }}>
+              <span className="rounded-full px-2 py-0.5 text-xs" style={{ background: "rgba(255,255,255,0.08)", color: "#f5f5f7" }}>
                 {sample.vst}
               </span>
             )}
@@ -345,17 +347,31 @@ function PackCard({
 }
 
 // ── Main page ───────────────────────────────────────────────────────────────
-export default function SamplesPage() {
+export default function SamplesPageWrapper() {
+  return (
+    <Suspense>
+      <SamplesPage />
+    </Suspense>
+  );
+}
+
+function SamplesPage() {
+  const searchParams = useSearchParams();
+  const initialTab = searchParams.get("tab");
   const [samples, setSamples] = useState<Sample[]>([]);
+  const [packs, setPacks] = useState<Pack[]>([]);
   const [loading, setLoading] = useState(true);
   const [query, setQuery] = useState("");
   const [debouncedQuery, setDebouncedQuery] = useState("");
-  const [activeType, setActiveType] = useState<ActiveType>("sample");
+  const [activeType, setActiveType] = useState<ActiveType>(
+    initialTab === "sample" ? "sample" : initialTab === "preset" ? "preset" : "pack"
+  );
   const [activeCategory, setActiveCategory] = useState("");
   const [genre, setGenre] = useState("");
   const [activeVst, setActiveVst] = useState("");
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [checkoutSample, setCheckoutSample] = useState<Sample | null>(null);
+  const [visibleCount, setVisibleCount] = useState(25);
   const { currentBeat, isPlaying, toggleBeat } = usePlayer();
 
   const toggleSample = useCallback((sample: Sample) => {
@@ -364,7 +380,11 @@ export default function SamplesPage() {
   }, [toggleBeat]);
 
   useEffect(() => {
-    fetchPublicSamples().then((data) => { setSamples(data); setLoading(false); });
+    Promise.all([fetchPublicSamples(), fetchPublicPacks()]).then(([s, p]) => {
+      setSamples(s);
+      setPacks(p);
+      setLoading(false);
+    });
   }, []);
 
   useEffect(() => {
@@ -401,6 +421,19 @@ export default function SamplesPage() {
     return result;
   }, [samples, debouncedQuery, activeType, activeCategory, genre, activeVst]);
 
+  const filteredPacks = useMemo(() => {
+    if (!debouncedQuery) return packs;
+    const q = debouncedQuery.toLowerCase();
+    return packs.filter((p) =>
+      p.title.toLowerCase().includes(q) ||
+      p.tags.some((t) => t.includes(q)) ||
+      p.producer?.display_name?.toLowerCase().includes(q)
+    );
+  }, [packs, debouncedQuery]);
+
+  // Reset visible count when filters change
+  useEffect(() => { setVisibleCount(25); }, [activeType, activeCategory, genre, activeVst, debouncedQuery]);
+
   const hasFilters = !!activeCategory || !!genre || !!activeVst;
 
   const handleKeyDown = useCallback((e: KeyboardEvent) => {
@@ -426,13 +459,12 @@ export default function SamplesPage() {
   }, [handleKeyDown]);
 
   const TAB_OPTIONS: { value: ActiveType; label: string }[] = [
+    { value: "pack",         label: "Pakker" },
     { value: "sample",       label: "Samples" },
     { value: "preset",       label: "Presets" },
-    { value: "sample-pack",  label: "Sample Pack" },
-    { value: "preset-pack",  label: "Preset Pack" },
   ];
 
-  const isPack = activeType === "sample-pack" || activeType === "preset-pack";
+  const isPack = activeType === "pack";
   const isPreset = activeType === "preset";
 
   return (
@@ -469,11 +501,11 @@ export default function SamplesPage() {
             {TAB_OPTIONS.map(({ value, label }) => (
               <button
                 key={value}
-                onClick={() => { setActiveType(value); setActiveCategory(""); setActiveVst(""); }}
+                onClick={() => { setActiveType(value); setActiveCategory(""); setActiveVst(""); setVisibleCount(25); }}
                 className="px-4 py-2 text-sm font-medium transition-colors whitespace-nowrap"
                 style={{
                   color: activeType === value ? "#f5f5f7" : "#86868b",
-                  borderBottom: activeType === value ? "2px solid #818cf8" : "2px solid transparent",
+                  borderBottom: activeType === value ? "2px solid #f5f5f7" : "2px solid transparent",
                   background: "transparent",
                   marginBottom: -1,
                 }}
@@ -483,50 +515,16 @@ export default function SamplesPage() {
             ))}
           </div>
 
-          {/* Category chips + filters */}
-          <div className="flex items-center gap-2 pt-3 overflow-x-auto pb-1 scrollbar-hide" style={{ scrollbarWidth: "none" }}>
-            {activeType === "sample" &&
-              Object.entries(SAMPLE_CATEGORIES).map(([, cats]) =>
-                cats.map((cat) => (
-                  <button
-                    key={cat}
-                    onClick={() => setActiveCategory(activeCategory === cat ? "" : cat)}
-                    className="shrink-0 rounded-xl px-3 py-1.5 text-xs transition-all whitespace-nowrap"
-                    style={{
-                      background: activeCategory === cat ? "rgba(99,102,241,0.12)" : "transparent",
-                      border: `1px solid ${activeCategory === cat ? "rgba(99,102,241,0.35)" : "#2a2a2a"}`,
-                      color: activeCategory === cat ? "#818cf8" : "#3a3a3a",
-                    }}
-                  >
-                    {CATEGORY_LABELS[cat]}
-                  </button>
-                ))
-              )}
-
-            {activeType === "preset" &&
-              Object.values(PRESET_CATEGORIES)[0].map((cat) => (
-                <button
-                  key={cat}
-                  onClick={() => setActiveCategory(activeCategory === cat ? "" : cat)}
-                  className="rounded-xl px-3 py-1.5 text-xs transition-all"
-                  style={{
-                    background: activeCategory === cat ? "rgba(99,102,241,0.12)" : "transparent",
-                    border: `1px solid ${activeCategory === cat ? "rgba(99,102,241,0.35)" : "#2a2a2a"}`,
-                    color: activeCategory === cat ? "#818cf8" : "#3a3a3a",
-                  }}
-                >
-                  {CATEGORY_LABELS[cat]}
-                </button>
-              ))}
-
-            <div className="shrink-0 ml-auto flex items-center gap-2">
-              {genres.length > 0 && !isPack && (
+          {/* Dropdowns row (always visible) */}
+          {!isPack && (
+            <div className="flex items-center gap-2 pt-3">
+              {genres.length > 0 && (
                 <select
                   value={genre}
                   onChange={(e) => setGenre(e.target.value)}
                   style={{
                     background: "#141414", color: genre ? "#f5f5f7" : "#86868b",
-                    border: `1px solid ${genre ? "rgba(99,102,241,0.35)" : "#2a2a2a"}`,
+                    border: `1px solid ${genre ? "rgba(255,255,255,0.2)" : "#2a2a2a"}`,
                     borderRadius: 12, padding: "7px 12px", fontSize: 13, outline: "none", cursor: "pointer",
                   }}
                 >
@@ -534,13 +532,13 @@ export default function SamplesPage() {
                   {genres.map((g) => <option key={g} value={g}>{g}</option>)}
                 </select>
               )}
-              {(isPreset || activeType === "preset-pack") && vsts.length > 0 && (
+              {isPreset && vsts.length > 0 && (
                 <select
                   value={activeVst}
                   onChange={(e) => setActiveVst(e.target.value)}
                   style={{
                     background: "#141414", color: activeVst ? "#f5f5f7" : "#86868b",
-                    border: `1px solid ${activeVst ? "rgba(99,102,241,0.35)" : "#2a2a2a"}`,
+                    border: `1px solid ${activeVst ? "rgba(255,255,255,0.2)" : "#2a2a2a"}`,
                     borderRadius: 12, padding: "7px 12px", fontSize: 13, outline: "none", cursor: "pointer",
                   }}
                 >
@@ -558,7 +556,46 @@ export default function SamplesPage() {
                 </button>
               )}
             </div>
-          </div>
+          )}
+
+          {/* Category chips (scrollable) */}
+          {!isPack && (
+            <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-hide" style={{ scrollbarWidth: "none" }}>
+              {activeType === "sample" &&
+                Object.entries(SAMPLE_CATEGORIES).map(([, cats]) =>
+                  cats.map((cat) => (
+                    <button
+                      key={cat}
+                      onClick={() => setActiveCategory(activeCategory === cat ? "" : cat)}
+                      className="shrink-0 rounded-xl px-3 py-1.5 text-xs transition-all whitespace-nowrap"
+                      style={{
+                        background: activeCategory === cat ? "rgba(255,255,255,0.1)" : "transparent",
+                        border: `1px solid ${activeCategory === cat ? "rgba(255,255,255,0.2)" : "#2a2a2a"}`,
+                        color: activeCategory === cat ? "#f5f5f7" : "#3a3a3a",
+                      }}
+                    >
+                      {CATEGORY_LABELS[cat]}
+                    </button>
+                  ))
+                )}
+
+              {activeType === "preset" &&
+                Object.values(PRESET_CATEGORIES)[0].map((cat) => (
+                  <button
+                    key={cat}
+                    onClick={() => setActiveCategory(activeCategory === cat ? "" : cat)}
+                    className="rounded-xl px-3 py-1.5 text-xs transition-all"
+                    style={{
+                      background: activeCategory === cat ? "rgba(255,255,255,0.1)" : "transparent",
+                      border: `1px solid ${activeCategory === cat ? "rgba(255,255,255,0.2)" : "#2a2a2a"}`,
+                      color: activeCategory === cat ? "#f5f5f7" : "#3a3a3a",
+                    }}
+                  >
+                    {CATEGORY_LABELS[cat]}
+                  </button>
+                ))}
+            </div>
+          )}
         </div>
       </div>
 
@@ -574,7 +611,7 @@ export default function SamplesPage() {
           </h1>
           {!loading && (
             <p className="text-sm" style={{ color: "#86868b" }}>
-              {filtered.length} {filtered.length === 1 ? "resultat" : "resultater"}
+              {isPack ? filteredPacks.length : filtered.length} {(isPack ? filteredPacks.length : filtered.length) === 1 ? "resultat" : "resultater"}
             </p>
           )}
         </div>
@@ -583,10 +620,37 @@ export default function SamplesPage() {
           <div className="mt-20 text-center" style={{ color: "#3a3a3a" }}>
             <p className="text-sm">Laster...</p>
           </div>
+        ) : isPack ? (
+          /* ── Packs grid ── */
+          filteredPacks.length === 0 ? (
+            <div className="mt-20 text-center" style={{ color: "#3a3a3a" }}>
+              <Package size={40} className="mx-auto mb-4" style={{ color: "#2a2a2a" }} />
+              <p className="text-lg font-medium">{debouncedQuery ? "Ingen pakker funnet" : "Ingen pakker publisert enda"}</p>
+            </div>
+          ) : (
+            <>
+              <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+                {filteredPacks.slice(0, visibleCount).map((pack) => (
+                  <InlinePackCard key={pack.id} pack={pack} />
+                ))}
+              </div>
+              {filteredPacks.length > visibleCount && (
+                <div className="mt-8 flex justify-center">
+                  <button
+                    onClick={() => setVisibleCount((v) => v + 25)}
+                    className="rounded-xl px-6 py-2.5 text-sm font-medium transition-opacity hover:opacity-80"
+                    style={{ background: "rgba(255,255,255,0.06)", color: "#f5f5f7", border: "1px solid #2a2a2a" }}
+                  >
+                    Last inn flere
+                  </button>
+                </div>
+              )}
+            </>
+          )
         ) : samples.length === 0 ? (
           <div className="mt-20 text-center">
             <Package size={40} className="mx-auto mb-4" style={{ color: "#2a2a2a" }} />
-            <p className="text-lg font-medium" style={{ color: "#3a3a3a" }}>Ingen innhold ennå</p>
+            <p className="text-lg font-medium" style={{ color: "#3a3a3a" }}>Ingen innhold enda</p>
             <p className="mt-1 text-sm" style={{ color: "#2a2a2a" }}>Kom tilbake snart</p>
           </div>
         ) : filtered.length === 0 ? (
@@ -603,25 +667,109 @@ export default function SamplesPage() {
               <div className="flex-1">Tittel</div>
               {isPreset && <div className="hidden sm:block" style={{ width: 110 }}>Kategori</div>}
               {isPreset && <div className="hidden sm:block" style={{ width: 110 }}>VST</div>}
-              {isPack && <div className="hidden sm:block" style={{ width: 120 }}>Type</div>}
-              {activeType === "preset-pack" && <div className="hidden sm:block" style={{ width: 110 }}>VST</div>}
-              {isPack && <div className="hidden sm:block" style={{ width: 88 }} />}
-              {!isPreset && !isPack && <div className="hidden lg:block" style={{ width: 200 }}>Tags</div>}
+              {!isPreset && <div className="hidden lg:block" style={{ width: 200 }}>Tags</div>}
               <div style={{ width: 80, textAlign: "right" }}>Pris</div>
               <div style={{ width: 76 }} />
             </div>
             <div>
-              {filtered.map((s) =>
-                s.item_type === "sample-pack" || s.item_type === "preset-pack" ? (
-                  <PackCard key={s.id} sample={s} isActive={currentBeat?.id === s.id} isPlaying={currentBeat?.id === s.id && isPlaying} onToggle={toggleSample} onBuy={setCheckoutSample} />
-                ) : (
-                  <SampleCard key={s.id} sample={s} isActive={currentBeat?.id === s.id} isPlaying={currentBeat?.id === s.id && isPlaying} isSelected={selectedId === s.id} onToggle={toggleSample} onBuy={setCheckoutSample} />
-                )
-              )}
+              {filtered.slice(0, visibleCount).map((s) => (
+                <SampleCard key={s.id} sample={s} isActive={currentBeat?.id === s.id} isPlaying={currentBeat?.id === s.id && isPlaying} isSelected={selectedId === s.id} onToggle={toggleSample} onBuy={setCheckoutSample} />
+              ))}
             </div>
+            {filtered.length > visibleCount && (
+              <div className="mt-8 flex justify-center">
+                <button
+                  onClick={() => setVisibleCount((v) => v + 25)}
+                  className="rounded-xl px-6 py-2.5 text-sm font-medium transition-opacity hover:opacity-80"
+                  style={{ background: "rgba(255,255,255,0.06)", color: "#f5f5f7", border: "1px solid #2a2a2a" }}
+                >
+                  Last inn flere
+                </button>
+              </div>
+            )}
           </>
         )}
       </div>
     </>
+  );
+}
+
+// ── InlinePackCard (pack grid within samples page) ────────────────────────
+function InlinePackCard({ pack }: { pack: Pack }) {
+  const router = useRouter();
+  const { currentBeat, isPlaying: playerIsPlaying, toggleBeat } = usePlayer();
+  const [hovered, setHovered] = useState(false);
+  const coverImg = pack.cover_url ?? pack.producer?.avatar_url ?? null;
+  const sampleCount = pack.pack_items?.filter((i) => i.item_type === "sample").length ?? 0;
+  const presetCount = pack.pack_items?.filter((i) => i.item_type === "preset").length ?? 0;
+  const totalCount = pack.pack_items?.length ?? 0;
+
+  const hasPreview = !!pack.preview_url;
+  const packBeatId = `pack-${pack.id}`;
+  const isThisPlaying = currentBeat?.id === packBeatId && playerIsPlaying;
+
+  function togglePlay(e: React.MouseEvent) {
+    e.stopPropagation();
+    if (!pack.preview_url) return;
+    toggleBeat({
+      id: packBeatId,
+      title: pack.title,
+      audio_preview_url: pack.preview_url,
+      cover_url: pack.cover_url ?? null,
+      genre: null,
+      bpm: null,
+      key: null,
+      producer: pack.producer ?? undefined,
+    });
+  }
+
+  return (
+    <div
+      className="rounded-2xl overflow-hidden transition-all cursor-pointer"
+      style={{ background: hovered ? "rgba(255,255,255,0.04)" : "#141414", border: "1px solid #1e1e1e" }}
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
+      onClick={() => router.push(`/packs/${pack.id}`)}
+    >
+      <div className="relative aspect-square" style={{ background: "#0a0a0a" }}>
+        {coverImg ? (
+          <Image src={coverImg} alt={pack.title} fill className="object-cover" sizes="400px" />
+        ) : (
+          <div className="flex items-center justify-center h-full">
+            <span className="text-4xl font-bold" style={{ color: "#1e1e1e" }}>{pack.title.slice(0, 2).toUpperCase()}</span>
+          </div>
+        )}
+        {hasPreview && (
+          <button
+            onClick={togglePlay}
+            className="absolute bottom-3 right-3 flex items-center justify-center rounded-full transition-opacity hover:opacity-90"
+            style={{ width: 40, height: 40, background: "#f5f5f7", color: "#080808" }}
+          >
+            {isThisPlaying ? <Pause size={16} /> : <Play size={16} style={{ marginLeft: 2 }} />}
+          </button>
+        )}
+      </div>
+      <div className="px-4 py-3">
+        <p className="text-sm font-semibold truncate" style={{ color: "#f5f5f7" }}>{pack.title}</p>
+        <Link
+          href={`/profile/${slugifyName(pack.producer?.display_name ?? "")}`}
+          className="text-xs mt-0.5 block truncate transition-opacity hover:opacity-80"
+          style={{ color: "#86868b" }}
+          onClick={(e) => e.stopPropagation()}
+        >
+          {pack.producer?.display_name ?? "Ukjent"}
+        </Link>
+        <div className="flex items-center justify-between mt-2.5">
+          <div className="flex items-center gap-2">
+            {sampleCount > 0 && <span className="text-xs rounded-full px-2 py-0.5" style={{ background: "rgba(255,255,255,0.06)", color: "#86868b" }}>{sampleCount} samples</span>}
+            {presetCount > 0 && <span className="text-xs rounded-full px-2 py-0.5" style={{ background: "rgba(255,255,255,0.06)", color: "#86868b" }}>{presetCount} presets</span>}
+            {totalCount === 0 && <span className="text-xs" style={{ color: "#3a3a3a" }}>Tom pakke</span>}
+          </div>
+          <span className="text-sm font-semibold" style={{ color: "#f5f5f7" }}>
+            {pack.price === 0 ? "Gratis" : `${pack.price} kr`}
+          </span>
+        </div>
+      </div>
+    </div>
   );
 }

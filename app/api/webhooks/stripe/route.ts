@@ -97,10 +97,11 @@ export async function POST(request: NextRequest) {
     const beatId = session.metadata?.beat_id ?? null;
     const remakeId = session.metadata?.remake_id ?? null;
     const sampleId = session.metadata?.sample_id ?? null;
+    const packId = session.metadata?.pack_id ?? null;
     const isExclusive = session.metadata?.exclusive === "true";
 
-    if (!beatId && !remakeId && !sampleId) {
-      console.error("[webhook] No beat_id, remake_id, or sample_id in metadata:", session.id);
+    if (!beatId && !remakeId && !sampleId && !packId) {
+      console.error("[webhook] No beat_id, remake_id, sample_id, or pack_id in metadata:", session.id);
       return NextResponse.json({ error: "Metadata mangler" }, { status: 400 });
     }
 
@@ -130,7 +131,7 @@ export async function POST(request: NextRequest) {
     let producerName = "";
     let producerEmail: string | null = null;
     let fileRawPath: string | null = null;
-    let itemType: "beat" | "remake" | "sample" = "beat";
+    let itemType: "beat" | "remake" | "sample" | "pack" = "beat";
 
     // ── Beat path ──
     if (beatId) {
@@ -258,6 +259,48 @@ export async function POST(request: NextRequest) {
         customer_email: customerEmail,
       });
       if (insertSampleError) console.error("[webhook] Sample purchase insert failed:", insertSampleError.message);
+
+      if (paymentIntentId && producer?.stripe_account_id) {
+        await transferToProducer(paymentIntentId, amountNok, producer.stripe_account_id, orderNumber);
+      }
+    }
+
+    // ── Pack path ──
+    if (packId) {
+      itemType = "pack";
+
+      const { data: pack } = await supabase
+        .from("packs")
+        .select("title, file_url, producer_id, producer:profiles(display_name, stripe_account_id)")
+        .eq("id", packId)
+        .single();
+
+      if (!pack) {
+        console.error("[webhook] Pack not found:", packId);
+        return NextResponse.json({ error: "Pakke ikke funnet" }, { status: 404 });
+      }
+
+      const producer = pack.producer as unknown as { display_name: string; stripe_account_id: string | null } | null;
+      itemTitle = pack.title;
+      producerName = producer?.display_name ?? "Ukjent";
+      fileRawPath = pack.file_url;
+
+      if (pack.producer_id) {
+        const { data: { user: producerUser } } = await supabase.auth.admin.getUserById(pack.producer_id);
+        producerEmail = producerUser?.email ?? null;
+      }
+
+      const { error: insertPackError } = await supabase.from("purchases").insert({
+        pack_id: packId,
+        item_type: "pack",
+        buyer_id: buyerId,
+        producer_id: pack.producer_id,
+        amount_paid: amountNok,
+        stripe_payment_intent_id: paymentIntentId,
+        order_number: orderNumber,
+        customer_email: customerEmail,
+      });
+      if (insertPackError) console.error("[webhook] Pack purchase insert failed:", insertPackError.message);
 
       if (paymentIntentId && producer?.stripe_account_id) {
         await transferToProducer(paymentIntentId, amountNok, producer.stripe_account_id, orderNumber);

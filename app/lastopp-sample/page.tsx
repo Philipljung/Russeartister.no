@@ -2,13 +2,12 @@
 
 import { useState, useRef, KeyboardEvent, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { X, Upload, Package, ImageIcon, AlertCircle, FolderArchive, Music } from "lucide-react";
+import { X, Upload, Package, ImageIcon, AlertCircle, Music } from "lucide-react";
 import { getSupabaseClient } from "@/lib/supabase/client";
 import Link from "next/link";
 import { useToast } from "@/lib/toast-context";
 import ImageCropModal from "@/components/ImageCropModal";
 import { SAMPLE_CATEGORIES, PRESET_CATEGORIES, CATEGORY_LABELS } from "@/lib/sampleCategories";
-import JSZip from "jszip";
 
 const MUSICAL_KEYS = [
   "C maj","C# maj","D maj","Eb maj","E maj","F maj",
@@ -23,7 +22,7 @@ const VSTS = [
   "Kontakt", "Analog Lab", "Roland Cloud", "Annet",
 ];
 
-type ItemType = "sample" | "preset" | "sample-pack" | "preset-pack";
+type ItemType = "sample" | "preset";
 type UploadFile = { file: File; previewUrl?: string } | null;
 
 const inputStyle: React.CSSProperties = {
@@ -44,18 +43,7 @@ function Label({ children }: { children: React.ReactNode }) {
 const TYPE_OPTIONS: { value: ItemType; label: string; icon: React.ReactNode }[] = [
   { value: "sample",       label: "Sample",       icon: <Music size={14} /> },
   { value: "preset",       label: "Preset",       icon: <Package size={14} /> },
-  { value: "sample-pack",  label: "Sample Pack",  icon: <FolderArchive size={14} /> },
-  { value: "preset-pack",  label: "Preset Pack",  icon: <FolderArchive size={14} /> },
 ];
-
-async function readZipFiles(file: File): Promise<string[]> {
-  const zip = await JSZip.loadAsync(file);
-  const names = Object.keys(zip.files)
-    .filter((name) => !zip.files[name].dir && !name.startsWith("__MACOSX"))
-    .map((name) => name.split("/").pop() ?? name)
-    .filter(Boolean);
-  return names.sort();
-}
 
 export default function LastOppSamplePage() {
   const router = useRouter();
@@ -91,9 +79,6 @@ export default function LastOppSamplePage() {
   const [cropSrc, setCropSrc] = useState<string | null>(null);
   const [sampleFile, setSampleFile] = useState<UploadFile>(null);
   const [audioPreview, setAudioPreview] = useState<UploadFile>(null);
-  const [packFiles, setPackFiles] = useState<string[]>([]);
-  const [parsingZip, setParsing] = useState(false);
-
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -101,8 +86,7 @@ export default function LastOppSamplePage() {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const audioPreviewInputRef = useRef<HTMLInputElement>(null);
 
-  const isPack = itemType === "sample-pack" || itemType === "preset-pack";
-  const isPreset = itemType === "preset" || itemType === "preset-pack";
+  const isPreset = itemType === "preset";
   const isSample = itemType === "sample";
 
   function handleTypeChange(t: ItemType) {
@@ -111,22 +95,6 @@ export default function LastOppSamplePage() {
     setVst("");
     setSampleFile(null);
     setAudioPreview(null);
-    setPackFiles([]);
-  }
-
-  async function handleZipSelect(e: React.ChangeEvent<HTMLInputElement>) {
-    const f = e.target.files?.[0];
-    if (!f) return;
-    setSampleFile({ file: f });
-    setParsing(true);
-    try {
-      const names = await readZipFiles(f);
-      setPackFiles(names);
-    } catch {
-      setPackFiles([]);
-    } finally {
-      setParsing(false);
-    }
   }
 
   function handleAudioPreviewChange(e: React.ChangeEvent<HTMLInputElement>) {
@@ -158,9 +126,9 @@ export default function LastOppSamplePage() {
     setError(null);
 
     if (!title) { setError("Tittel er påkrevd."); return; }
-    if (!isPack && !category) { setError("Velg kategori."); return; }
+    if (!category) { setError("Velg kategori."); return; }
     if (isPreset && !vst) { setError("Velg VST."); return; }
-    if (!sampleFile?.file) { setError(`Du må laste opp ${isPack ? "zip-filen" : isPreset ? "presetfilen" : "samplefilen"}.`); return; }
+    if (!sampleFile?.file) { setError(`Du må laste opp ${isPreset ? "presetfilen" : "samplefilen"}.`); return; }
     if (isSample && sampleFile?.file) {
       const name = sampleFile.file.name.toLowerCase();
       if (!name.endsWith('.wav') && !name.endsWith('.mp3')) {
@@ -239,7 +207,7 @@ export default function LastOppSamplePage() {
           cover_url: coverUrl,
           audio_preview_url: audioPreviewUrl,
           file_url: fileUrl,
-          pack_files: isPack && packFiles.length > 0 ? packFiles : null,
+          pack_files: null,
           is_published: true,
         })
         .select("id")
@@ -281,9 +249,9 @@ export default function LastOppSamplePage() {
                 onClick={() => handleTypeChange(value)}
                 className="flex items-center gap-2 rounded-xl px-4 py-2 text-sm font-medium transition-all"
                 style={{
-                  background: itemType === value ? "rgba(99,102,241,0.15)" : "#141414",
-                  border: `1px solid ${itemType === value ? "rgba(99,102,241,0.4)" : "#2a2a2a"}`,
-                  color: itemType === value ? "#818cf8" : "#86868b",
+                  background: itemType === value ? "rgba(255,255,255,0.1)" : "#141414",
+                  border: `1px solid ${itemType === value ? "rgba(255,255,255,0.2)" : "#2a2a2a"}`,
+                  color: itemType === value ? "#f5f5f7" : "#86868b",
                 }}
               >
                 {icon}{label}
@@ -317,7 +285,7 @@ export default function LastOppSamplePage() {
             <Label>Tittel *</Label>
             <input
               type="text"
-              placeholder={isPreset ? "Dark Pad v2" : isPack ? "808 Mafia Sample Pack Vol. 1" : "Midnight Kick 01"}
+              placeholder={isPreset ? "Dark Pad v2" : "Midnight Kick 01"}
               value={title}
               onChange={(e) => setTitle(e.target.value)}
               required
@@ -326,8 +294,8 @@ export default function LastOppSamplePage() {
           </div>
         </div>
 
-        {/* VST (presets only, not preset-pack) */}
-        {(itemType === "preset" || itemType === "preset-pack") && (
+        {/* VST (presets only) */}
+        {isPreset && (
           <div>
             <Label>VST *</Label>
             <select value={vst} onChange={(e) => setVst(e.target.value)} style={{ ...inputStyle, cursor: "pointer" }}>
@@ -337,8 +305,8 @@ export default function LastOppSamplePage() {
           </div>
         )}
 
-        {/* Category (not for packs) */}
-        {!isPack && (
+        {/* Category */}
+        {(
           <div>
             <Label>Kategori *</Label>
             <div className="flex flex-col gap-3">
@@ -353,9 +321,9 @@ export default function LastOppSamplePage() {
                         onClick={() => setCategory(cat)}
                         className="rounded-xl px-3 py-1.5 text-xs transition-all"
                         style={{
-                          background: category === cat ? "rgba(99,102,241,0.15)" : "#141414",
-                          border: `1px solid ${category === cat ? "rgba(99,102,241,0.4)" : "#2a2a2a"}`,
-                          color: category === cat ? "#818cf8" : "#86868b",
+                          background: category === cat ? "rgba(255,255,255,0.1)" : "#141414",
+                          border: `1px solid ${category === cat ? "rgba(255,255,255,0.2)" : "#2a2a2a"}`,
+                          color: category === cat ? "#f5f5f7" : "#86868b",
                         }}
                       >
                         {CATEGORY_LABELS[cat]}
@@ -368,8 +336,8 @@ export default function LastOppSamplePage() {
           </div>
         )}
 
-        {/* Genre + BPM + Key (samples only) */}
-        {!isPack && (
+        {/* Genre + BPM + Key */}
+        {(
           <div className="grid gap-3" style={{ gridTemplateColumns: isSample ? "1fr 1fr 1fr" : "1fr" }}>
             <div>
               <Label>Sjanger</Label>
@@ -427,7 +395,7 @@ export default function LastOppSamplePage() {
         <div>
           <Label>Beskrivelse</Label>
           <textarea
-            placeholder={isPack ? "Hva er inkludert i pakken?" : isPreset ? "Kort beskrivelse av preseten..." : "Kort beskrivelse..."}
+            placeholder={isPreset ? "Kort beskrivelse av preseten..." : "Kort beskrivelse..."}
             value={description}
             onChange={(e) => setDescription(e.target.value)}
             rows={3}
@@ -476,33 +444,16 @@ export default function LastOppSamplePage() {
               />
             )}
             <FileRow
-              label={isPack ? "Pack *" : isPreset ? "Presetfil *" : "Samplefil *"}
-              hint={isPack ? "Alle filtyper — maks 500 MB" : isPreset ? "Alle filtyper" : "WAV eller MP3"}
+              label={isPreset ? "Presetfil *" : "Samplefil *"}
+              hint={isPreset ? "Alle filtyper" : "WAV eller MP3"}
               accept={isSample ? ".wav,.mp3,audio/wav,audio/mpeg" : "*"}
               icon={<Package size={15} style={{ color: "#86868b" }} />}
               file={sampleFile?.file ?? null}
               inputRef={fileInputRef}
-              onChange={isPack ? handleZipSelect : (e) => { const f = e.target.files?.[0]; if (f) setSampleFile({ file: f }); }}
-              onClear={() => { if (fileInputRef.current) fileInputRef.current.value = ""; setSampleFile(null); setPackFiles([]); }}
+              onChange={(e) => { const f = e.target.files?.[0]; if (f) setSampleFile({ file: f }); }}
+              onClear={() => { if (fileInputRef.current) fileInputRef.current.value = ""; setSampleFile(null); }}
             />
 
-            {/* File list — shown only if a zip was uploaded and parsed successfully */}
-            {isPack && packFiles.length > 0 && (
-              <div className="mt-3 rounded-xl px-4 py-3" style={{ background: "#141414", border: "1px solid #1e1e1e" }}>
-                {parsingZip ? (
-                  <p className="text-xs" style={{ color: "#86868b" }}>Leser filen...</p>
-                ) : (
-                  <>
-                    <p className="text-xs font-medium mb-2" style={{ color: "#86868b" }}>{packFiles.length} filer funnet</p>
-                    <div className="flex flex-col gap-1 max-h-48 overflow-y-auto">
-                      {packFiles.map((name, i) => (
-                        <p key={i} className="text-xs font-mono truncate" style={{ color: "#4a4a4a" }}>{name}</p>
-                      ))}
-                    </div>
-                  </>
-                )}
-              </div>
-            )}
           </div>
 
           {/* Anti-scam warning */}
@@ -521,7 +472,7 @@ export default function LastOppSamplePage() {
             type="submit"
             disabled={submitting}
             className="rounded-xl px-6 py-2.5 text-sm font-semibold transition-opacity disabled:opacity-50"
-            style={{ background: "#0071e3", color: "#fff" }}
+            style={{ background: "#f5f5f7", color: "#080808" }}
           >
             {submitting ? (
               <span className="flex items-center gap-2">

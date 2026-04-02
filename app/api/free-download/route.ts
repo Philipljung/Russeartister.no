@@ -42,6 +42,13 @@ export async function GET(req: NextRequest) {
     rawPath = data.file_url;
     title = data.title ?? "sample";
     producerId = data.producer_id ?? null;
+  } else if (type === "pack") {
+    const { data } = await service.from("packs").select("price, file_url, title, producer_id").eq("id", id).single();
+    if (!data) return NextResponse.json({ error: "Ikke funnet" }, { status: 404 });
+    if (data.price !== 0) return NextResponse.json({ error: "Ikke gratis" }, { status: 403 });
+    rawPath = data.file_url;
+    title = data.title ?? "pack";
+    producerId = data.producer_id ?? null;
   } else {
     return NextResponse.json({ error: "Ukjent type" }, { status: 400 });
   }
@@ -66,7 +73,7 @@ export async function GET(req: NextRequest) {
   // Record in purchases so it appears in Mine Nedlastninger (only for logged-in users)
   if (user) {
     const orderNumber = generateOrderNumber();
-    const itemTypeCol = type === "beat" ? "beat_id" : type === "remake" ? "remake_id" : "sample_id";
+    const itemTypeCol = type === "beat" ? "beat_id" : type === "remake" ? "remake_id" : type === "pack" ? "pack_id" : "sample_id";
     const { error: insertError } = await service.from("purchases").insert({
       [itemTypeCol]: id,
       item_type: type,
