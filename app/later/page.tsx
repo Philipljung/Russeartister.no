@@ -12,7 +12,7 @@ export default function LaterPage() {
   const [loading, setLoading] = useState(true);
   const [filters, setFilters] = useState<Filters>(DEFAULT_FILTERS);
   const [selectedId, setSelectedId] = useState<string | null>(null);
-  const [visibleCount, setVisibleCount] = useState(25);
+  const [visibleCount, setVisibleCount] = useState(20);
 
   useEffect(() => {
     fetchPublicBeats().then((data) => {
@@ -59,7 +59,7 @@ export default function LaterPage() {
   }, [beats, filters]);
 
   // Reset visible count when filters change
-  useEffect(() => { setVisibleCount(25); }, [filters]);
+  useEffect(() => { setVisibleCount(20); }, [filters]);
 
   const handleKeyDown = useCallback((e: KeyboardEvent) => {
     if (!["ArrowUp", "ArrowDown"].includes(e.key)) return;
@@ -133,7 +133,7 @@ export default function LaterPage() {
                 {filtered.length > visibleCount && (
                   <div className="mt-8 flex justify-center">
                     <button
-                      onClick={() => setVisibleCount((v) => v + 25)}
+                      onClick={() => setVisibleCount((v) => v + 20)}
                       className="rounded-xl px-6 py-2.5 text-sm font-medium transition-opacity hover:opacity-80"
                       style={{ background: "rgba(255,255,255,0.06)", color: "#f5f5f7", border: "1px solid #2a2a2a" }}
                     >

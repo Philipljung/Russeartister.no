@@ -371,7 +371,7 @@ function SamplesPage() {
   const [activeVst, setActiveVst] = useState("");
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [checkoutSample, setCheckoutSample] = useState<Sample | null>(null);
-  const [visibleCount, setVisibleCount] = useState(25);
+  const [visibleCount, setVisibleCount] = useState(20);
   const { currentBeat, isPlaying, toggleBeat } = usePlayer();
 
   const toggleSample = useCallback((sample: Sample) => {
@@ -432,7 +432,7 @@ function SamplesPage() {
   }, [packs, debouncedQuery]);
 
   // Reset visible count when filters change
-  useEffect(() => { setVisibleCount(25); }, [activeType, activeCategory, genre, activeVst, debouncedQuery]);
+  useEffect(() => { setVisibleCount(20); }, [activeType, activeCategory, genre, activeVst, debouncedQuery]);
 
   const hasFilters = !!activeCategory || !!genre || !!activeVst;
 
@@ -501,7 +501,7 @@ function SamplesPage() {
             {TAB_OPTIONS.map(({ value, label }) => (
               <button
                 key={value}
-                onClick={() => { setActiveType(value); setActiveCategory(""); setActiveVst(""); setVisibleCount(25); }}
+                onClick={() => { setActiveType(value); setActiveCategory(""); setActiveVst(""); setVisibleCount(20); }}
                 className="px-4 py-2 text-sm font-medium transition-colors whitespace-nowrap"
                 style={{
                   color: activeType === value ? "#f5f5f7" : "#86868b",
@@ -637,7 +637,7 @@ function SamplesPage() {
               {filteredPacks.length > visibleCount && (
                 <div className="mt-8 flex justify-center">
                   <button
-                    onClick={() => setVisibleCount((v) => v + 25)}
+                    onClick={() => setVisibleCount((v) => v + 20)}
                     className="rounded-xl px-6 py-2.5 text-sm font-medium transition-opacity hover:opacity-80"
                     style={{ background: "rgba(255,255,255,0.06)", color: "#f5f5f7", border: "1px solid #2a2a2a" }}
                   >
@@ -679,7 +679,7 @@ function SamplesPage() {
             {filtered.length > visibleCount && (
               <div className="mt-8 flex justify-center">
                 <button
-                  onClick={() => setVisibleCount((v) => v + 25)}
+                  onClick={() => setVisibleCount((v) => v + 20)}
                   className="rounded-xl px-6 py-2.5 text-sm font-medium transition-opacity hover:opacity-80"
                   style={{ background: "rgba(255,255,255,0.06)", color: "#f5f5f7", border: "1px solid #2a2a2a" }}
                 >
