@@ -1,0 +1,858 @@
+<!DOCTYPE html>
+<html lang="no">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Russeartister.no – Annonser (Designforslag)</title>
+  <style>
+    :root {
+      --bg: #0a0a0f;
+      --surface: #13131a;
+      --card: #1a1a25;
+      --card-hover: #1f1f2e;
+      --border: #2a2a3a;
+      --accent: #7c3aed;
+      --accent-light: #a855f7;
+      --accent-glow: rgba(124, 58, 237, 0.25);
+      --gold: #f59e0b;
+      --green: #10b981;
+      --text: #f1f0f5;
+      --muted: #8b8a9a;
+      --badge-bg: rgba(124, 58, 237, 0.15);
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      min-height: 100vh;
+    }
+
+    /* NAV */
+    nav {
+      background: rgba(10, 10, 15, 0.85);
+      backdrop-filter: blur(16px);
+      border-bottom: 1px solid var(--border);
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      padding: 0 2rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      height: 64px;
+    }
+
+    .logo {
+      font-weight: 800;
+      font-size: 1.15rem;
+      background: linear-gradient(135deg, #a855f7, #7c3aed);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      letter-spacing: -0.5px;
+    }
+
+    .nav-links {
+      display: flex;
+      gap: 2rem;
+      list-style: none;
+    }
+
+    .nav-links a {
+      color: var(--muted);
+      text-decoration: none;
+      font-size: 0.9rem;
+      font-weight: 500;
+      transition: color 0.2s;
+    }
+
+    .nav-links a:hover, .nav-links a.active {
+      color: var(--text);
+    }
+
+    .nav-links a.active {
+      color: var(--accent-light);
+    }
+
+    .nav-actions {
+      display: flex;
+      gap: 0.75rem;
+      align-items: center;
+    }
+
+    .btn-outline {
+      padding: 0.45rem 1rem;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      background: transparent;
+      color: var(--text);
+      font-size: 0.85rem;
+      cursor: pointer;
+      transition: border-color 0.2s;
+    }
+
+    .btn-outline:hover { border-color: var(--accent); }
+
+    .btn-primary {
+      padding: 0.45rem 1rem;
+      border: none;
+      border-radius: 8px;
+      background: var(--accent);
+      color: white;
+      font-size: 0.85rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+
+    .btn-primary:hover { background: var(--accent-light); }
+
+    /* HERO */
+    .hero {
+      background: linear-gradient(180deg, rgba(124, 58, 237, 0.08) 0%, transparent 100%);
+      border-bottom: 1px solid var(--border);
+      padding: 3.5rem 2rem 2.5rem;
+      text-align: center;
+    }
+
+    .hero-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      background: var(--badge-bg);
+      border: 1px solid rgba(124, 58, 237, 0.3);
+      border-radius: 999px;
+      padding: 0.3rem 0.85rem;
+      font-size: 0.78rem;
+      color: var(--accent-light);
+      font-weight: 600;
+      margin-bottom: 1.2rem;
+      letter-spacing: 0.5px;
+      text-transform: uppercase;
+    }
+
+    .hero h1 {
+      font-size: 2.8rem;
+      font-weight: 800;
+      letter-spacing: -1px;
+      margin-bottom: 0.75rem;
+      line-height: 1.1;
+    }
+
+    .hero h1 span {
+      background: linear-gradient(135deg, #a855f7, #7c3aed, #ec4899);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .hero p {
+      color: var(--muted);
+      font-size: 1.05rem;
+      max-width: 520px;
+      margin: 0 auto 2rem;
+      line-height: 1.6;
+    }
+
+    /* FILTER BAR */
+    .filter-bar {
+      display: flex;
+      gap: 0.6rem;
+      justify-content: center;
+      flex-wrap: wrap;
+      margin-top: 0.5rem;
+    }
+
+    .filter-chip {
+      padding: 0.4rem 1rem;
+      border-radius: 999px;
+      border: 1px solid var(--border);
+      background: var(--surface);
+      color: var(--muted);
+      font-size: 0.82rem;
+      cursor: pointer;
+      transition: all 0.2s;
+      font-weight: 500;
+    }
+
+    .filter-chip:hover { border-color: var(--accent); color: var(--text); }
+    .filter-chip.active {
+      background: var(--accent);
+      border-color: var(--accent);
+      color: white;
+    }
+
+    /* MAIN CONTENT */
+    .container {
+      max-width: 1280px;
+      margin: 0 auto;
+      padding: 2.5rem 2rem;
+    }
+
+    .section-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 1.75rem;
+    }
+
+    .section-title {
+      font-size: 1.1rem;
+      font-weight: 700;
+    }
+
+    .section-count {
+      font-size: 0.82rem;
+      color: var(--muted);
+    }
+
+    .sort-select {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      color: var(--text);
+      padding: 0.4rem 0.8rem;
+      border-radius: 8px;
+      font-size: 0.82rem;
+      cursor: pointer;
+    }
+
+    /* GIG GRID */
+    .gig-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+      gap: 1.25rem;
+    }
+
+    /* GIG CARD */
+    .gig-card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      overflow: hidden;
+      cursor: pointer;
+      transition: all 0.25s ease;
+      position: relative;
+    }
+
+    .gig-card:hover {
+      background: var(--card-hover);
+      border-color: rgba(124, 58, 237, 0.4);
+      transform: translateY(-3px);
+      box-shadow: 0 12px 40px rgba(124, 58, 237, 0.15);
+    }
+
+    .card-banner {
+      height: 130px;
+      background: linear-gradient(135deg, #1e1030, #2d1060);
+      position: relative;
+      overflow: hidden;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .card-banner.b1 { background: linear-gradient(135deg, #1a0535, #3b0e6e, #1a0535); }
+    .card-banner.b2 { background: linear-gradient(135deg, #051a35, #0e3b6e, #051a35); }
+    .card-banner.b3 { background: linear-gradient(135deg, #1a0525, #6e0e5a, #1a0525); }
+    .card-banner.b4 { background: linear-gradient(135deg, #0d1a05, #2e6e0e, #0d1a05); }
+
+    .banner-waves {
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      height: 60px;
+      opacity: 0.4;
+    }
+
+    .banner-tag {
+      position: absolute;
+      top: 10px;
+      right: 10px;
+      background: rgba(0,0,0,0.5);
+      backdrop-filter: blur(8px);
+      border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 6px;
+      padding: 0.25rem 0.6rem;
+      font-size: 0.72rem;
+      font-weight: 600;
+      color: #fff;
+    }
+
+    .verified-badge {
+      position: absolute;
+      top: 10px;
+      left: 10px;
+      background: var(--accent);
+      border-radius: 6px;
+      padding: 0.2rem 0.5rem;
+      font-size: 0.68rem;
+      font-weight: 700;
+      color: white;
+      display: flex;
+      align-items: center;
+      gap: 3px;
+    }
+
+    .play-btn {
+      width: 44px;
+      height: 44px;
+      background: rgba(255,255,255,0.15);
+      backdrop-filter: blur(8px);
+      border: 1px solid rgba(255,255,255,0.2);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.1rem;
+      position: relative;
+      z-index: 2;
+      transition: background 0.2s;
+    }
+
+    .gig-card:hover .play-btn {
+      background: var(--accent);
+    }
+
+    /* ARTIST ROW */
+    .artist-row {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      padding: 0.9rem 1rem 0.6rem;
+    }
+
+    .avatar {
+      width: 42px;
+      height: 42px;
+      border-radius: 50%;
+      object-fit: cover;
+      border: 2px solid var(--border);
+      flex-shrink: 0;
+      background: linear-gradient(135deg, var(--accent), #ec4899);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 700;
+      font-size: 0.9rem;
+      color: white;
+    }
+
+    .artist-info {}
+    .artist-name { font-size: 0.9rem; font-weight: 700; }
+    .artist-location { font-size: 0.75rem; color: var(--muted); display: flex; align-items: center; gap: 3px; }
+
+    .rating {
+      margin-left: auto;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      font-size: 0.8rem;
+      font-weight: 600;
+    }
+
+    .star { color: var(--gold); }
+
+    /* CARD BODY */
+    .card-body { padding: 0 1rem 1rem; }
+
+    .gig-title {
+      font-size: 0.95rem;
+      font-weight: 700;
+      line-height: 1.4;
+      margin-bottom: 0.45rem;
+    }
+
+    .gig-desc {
+      font-size: 0.8rem;
+      color: var(--muted);
+      line-height: 1.5;
+      margin-bottom: 0.9rem;
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+    }
+
+    /* TRACKS */
+    .tracks-label {
+      font-size: 0.72rem;
+      font-weight: 600;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.6px;
+      margin-bottom: 0.4rem;
+    }
+
+    .tracks-list {
+      display: flex;
+      flex-direction: column;
+      gap: 0.3rem;
+      margin-bottom: 1rem;
+    }
+
+    .track-item {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.35rem 0.6rem;
+      background: var(--bg);
+      border-radius: 8px;
+      font-size: 0.8rem;
+    }
+
+    .track-icon { font-size: 0.75rem; color: var(--accent-light); }
+    .track-name { flex: 1; color: var(--text); }
+    .track-bpm { font-size: 0.7rem; color: var(--muted); font-weight: 500; }
+    .track-plays { font-size: 0.68rem; color: var(--muted); }
+
+    /* DIVIDER */
+    .card-divider {
+      border: none;
+      border-top: 1px solid var(--border);
+      margin: 0.75rem 0;
+    }
+
+    /* CARD FOOTER */
+    .card-footer {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .price-block {}
+    .price-from { font-size: 0.7rem; color: var(--muted); }
+    .price-value {
+      font-size: 1.35rem;
+      font-weight: 800;
+      color: var(--text);
+    }
+
+    .price-unit { font-size: 0.75rem; color: var(--muted); }
+
+    .btn-buy {
+      padding: 0.5rem 1.1rem;
+      background: var(--accent);
+      border: none;
+      border-radius: 10px;
+      color: white;
+      font-size: 0.82rem;
+      font-weight: 700;
+      cursor: pointer;
+      transition: background 0.2s, transform 0.15s;
+    }
+
+    .btn-buy:hover { background: var(--accent-light); transform: scale(1.03); }
+
+    /* TAGS */
+    .tags {
+      display: flex;
+      gap: 0.4rem;
+      flex-wrap: wrap;
+      margin-bottom: 0.75rem;
+    }
+
+    .tag {
+      font-size: 0.7rem;
+      padding: 0.2rem 0.55rem;
+      border-radius: 999px;
+      background: var(--badge-bg);
+      border: 1px solid rgba(124, 58, 237, 0.2);
+      color: var(--accent-light);
+      font-weight: 500;
+    }
+
+    /* FEATURED CARD */
+    .gig-card.featured {
+      border-color: rgba(245, 158, 11, 0.4);
+      background: linear-gradient(180deg, rgba(245, 158, 11, 0.04), var(--card));
+    }
+
+    .gig-card.featured:hover {
+      border-color: rgba(245, 158, 11, 0.6);
+      box-shadow: 0 12px 40px rgba(245, 158, 11, 0.12);
+    }
+
+    .featured-badge {
+      position: absolute;
+      top: 10px;
+      left: 10px;
+      background: var(--gold);
+      color: #000;
+      border-radius: 6px;
+      padding: 0.2rem 0.5rem;
+      font-size: 0.68rem;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 0.4px;
+    }
+
+    /* ARTIST AVATAR INITIALS */
+    .av-mc { background: linear-gradient(135deg, #7c3aed, #a855f7); }
+    .av-dj { background: linear-gradient(135deg, #0ea5e9, #06b6d4); }
+    .av-no { background: linear-gradient(135deg, #f59e0b, #f97316); }
+    .av-bl { background: linear-gradient(135deg, #10b981, #059669); }
+
+    /* STATS ROW */
+    .stats-row {
+      display: flex;
+      gap: 0.5rem;
+      margin-bottom: 0.75rem;
+    }
+
+    .stat-pill {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      font-size: 0.72rem;
+      color: var(--muted);
+    }
+
+    /* BANNER GRAPHIC */
+    .waveform {
+      display: flex;
+      align-items: flex-end;
+      gap: 3px;
+      height: 40px;
+    }
+
+    .waveform span {
+      width: 4px;
+      border-radius: 2px;
+      background: rgba(255,255,255,0.5);
+      display: block;
+    }
+
+    /* CTA SECTION */
+    .cta-box {
+      background: linear-gradient(135deg, rgba(124, 58, 237, 0.12), rgba(168, 85, 247, 0.06));
+      border: 1px solid rgba(124, 58, 237, 0.25);
+      border-radius: 20px;
+      padding: 2.5rem;
+      text-align: center;
+      margin-top: 3rem;
+    }
+
+    .cta-box h2 { font-size: 1.6rem; font-weight: 800; margin-bottom: 0.5rem; }
+    .cta-box p { color: var(--muted); margin-bottom: 1.5rem; }
+    .cta-btns { display: flex; gap: 1rem; justify-content: center; }
+
+    .btn-lg {
+      padding: 0.75rem 2rem;
+      border-radius: 12px;
+      font-size: 0.95rem;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .btn-lg.primary {
+      background: var(--accent);
+      border: none;
+      color: white;
+    }
+
+    .btn-lg.primary:hover { background: var(--accent-light); }
+
+    .btn-lg.ghost {
+      background: transparent;
+      border: 1px solid var(--border);
+      color: var(--text);
+    }
+
+    .btn-lg.ghost:hover { border-color: var(--accent); }
+
+    /* RESPONSIVE */
+    @media (max-width: 640px) {
+      .hero h1 { font-size: 1.8rem; }
+      .gig-grid { grid-template-columns: 1fr; }
+      nav { padding: 0 1rem; }
+      .nav-links { display: none; }
+    }
+
+    /* SMALL BANNER LABEL */
+    .banner-label {
+      position: absolute;
+      bottom: 10px;
+      left: 50%;
+      transform: translateX(-50%);
+      font-size: 0.7rem;
+      color: rgba(255,255,255,0.5);
+      letter-spacing: 0.5px;
+      white-space: nowrap;
+    }
+  </style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav>
+  <div class="logo">Russeartister.no</div>
+  <ul class="nav-links">
+    <li><a href="#">Låter</a></li>
+    <li><a href="#">Samples & Presets</a></li>
+    <li><a href="#">Remakes</a></li>
+    <li><a href="#" class="active">Annonser ✦</a></li>
+  </ul>
+  <div class="nav-actions">
+    <button class="btn-outline">Logg inn</button>
+    <button class="btn-primary">+ Legg ut annonse</button>
+  </div>
+</nav>
+
+<!-- HERO -->
+<section class="hero">
+  <div class="hero-badge">✦ Nytt: Artist-annonser</div>
+  <h1>Bestill en <span>russelåt</span><br>fra ditt favorittartist</h1>
+  <p>Bla gjennom annonser fra Norges beste russeartister. Velg pakke, send melding, og få en profesjonell russelåt – enkelt og raskt.</p>
+  <div class="filter-bar">
+    <div class="filter-chip active">Alle sjangre</div>
+    <div class="filter-chip">Drill / Rap</div>
+    <div class="filter-chip">Pop</div>
+    <div class="filter-chip">Afrobeats</div>
+    <div class="filter-chip">Elektronisk</div>
+    <div class="filter-chip">R&amp;B</div>
+    <div class="filter-chip">Vokal inkl.</div>
+    <div class="filter-chip">Under 2000 kr</div>
+  </div>
+</section>
+
+<!-- MAIN -->
+<div class="container">
+
+  <div class="section-header">
+    <div>
+      <div class="section-title">47 annonser tilgjengelig</div>
+      <div class="section-count">Oppdatert i dag</div>
+    </div>
+    <select class="sort-select">
+      <option>Mest populære</option>
+      <option>Nyeste først</option>
+      <option>Lavest pris</option>
+      <option>Høyest rangert</option>
+    </select>
+  </div>
+
+  <!-- GIG GRID -->
+  <div class="gig-grid">
+
+    <!-- CARD 1: FEATURED -->
+    <div class="gig-card featured">
+      <div class="card-banner b1">
+        <div class="featured-badge">⭐ Fremhevet</div>
+        <div class="banner-tag">Drill / Trap</div>
+        <div class="waveform">
+          <span style="height:20px"></span><span style="height:35px"></span><span style="height:15px"></span><span style="height:30px"></span><span style="height:25px"></span><span style="height:38px"></span><span style="height:18px"></span><span style="height:32px"></span><span style="height:22px"></span><span style="height:28px"></span><span style="height:40px"></span><span style="height:14px"></span><span style="height:26px"></span><span style="height:33px"></span><span style="height:19px"></span>
+        </div>
+        <div class="banner-label">Preview tilgjengelig</div>
+      </div>
+      <div class="artist-row">
+        <div class="avatar av-mc">MC</div>
+        <div class="artist-info">
+          <div class="artist-name">MC Vilde</div>
+          <div class="artist-location">📍 Oslo · 3 år erfaring</div>
+        </div>
+        <div class="rating"><span class="star">★</span> 4.9 <span style="color:var(--muted);font-weight:400">(38)</span></div>
+      </div>
+      <div class="card-body">
+        <div class="gig-title">Jeg lager din custom russelåt med drill-beat og skreddersydd tekst</div>
+        <div class="gig-desc">Spesialiserer meg på drill, trap og bass-tunge beats. Teksten skrives etter avtale og jeg leverer alltid innen 5 dager.</div>
+        <div class="tags">
+          <span class="tag">Custom tekst</span>
+          <span class="tag">Levering 5 dager</span>
+          <span class="tag">Ubegrenset revisjoner</span>
+        </div>
+        <div class="tracks-label">Eksempel-låter</div>
+        <div class="tracks-list">
+          <div class="track-item">
+            <span class="track-icon">▶</span>
+            <span class="track-name">Russebuss 2024 – demo</span>
+            <span class="track-bpm">140 BPM</span>
+          </div>
+          <div class="track-item">
+            <span class="track-icon">▶</span>
+            <span class="track-name">Siste natt – demo</span>
+            <span class="track-bpm">132 BPM</span>
+          </div>
+        </div>
+        <hr class="card-divider" />
+        <div class="card-footer">
+          <div class="price-block">
+            <div class="price-from">Fra</div>
+            <span class="price-value">1 499</span>
+            <span class="price-unit"> kr</span>
+          </div>
+          <button class="btn-buy">Se pakker →</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- CARD 2 -->
+    <div class="gig-card">
+      <div class="card-banner b2">
+        <div class="verified-badge">✓ Verifisert</div>
+        <div class="banner-tag">Pop / Afro</div>
+        <div class="waveform">
+          <span style="height:18px"></span><span style="height:28px"></span><span style="height:38px"></span><span style="height:22px"></span><span style="height:30px"></span><span style="height:14px"></span><span style="height:35px"></span><span style="height:25px"></span><span style="height:18px"></span><span style="height:40px"></span><span style="height:20px"></span><span style="height:30px"></span><span style="height:16px"></span><span style="height:36px"></span><span style="height:24px"></span>
+        </div>
+        <div class="banner-label">3 pakker tilgjengelig</div>
+      </div>
+      <div class="artist-row">
+        <div class="avatar av-dj">DJ</div>
+        <div class="artist-info">
+          <div class="artist-name">DJ Stormesen</div>
+          <div class="artist-location">📍 Bergen · 5 år erfaring</div>
+        </div>
+        <div class="rating"><span class="star">★</span> 5.0 <span style="color:var(--muted);font-weight:400">(61)</span></div>
+      </div>
+      <div class="card-body">
+        <div class="gig-title">Full russelåtpakke: beat, tekst, mixing og mastering</div>
+        <div class="gig-desc">Komplett produksjon fra A til Å. Du sender inn ønsker, jeg leverer en ferdig låt klar for streaming og buss.</div>
+        <div class="tags">
+          <span class="tag">Alt inkludert</span>
+          <span class="tag">Streaming-klar</span>
+          <span class="tag">3 revisjoner</span>
+        </div>
+        <div class="tracks-label">Eksempel-låter</div>
+        <div class="tracks-list">
+          <div class="track-item">
+            <span class="track-icon">▶</span>
+            <span class="track-name">Bergen Russ 2023</span>
+            <span class="track-bpm">128 BPM</span>
+          </div>
+          <div class="track-item">
+            <span class="track-icon">▶</span>
+            <span class="track-name">Afro Russ Beat – demo</span>
+            <span class="track-bpm">98 BPM</span>
+          </div>
+        </div>
+        <hr class="card-divider" />
+        <div class="card-footer">
+          <div class="price-block">
+            <div class="price-from">Fra</div>
+            <span class="price-value">2 990</span>
+            <span class="price-unit"> kr</span>
+          </div>
+          <button class="btn-buy">Se pakker →</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- CARD 3 -->
+    <div class="gig-card">
+      <div class="card-banner b3">
+        <div class="banner-tag">R&amp;B / Pop</div>
+        <div class="waveform">
+          <span style="height:30px"></span><span style="height:18px"></span><span style="height:36px"></span><span style="height:24px"></span><span style="height:40px"></span><span style="height:16px"></span><span style="height:28px"></span><span style="height:38px"></span><span style="height:20px"></span><span style="height:32px"></span><span style="height:14px"></span><span style="height:26px"></span><span style="height:35px"></span><span style="height:22px"></span><span style="height:30px"></span>
+        </div>
+        <div class="banner-label">Rask levering tilgjengelig</div>
+      </div>
+      <div class="artist-row">
+        <div class="avatar av-no">NA</div>
+        <div class="artist-info">
+          <div class="artist-name">Nora A.</div>
+          <div class="artist-location">📍 Trondheim · 2 år erfaring</div>
+        </div>
+        <div class="rating"><span class="star">★</span> 4.8 <span style="color:var(--muted);font-weight:400">(24)</span></div>
+      </div>
+      <div class="card-body">
+        <div class="gig-title">Søt og catchy russelåt med vokal – R&B eller pop etter ønske</div>
+        <div class="gig-desc">Jeg skriver og synger låten selv. Perfekt for deg som vil ha noe unikt og personlig til årets russekort.</div>
+        <div class="tags">
+          <span class="tag">Live vokal</span>
+          <span class="tag">Custom tekst</span>
+          <span class="tag">2 dagers express</span>
+        </div>
+        <div class="tracks-label">Eksempel-låter</div>
+        <div class="tracks-list">
+          <div class="track-item">
+            <span class="track-icon">▶</span>
+            <span class="track-name">Sommernatten – demo</span>
+            <span class="track-bpm">104 BPM</span>
+          </div>
+          <div class="track-item">
+            <span class="track-icon">▶</span>
+            <span class="track-name">Kjærlighet & Russ</span>
+            <span class="track-bpm">96 BPM</span>
+          </div>
+        </div>
+        <hr class="card-divider" />
+        <div class="card-footer">
+          <div class="price-block">
+            <div class="price-from">Fra</div>
+            <span class="price-value">999</span>
+            <span class="price-unit"> kr</span>
+          </div>
+          <button class="btn-buy">Se pakker →</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- CARD 4 -->
+    <div class="gig-card">
+      <div class="card-banner b4">
+        <div class="verified-badge">✓ Verifisert</div>
+        <div class="banner-tag">Elektronisk / EDM</div>
+        <div class="waveform">
+          <span style="height:15px"></span><span style="height:38px"></span><span style="height:22px"></span><span style="height:35px"></span><span style="height:18px"></span><span style="height:40px"></span><span style="height:25px"></span><span style="height:30px"></span><span style="height:14px"></span><span style="height:36px"></span><span style="height:20px"></span><span style="height:28px"></span><span style="height:38px"></span><span style="height:16px"></span><span style="height:32px"></span>
+        </div>
+        <div class="banner-label">Eksklusiv lisens tilgjengelig</div>
+      </div>
+      <div class="artist-row">
+        <div class="avatar av-bl">BL</div>
+        <div class="artist-info">
+          <div class="artist-name">BassLord_K</div>
+          <div class="artist-location">📍 Stavanger · 6 år erfaring</div>
+        </div>
+        <div class="rating"><span class="star">★</span> 4.7 <span style="color:var(--muted);font-weight:400">(17)</span></div>
+      </div>
+      <div class="card-body">
+        <div class="gig-title">EDM / festival-beat for russebuss – eksklusiv eller ikke-eksklusiv lisens</div>
+        <div class="gig-desc">Spesialist på hardstyle, house og festival-beats. Leveres med full mixdown og master. Velg eksklusivitet selv.</div>
+        <div class="tags">
+          <span class="tag">Hardstyle</span>
+          <span class="tag">House</span>
+          <span class="tag">Eksklusiv lisens</span>
+        </div>
+        <div class="tracks-label">Eksempel-låter</div>
+        <div class="tracks-list">
+          <div class="track-item">
+            <span class="track-icon">▶</span>
+            <span class="track-name">Buss Anthem 2024</span>
+            <span class="track-bpm">175 BPM</span>
+          </div>
+          <div class="track-item">
+            <span class="track-icon">▶</span>
+            <span class="track-name">Festival Russ – WIP</span>
+            <span class="track-bpm">128 BPM</span>
+          </div>
+        </div>
+        <hr class="card-divider" />
+        <div class="card-footer">
+          <div class="price-block">
+            <div class="price-from">Fra</div>
+            <span class="price-value">1 799</span>
+            <span class="price-unit"> kr</span>
+          </div>
+          <button class="btn-buy">Se pakker →</button>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- CTA -->
+  <div class="cta-box">
+    <h2>Er du artist? 🎙️</h2>
+    <p>Legg ut din annonse gratis og nå tusenvis av russ over hele landet.</p>
+    <div class="cta-btns">
+      <button class="btn-lg primary">+ Lag din annonse</button>
+      <button class="btn-lg ghost">Se hvordan det fungerer</button>
+    </div>
+  </div>
+
+</div>
+
+</body>
+</html>
