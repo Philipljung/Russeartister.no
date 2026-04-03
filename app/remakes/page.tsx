@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useMemo, useCallback, useRef } from "react";
+import { useState, useEffect, useMemo, useCallback } from "react";
 import { Search, X } from "lucide-react";
 import { fetchPublicRemakes } from "@/lib/fetchRemakes";
 import RemakeCard from "@/components/RemakeCard";
@@ -19,7 +19,14 @@ export default function RemakesPage() {
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [checkoutRemake, setCheckoutRemake] = useState<Remake | null>(null);
   const [visibleCount, setVisibleCount] = useState(20);
-  const sentinelRef = useRef<HTMLDivElement>(null);
+  const sentinelRef = useCallback((el: HTMLDivElement | null) => {
+    if (!el) return;
+    const observer = new IntersectionObserver(
+      (entries) => { if (entries[0].isIntersecting) setVisibleCount((v) => v + 20); },
+      { rootMargin: "200px" }
+    );
+    observer.observe(el);
+  }, []);
   const { currentBeat, isPlaying, toggleBeat } = usePlayer();
 
   const toggleRemake = useCallback((remake: Remake) => {
@@ -71,17 +78,6 @@ export default function RemakesPage() {
   // Reset visible count when filters change
   useEffect(() => { setVisibleCount(20); }, [debouncedQuery, activeDaw, includeVsts, excludeVsts]);
 
-  // Infinite scroll sentinel
-  useEffect(() => {
-    const el = sentinelRef.current;
-    if (!el) return;
-    const observer = new IntersectionObserver(
-      (entries) => { if (entries[0].isIntersecting) setVisibleCount((v) => v + 20); },
-      { rootMargin: "200px" }
-    );
-    observer.observe(el);
-    return () => observer.disconnect();
-  }, []);
 
   // Keyboard navigation
   const handleKeyDown = useCallback((e: KeyboardEvent) => {
