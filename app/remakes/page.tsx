@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useMemo, useCallback } from "react";
+import { useState, useEffect, useMemo, useCallback, useRef } from "react";
 import { Search, X } from "lucide-react";
 import { fetchPublicRemakes } from "@/lib/fetchRemakes";
 import RemakeCard from "@/components/RemakeCard";
@@ -18,7 +18,8 @@ export default function RemakesPage() {
   const [excludeVsts, setExcludeVsts] = useState<string[]>([]);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [checkoutRemake, setCheckoutRemake] = useState<Remake | null>(null);
-  const [visibleCount, setVisibleCount] = useState(25);
+  const [visibleCount, setVisibleCount] = useState(20);
+  const sentinelRef = useRef<HTMLDivElement>(null);
   const { currentBeat, isPlaying, toggleBeat } = usePlayer();
 
   const toggleRemake = useCallback((remake: Remake) => {
@@ -68,7 +69,19 @@ export default function RemakesPage() {
   }, [remakes, debouncedQuery, activeDaw, includeVsts, excludeVsts]);
 
   // Reset visible count when filters change
-  useEffect(() => { setVisibleCount(25); }, [debouncedQuery, activeDaw, includeVsts, excludeVsts]);
+  useEffect(() => { setVisibleCount(20); }, [debouncedQuery, activeDaw, includeVsts, excludeVsts]);
+
+  // Infinite scroll sentinel
+  useEffect(() => {
+    const el = sentinelRef.current;
+    if (!el) return;
+    const observer = new IntersectionObserver(
+      (entries) => { if (entries[0].isIntersecting) setVisibleCount((v) => v + 20); },
+      { rootMargin: "200px" }
+    );
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, []);
 
   // Keyboard navigation
   const handleKeyDown = useCallback((e: KeyboardEvent) => {
@@ -263,17 +276,7 @@ export default function RemakesPage() {
                 />
               ))}
             </div>
-            {filtered.length > visibleCount && (
-              <div className="mt-8 flex justify-center">
-                <button
-                  onClick={() => setVisibleCount((v) => v + 25)}
-                  className="rounded-xl px-6 py-2.5 text-sm font-medium transition-opacity hover:opacity-80"
-                  style={{ background: "rgba(255,255,255,0.06)", color: "#f5f5f7", border: "1px solid #2a2a2a" }}
-                >
-                  Last inn flere
-                </button>
-              </div>
-            )}
+            <div ref={sentinelRef} />
           </>
         )}
       </div>
