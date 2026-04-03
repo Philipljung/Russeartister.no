@@ -69,6 +69,7 @@ export default function BeatDetailClient({
     { label: "Sjanger", value: beat.genre },
     { label: "BPM", value: String(beat.bpm) },
     ...(beat.key ? [{ label: "Skala", value: beat.key }] : []),
+    ...(beat.daw ? [{ label: "DAW", value: beat.daw }] : []),
     ...(beat.vocal_type ? [{ label: "Vokal", value: beat.vocal_type === "med_vokal" ? "Med vokal" : "Uten vokal" }] : []),
     {
       label: "Prosjektfil",

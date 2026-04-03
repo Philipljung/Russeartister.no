@@ -147,7 +147,7 @@ export default function LastOppPage() {
     e.preventDefault();
     setError(null);
 
-    if (!title || !genre || !bpm) {
+    if (!title || !genre || !bpm || !daw) {
       setError("Fyll ut alle obligatoriske felt.");
       return;
     }
@@ -441,7 +441,7 @@ export default function LastOppPage() {
 
         {/* DAW */}
         <div>
-          <Label>DAW</Label>
+          <Label>DAW *</Label>
           <select value={daw} onChange={(e) => setDaw(e.target.value)} style={{ ...inputStyle, cursor: "pointer" }}>
             <option value="">Velg DAW...</option>
             {DAWS.map((d) => <option key={d} value={d}>{d}</option>)}
