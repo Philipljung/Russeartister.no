@@ -99,6 +99,7 @@ export async function POST(request: NextRequest) {
     const sampleId = session.metadata?.sample_id ?? null;
     const packId = session.metadata?.pack_id ?? null;
     const isExclusive = session.metadata?.exclusive === "true";
+    const gigOrderId = session.metadata?.gig_order_id ?? null;
 
     if (!beatId && !remakeId && !sampleId && !packId) {
       console.error("[webhook] No beat_id, remake_id, sample_id, or pack_id in metadata:", session.id);
@@ -113,6 +114,24 @@ export async function POST(request: NextRequest) {
     const platformFeeNok = Math.round(amountNok * PLATFORM_FEE_PERCENT);
 
     const supabase = createServiceClient();
+
+    // ── Gig payment ──────────────────────────────────────────────────────────
+    if (gigOrderId) {
+      await supabase.from("gig_orders").update({
+        status: "in_progress",
+        stripe_payment_intent_id: paymentIntentId,
+      }).eq("id", gigOrderId);
+
+      const { data: order } = await supabase.from("gig_orders")
+        .select("producer_id")
+        .eq("id", gigOrderId).single();
+      if (order) {
+        await supabase.from("notifications").insert({
+          user_id: order.producer_id, type: "paid", order_id: gigOrderId,
+        });
+      }
+      return NextResponse.json({ received: true });
+    }
 
     // Idempotency: skip duplicate events
     if (paymentIntentId) {
