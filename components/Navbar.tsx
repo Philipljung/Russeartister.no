@@ -1,28 +1,28 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
-import { usePathname, useRouter } from "next/navigation";
-import { Menu, X } from "lucide-react";
+import { usePathname } from "next/navigation";
+import { Menu, X, ChevronDown } from "lucide-react";
 import { getSupabaseClient } from "@/lib/supabase/client";
 import type { Session, AuthChangeEvent } from "@supabase/supabase-js";
 import { slugifyName } from "@/lib/slugify";
 
-const navLinks = [
-  { label: "Låter", href: "/later", active: true },
-  { label: "Samples & Presets", href: "/samples", active: true },
-  { label: "Remakes", href: "/remakes", active: true },
+const producerLinks = [
+  { label: "Samples & Presets", href: "/samples" },
+  { label: "Remakes", href: "/remakes" },
 ];
 
 export default function Navbar() {
   const pathname = usePathname();
-  const router = useRouter();
   const [session, setSession] = useState<Session | null>(null);
   const [authReady, setAuthReady] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
+  const [dropdownOpen, setDropdownOpen] = useState(false);
   const [username, setUsername] = useState<string | undefined>(undefined);
   const [displayName, setDisplayName] = useState<string | undefined>(undefined);
+  const dropdownRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const supabase = getSupabaseClient();
@@ -30,7 +30,6 @@ export default function Navbar() {
     async function loadSession(s: Session | null) {
       setSession(s);
       if (!s) { setUsername(undefined); setDisplayName(undefined); return; }
-
       const { data } = await supabase
         .from("profiles")
         .select("username, display_name")
@@ -56,11 +55,24 @@ export default function Navbar() {
     return () => subscription.unsubscribe();
   }, []);
 
-  // Close mobile menu on route change
-  useEffect(() => {
-    setMenuOpen(false);
-  }, [pathname]);
 
+  // Close dropdown on outside click
+  useEffect(() => {
+    function handleClick(e: MouseEvent) {
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
+        setDropdownOpen(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClick);
+    return () => document.removeEventListener("mousedown", handleClick);
+  }, []);
+
+  const isProducerActive = pathname.startsWith("/samples") || pathname.startsWith("/remakes");
+
+  const navLinkStyle = (active: boolean) => ({
+    color: active ? "#f5f5f7" : "#86868b",
+    background: active ? "rgba(255,255,255,0.06)" : "transparent",
+  });
 
   return (
     <nav
@@ -73,7 +85,8 @@ export default function Navbar() {
       }}
     >
       <div className="mx-auto grid h-14 max-w-7xl grid-cols-3 items-center px-4 md:px-6">
-        {/* Logo — left col */}
+
+        {/* Logo */}
         <Link href="/later" className="flex items-center transition-opacity hover:opacity-80 justify-self-start">
           <Image
             src="/ra-logo.png"
@@ -85,42 +98,73 @@ export default function Navbar() {
           />
         </Link>
 
-        {/* Desktop nav links — center col */}
+        {/* Desktop nav */}
         <div className="hidden md:flex items-center justify-center gap-1">
-          {navLinks.map((link) => {
-            const isCurrentPage = pathname.startsWith(link.href);
-            if (!link.active) {
-              return (
-                <span
-                  key={link.href}
-                  title="Kommer snart"
-                  className="cursor-not-allowed rounded-md px-3 py-1.5 text-sm"
-                  style={{ color: "#2a2a2a" }}
-                >
-                  {link.label}
-                </span>
-              );
-            }
-            return (
-              <Link
-                key={link.href}
-                href={link.href}
-                className="rounded-md px-3 py-1.5 text-sm font-medium transition-colors"
+
+          {/* Bestill */}
+          <Link
+            href="/tjenester"
+            className="rounded-md px-3 py-1.5 text-sm font-medium transition-colors"
+            style={navLinkStyle(pathname.startsWith("/tjenester"))}
+          >
+            Bestill
+          </Link>
+
+          {/* Låter */}
+          <Link
+            href="/later"
+            className="rounded-md px-3 py-1.5 text-sm font-medium transition-colors"
+            style={navLinkStyle(pathname.startsWith("/later"))}
+          >
+            Låter
+          </Link>
+
+          {/* For produsenter dropdown */}
+          <div className="relative" ref={dropdownRef}>
+            <button
+              onClick={() => setDropdownOpen((o) => !o)}
+              className="flex items-center gap-1 rounded-md px-3 py-1.5 text-sm font-medium transition-colors"
+              style={navLinkStyle(isProducerActive)}
+            >
+              For produsenter
+              <ChevronDown
+                size={13}
                 style={{
-                  color: isCurrentPage ? "#f5f5f7" : "#86868b",
-                  background: isCurrentPage ? "rgba(255,255,255,0.06)" : "transparent",
+                  transition: "transform 0.15s",
+                  transform: dropdownOpen ? "rotate(180deg)" : "rotate(0deg)",
+                }}
+              />
+            </button>
+
+            {dropdownOpen && (
+              <div
+                className="absolute left-1/2 top-full mt-2 w-44 rounded-xl py-1.5 shadow-xl"
+                style={{
+                  background: "#141414",
+                  border: "1px solid #2a2a2a",
+                  transform: "translateX(-50%)",
                 }}
               >
-                {link.label}
-              </Link>
-            );
-          })}
+                {producerLinks.map((link) => (
+                  <Link
+                    key={link.href}
+                    href={link.href}
+                    className="block px-3.5 py-2 text-sm font-medium transition-colors rounded-lg mx-1"
+                    style={{
+                      color: pathname.startsWith(link.href) ? "#f5f5f7" : "#86868b",
+                      background: pathname.startsWith(link.href) ? "rgba(255,255,255,0.06)" : "transparent",
+                    }}
+                  >
+                    {link.label}
+                  </Link>
+                ))}
+              </div>
+            )}
+          </div>
         </div>
 
-        {/* Desktop auth — right col */}
-        <div
-          className="hidden md:flex items-center gap-2 justify-self-end"
-        >
+        {/* Desktop auth */}
+        <div className="hidden md:flex items-center gap-2 justify-self-end">
           {!authReady ? (
             <div style={{ width: 160, height: 32 }} />
           ) : session && username ? (
@@ -128,10 +172,7 @@ export default function Navbar() {
               <Link
                 href="/nedlastninger"
                 className="rounded-md px-3 py-1.5 text-sm font-medium transition-opacity hover:opacity-80"
-                style={{
-                  color: pathname.startsWith("/nedlastninger") ? "#f5f5f7" : "#86868b",
-                  background: pathname.startsWith("/nedlastninger") ? "rgba(255,255,255,0.06)" : "transparent",
-                }}
+                style={navLinkStyle(pathname.startsWith("/nedlastninger"))}
               >
                 Mine nedlastninger
               </Link>
@@ -175,7 +216,7 @@ export default function Navbar() {
           )}
         </div>
 
-        {/* Mobile hamburger — right col (center col hidden on mobile so hamburger spans cols 2+3) */}
+        {/* Mobile hamburger */}
         <button
           className="md:hidden col-start-3 flex items-center justify-end rounded-lg p-2 transition-colors justify-self-end"
           style={{ color: "#86868b" }}
@@ -186,57 +227,61 @@ export default function Navbar() {
         </button>
       </div>
 
-      {/* Mobile dropdown menu */}
+      {/* Mobile menu */}
       {menuOpen && (
         <div
           className="md:hidden border-t"
-          style={{
-            background: "rgba(8,8,8,0.97)",
-            borderColor: "#1e1e1e",
-          }}
+          style={{ background: "rgba(8,8,8,0.97)", borderColor: "#1e1e1e" }}
         >
           <div className="px-4 py-3 flex flex-col gap-1">
-            {/* Nav links */}
-            {navLinks.map((link) => {
-              const isCurrentPage = pathname.startsWith(link.href);
-              if (!link.active) {
-                return (
-                  <span
-                    key={link.href}
-                    className="cursor-not-allowed rounded-lg px-3 py-2.5 text-sm"
-                    style={{ color: "#2a2a2a" }}
-                  >
-                    {link.label} (kommer snart)
-                  </span>
-                );
-              }
-              return (
+
+            <Link
+              href="/tjenester"
+              className="rounded-lg px-3 py-2.5 text-sm font-medium"
+              style={navLinkStyle(pathname.startsWith("/tjenester"))}
+              onClick={() => setMenuOpen(false)}
+            >
+              Bestill
+            </Link>
+
+            <Link
+              href="/later"
+              className="rounded-lg px-3 py-2.5 text-sm font-medium"
+              style={navLinkStyle(pathname.startsWith("/later"))}
+              onClick={() => setMenuOpen(false)}
+            >
+              Låter
+            </Link>
+
+            {/* For produsenter — expanded inline on mobile */}
+            <div>
+              <p className="px-3 py-1.5 text-xs font-medium uppercase tracking-wider" style={{ color: "#3a3a3a" }}>
+                For produsenter
+              </p>
+              {producerLinks.map((link) => (
                 <Link
                   key={link.href}
                   href={link.href}
-                  className="rounded-lg px-3 py-2.5 text-sm font-medium transition-colors"
-                  style={{
-                    color: isCurrentPage ? "#f5f5f7" : "#86868b",
-                    background: isCurrentPage ? "rgba(255,255,255,0.06)" : "transparent",
-                  }}
+                  className="block rounded-lg px-3 py-2.5 text-sm font-medium"
+                  style={navLinkStyle(pathname.startsWith(link.href))}
+                  onClick={() => setMenuOpen(false)}
                 >
                   {link.label}
                 </Link>
-              );
-            })}
+              ))}
+            </div>
 
-            {/* Divider */}
             <div className="my-2 h-px" style={{ background: "#1e1e1e" }} />
 
-            {/* Auth section */}
             {authReady && (
               <>
                 {session && username ? (
                   <>
                     <Link
                       href={`/profile/${slugifyName(displayName ?? username ?? "")}`}
-                      className="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors"
+                      className="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium"
                       style={{ color: "#f5f5f7", background: "rgba(255,255,255,0.04)" }}
+                      onClick={() => setMenuOpen(false)}
                     >
                       <div
                         className="flex items-center justify-center rounded-md text-xs font-bold select-none shrink-0"
@@ -253,10 +298,9 @@ export default function Navbar() {
                     </Link>
                     <Link
                       href="/nedlastninger"
-                      className="rounded-lg px-3 py-2.5 text-sm font-medium transition-colors"
-                      style={{
-                        color: pathname.startsWith("/nedlastninger") ? "#f5f5f7" : "#86868b",
-                      }}
+                      className="rounded-lg px-3 py-2.5 text-sm font-medium"
+                      style={navLinkStyle(pathname.startsWith("/nedlastninger"))}
+                      onClick={() => setMenuOpen(false)}
                     >
                       Mine nedlastninger
                     </Link>
@@ -265,14 +309,14 @@ export default function Navbar() {
                   <div className="flex gap-2 pt-1">
                     <Link
                       href="/logg-inn"
-                      className="flex-1 rounded-xl px-4 py-2.5 text-center text-sm font-medium transition-colors"
+                      className="flex-1 rounded-xl px-4 py-2.5 text-center text-sm font-medium"
                       style={{ background: "rgba(255,255,255,0.06)", color: "#f5f5f7" }}
                     >
                       Logg inn
                     </Link>
                     <Link
                       href="/registrer"
-                      className="flex-1 rounded-xl px-4 py-2.5 text-center text-sm font-semibold transition-opacity hover:opacity-90"
+                      className="flex-1 rounded-xl px-4 py-2.5 text-center text-sm font-semibold"
                       style={{ background: "#f5f5f7", color: "#080808" }}
                     >
                       Registrer deg
