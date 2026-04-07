@@ -9,6 +9,7 @@ import { useToast } from "@/lib/toast-context";
 import RemakeCheckoutModal from "@/components/RemakeCheckoutModal";
 import RemakeCard from "@/components/RemakeCard";
 import { slugifyName } from "@/lib/slugify";
+import { usePlayer } from "@/lib/player-context";
 
 function genreColor(seed: string): string {
   const palette = ["#1a1040", "#001a2e", "#1a2e00", "#2e1a00", "#001e14", "#14001e", "#1e0a0a", "#00141e"];
@@ -26,6 +27,7 @@ export default function RemakeDetailClient({
 }) {
   const { toast } = useToast();
   const router = useRouter();
+  const { pausePlayer } = usePlayer();
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const [isPlaying, setIsPlaying] = useState(false);
   const [checkoutOpen, setCheckoutOpen] = useState(false);
@@ -49,12 +51,14 @@ export default function RemakeDetailClient({
         audioRef.current.pause();
         setIsPlaying(false);
       } else {
+        pausePlayer();
         void audioRef.current.play();
         setIsPlaying(true);
       }
       return;
     }
 
+    pausePlayer();
     const audio = new Audio(remake.audio_preview_url);
     audio.onended = () => setIsPlaying(false);
     audioRef.current = audio;
@@ -85,11 +89,15 @@ export default function RemakeDetailClient({
     if (recPlayingId === r.id) {
       if (recAudioRef.current) {
         if (recAudioPlaying) { recAudioRef.current.pause(); setRecAudioPlaying(false); }
-        else { void recAudioRef.current.play(); setRecAudioPlaying(true); }
+        else {
+          pausePlayer();
+          void recAudioRef.current.play(); setRecAudioPlaying(true);
+        }
       }
       return;
     }
 
+    pausePlayer();
     recAudioRef.current?.pause();
     const audio = new Audio(r.audio_preview_url);
     audio.onended = () => { setRecPlayingId(null); setRecAudioPlaying(false); };
