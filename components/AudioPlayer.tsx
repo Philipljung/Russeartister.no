@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useCallback } from "react";
 import { usePathname } from "next/navigation";
 import { Play, Pause, X, Volume2 } from "lucide-react";
 import { usePlayer } from "@/lib/player-context";
@@ -31,6 +31,7 @@ export default function AudioPlayer() {
   const [duration, setDuration] = useState(0);
   const [volume, setVolume] = useState(1);
   const [showVolume, setShowVolume] = useState(false);
+  const volumeRef = useRef<HTMLDivElement>(null);
 
   // Show on beats, profile, remakes, samples, presets, and pack pages
   const showPlayer =
@@ -70,6 +71,21 @@ export default function AudioPlayer() {
   useEffect(() => {
     if (audioRef.current) audioRef.current.volume = volume;
   }, [volume]);
+
+  const handleClickOutsideVolume = useCallback((e: MouseEvent) => {
+    if (volumeRef.current && !volumeRef.current.contains(e.target as Node)) {
+      setShowVolume(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (showVolume) {
+      document.addEventListener("mousedown", handleClickOutsideVolume);
+    } else {
+      document.removeEventListener("mousedown", handleClickOutsideVolume);
+    }
+    return () => document.removeEventListener("mousedown", handleClickOutsideVolume);
+  }, [showVolume, handleClickOutsideVolume]);
 
   function seek(e: React.PointerEvent) {
     const rect = progressRef.current?.getBoundingClientRect();
@@ -203,7 +219,7 @@ export default function AudioPlayer() {
       )}
 
       {/* Volume */}
-      <div className="relative shrink-0 hidden sm:flex items-center">
+      <div ref={volumeRef} className="relative shrink-0 hidden sm:flex items-center">
         <button
           onClick={() => setShowVolume((v) => !v)}
           className="flex items-center justify-center rounded-lg transition-opacity hover:opacity-60"

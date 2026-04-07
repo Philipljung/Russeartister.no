@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef } from "react";
+import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Play, Pause, Share2, ChevronLeft } from "lucide-react";
@@ -27,9 +27,7 @@ export default function RemakeDetailClient({
 }) {
   const { toast } = useToast();
   const router = useRouter();
-  const { pausePlayer } = usePlayer();
-  const audioRef = useRef<HTMLAudioElement | null>(null);
-  const [isPlaying, setIsPlaying] = useState(false);
+  const { currentBeat, isPlaying, toggleBeat } = usePlayer();
   const [checkoutOpen, setCheckoutOpen] = useState(false);
 
   async function handleFreeDownload() {
@@ -43,28 +41,7 @@ export default function RemakeDetailClient({
   const coverImg = remake.cover_url ?? producer?.avatar_url ?? null;
   const coverBg = coverImg ? undefined : genreColor(remake.title);
 
-  function handleTogglePlay() {
-    if (!remake.audio_preview_url) return;
-
-    if (audioRef.current) {
-      if (isPlaying) {
-        audioRef.current.pause();
-        setIsPlaying(false);
-      } else {
-        pausePlayer();
-        void audioRef.current.play();
-        setIsPlaying(true);
-      }
-      return;
-    }
-
-    pausePlayer();
-    const audio = new Audio(remake.audio_preview_url);
-    audio.onended = () => setIsPlaying(false);
-    audioRef.current = audio;
-    void audio.play();
-    setIsPlaying(true);
-  }
+  const thisIsPlaying = currentBeat?.id === remake.id && isPlaying;
 
   async function handleShare() {
     await navigator.clipboard.writeText(window.location.origin + "/remakes/" + remake.id);
@@ -77,35 +54,6 @@ export default function RemakeDetailClient({
     ...(remake.key ? [{ label: "Skala", value: remake.key }] : []),
     ...(remake.genre ? [{ label: "Sjanger", value: remake.genre }] : []),
   ];
-
-  // Recommended playback state
-  const [recPlayingId, setRecPlayingId] = useState<string | null>(null);
-  const [recAudioPlaying, setRecAudioPlaying] = useState(false);
-  const recAudioRef = useRef<HTMLAudioElement | null>(null);
-
-  function handleRecToggle(r: Remake) {
-    if (!r.audio_preview_url) return;
-
-    if (recPlayingId === r.id) {
-      if (recAudioRef.current) {
-        if (recAudioPlaying) { recAudioRef.current.pause(); setRecAudioPlaying(false); }
-        else {
-          pausePlayer();
-          void recAudioRef.current.play(); setRecAudioPlaying(true);
-        }
-      }
-      return;
-    }
-
-    pausePlayer();
-    recAudioRef.current?.pause();
-    const audio = new Audio(r.audio_preview_url);
-    audio.onended = () => { setRecPlayingId(null); setRecAudioPlaying(false); };
-    recAudioRef.current = audio;
-    setRecPlayingId(r.id);
-    void audio.play();
-    setRecAudioPlaying(true);
-  }
 
   return (
     <div className="mx-auto max-w-4xl px-4 md:px-6 py-8">
@@ -150,14 +98,14 @@ export default function RemakeDetailClient({
               }}
             />
             <button
-              onClick={handleTogglePlay}
+              onClick={() => toggleBeat(remake)}
               className="absolute inset-0 flex items-center justify-center rounded-xl transition-all"
               style={{
-                background: isPlaying ? "rgba(0,0,0,0.55)" : "rgba(0,0,0,0.35)",
+                background: thisIsPlaying ? "rgba(0,0,0,0.55)" : "rgba(0,0,0,0.35)",
                 cursor: remake.audio_preview_url ? "pointer" : "default",
               }}
             >
-              {isPlaying
+              {thisIsPlaying
                 ? <Pause size={20} fill="#f5f5f7" color="#f5f5f7" />
                 : <Play size={20} fill="#f5f5f7" color="#f5f5f7" />}
             </button>
@@ -269,9 +217,9 @@ export default function RemakeDetailClient({
               <RemakeCard
                 key={r.id}
                 remake={r}
-                isActive={recPlayingId === r.id}
-                isPlaying={recPlayingId === r.id && recAudioPlaying}
-                onToggle={handleRecToggle}
+                isActive={currentBeat?.id === r.id}
+                isPlaying={currentBeat?.id === r.id && isPlaying}
+                onToggle={(rec) => toggleBeat(rec)}
                 onBuy={(rec) => { router.push(`/remakes/${rec.id}`); }}
               />
             ))}
