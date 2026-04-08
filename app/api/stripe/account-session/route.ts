@@ -36,6 +36,30 @@ export async function POST(request: Request) {
 
     let accountId = profile.stripe_account_id as string | null;
 
+    // If an account exists, verify it matches the requested country.
+    // A Stripe account is permanently locked to its creation country — if it
+    // doesn't match we must create a fresh one (safe as long as no payouts have
+    // been made to the old account, which is the case during initial onboarding).
+    if (accountId) {
+      try {
+        const existing = await stripe.accounts.retrieve(accountId);
+        const countryMismatch = existing.country && existing.country !== country;
+        const alreadyComplete = existing.charges_enabled && existing.payouts_enabled;
+
+        if (countryMismatch && !alreadyComplete) {
+          console.warn(`[account-session] Country mismatch: existing=${existing.country}, requested=${country}. Creating new account.`);
+          accountId = null; // fall through to create a new one
+          await supabase
+            .from("profiles")
+            .update({ stripe_account_id: null, stripe_onboarding_complete: false })
+            .eq("id", user.id);
+        }
+      } catch (err) {
+        console.error("[account-session] Could not retrieve existing account, will create new:", err);
+        accountId = null;
+      }
+    }
+
     // Create a Stripe Express account if one doesn't exist yet
     if (!accountId) {
       const account = await stripe.accounts.create({
