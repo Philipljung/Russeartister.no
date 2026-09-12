@@ -1,16 +1,22 @@
 "use client";
 
-import { useState, useEffect, useMemo, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { Search, X } from "lucide-react";
 import { fetchPublicRemakes } from "@/lib/fetchRemakes";
 import RemakeCard from "@/components/RemakeCard";
-import RemakeCheckoutModal from "@/components/RemakeCheckoutModal";
+import dynamic from "next/dynamic";
+const RemakeCheckoutModal = dynamic(() => import("@/components/RemakeCheckoutModal"), { ssr: false });
 import { usePlayer } from "@/lib/player-context";
+import { getSupabaseClient } from "@/lib/supabase/client";
 import type { Remake } from "@/lib/supabase/types";
+
+const PAGE_SIZE = 20;
 
 export default function RemakesPage() {
   const [remakes, setRemakes] = useState<Remake[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [hasMore, setHasMore] = useState(true);
   const [query, setQuery] = useState("");
   const [debouncedQuery, setDebouncedQuery] = useState("");
   const [activeDaw, setActiveDaw] = useState("");
@@ -18,57 +24,54 @@ export default function RemakesPage() {
   const [excludeVsts, setExcludeVsts] = useState<string[]>([]);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [checkoutRemake, setCheckoutRemake] = useState<Remake | null>(null);
-  const [visibleCount, setVisibleCount] = useState(20);
+  const [daws, setDaws] = useState<string[]>([]);
+  const [vsts, setVsts] = useState<string[]>([]);
+  const offsetRef = useRef(0);
   const { currentBeat, isPlaying, toggleBeat } = usePlayer();
+
+  useEffect(() => {
+    const supabase = getSupabaseClient();
+    supabase.from("remakes").select("daw, vsts").eq("is_published", true).is("deleted_at", null).then(({ data }) => {
+      if (!data) return;
+      setDaws(Array.from(new Set(data.map((r: { daw: string }) => r.daw).filter(Boolean))).sort() as string[]);
+      const allVsts = data.flatMap((r: { vsts: string[] | null }) => r.vsts ?? []);
+      setVsts(Array.from(new Set(allVsts)).sort() as string[]);
+    });
+  }, []);
 
   const toggleRemake = useCallback((remake: Remake) => {
     if (!remake.audio_preview_url) return;
     toggleBeat(remake);
   }, [toggleBeat]);
 
-  useEffect(() => {
-    fetchPublicRemakes().then((data) => { setRemakes(data); setLoading(false); });
+  const load = useCallback(async (
+    q: string, daw: string, inc: string[], exc: string[], reset: boolean
+  ) => {
+    const from = reset ? 0 : offsetRef.current;
+    const to = from + PAGE_SIZE - 1;
+    if (reset) setLoading(true); else setLoadingMore(true);
+
+    const data = await fetchPublicRemakes({ query: q, daw, includeVsts: inc, excludeVsts: exc, from, to });
+
+    if (reset) { setRemakes(data); offsetRef.current = data.length; }
+    else { setRemakes((prev) => [...prev, ...data]); offsetRef.current += data.length; }
+
+    setHasMore(data.length === PAGE_SIZE);
+    setLoading(false);
+    setLoadingMore(false);
   }, []);
+
+  useEffect(() => {
+    offsetRef.current = 0;
+    void load(debouncedQuery, activeDaw, includeVsts, excludeVsts, true);
+  }, [debouncedQuery, activeDaw, includeVsts, excludeVsts, load]);
 
   useEffect(() => {
     const id = setTimeout(() => setDebouncedQuery(query), 300);
     return () => clearTimeout(id);
   }, [query]);
 
-  const daws = useMemo(() => {
-    const all = remakes.map((r) => r.daw).filter(Boolean) as string[];
-    return Array.from(new Set(all)).sort();
-  }, [remakes]);
-
-  const vsts = useMemo(() => {
-    const all = remakes.flatMap((r) => r.vsts ?? []);
-    return Array.from(new Set(all)).sort();
-  }, [remakes]);
-
-  const filtered = useMemo(() => {
-    let result = [...remakes];
-    if (debouncedQuery) {
-      const q = debouncedQuery.toLowerCase();
-      result = result.filter(
-        (r) =>
-          r.title.toLowerCase().includes(q) ||
-          (r.daw?.toLowerCase().includes(q) ?? false) ||
-          r.tags.some((t) => t.toLowerCase().includes(q)) ||
-          r.producer?.display_name?.toLowerCase().includes(q)
-      );
-    }
-    if (activeDaw) result = result.filter((r) => r.daw === activeDaw);
-    if (includeVsts.length > 0) {
-      result = result.filter((r) => includeVsts.some((v) => r.vsts?.includes(v)));
-    }
-    if (excludeVsts.length > 0) {
-      result = result.filter((r) => !excludeVsts.some((v) => r.vsts?.includes(v)));
-    }
-    return result;
-  }, [remakes, debouncedQuery, activeDaw, includeVsts, excludeVsts]);
-
-  // Reset visible count when filters change
-  useEffect(() => { setVisibleCount(20); }, [debouncedQuery, activeDaw, includeVsts, excludeVsts]);
+  const filtered = remakes;
 
 
   // Keyboard navigation
@@ -252,7 +255,7 @@ export default function RemakesPage() {
             </div>
 
             <div>
-              {filtered.slice(0, visibleCount).map((remake) => (
+              {filtered.map((remake) => (
                 <RemakeCard
                   key={remake.id}
                   remake={remake}
@@ -264,14 +267,15 @@ export default function RemakesPage() {
                 />
               ))}
             </div>
-            {filtered.length > visibleCount && (
+            {hasMore && (
               <div className="mt-8 flex justify-center">
                 <button
-                  onClick={() => setVisibleCount((v) => v + 20)}
-                  className="rounded-xl px-6 py-2.5 text-sm font-medium transition-opacity hover:opacity-80"
+                  onClick={() => void load(debouncedQuery, activeDaw, includeVsts, excludeVsts, false)}
+                  disabled={loadingMore}
+                  className="rounded-xl px-6 py-2.5 text-sm font-medium transition-opacity hover:opacity-80 disabled:opacity-40"
                   style={{ background: "rgba(255,255,255,0.06)", color: "#f5f5f7", border: "1px solid #2a2a2a" }}
                 >
-                  Last inn flere
+                  {loadingMore ? "Laster..." : "Last inn flere"}
                 </button>
               </div>
             )}

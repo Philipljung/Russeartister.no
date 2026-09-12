@@ -8,7 +8,8 @@ import type { Beat } from "@/lib/supabase/types";
 import { usePlayer } from "@/lib/player-context";
 import { useToast } from "@/lib/toast-context";
 import { slugifyName } from "@/lib/slugify";
-import BeatCheckoutModal from "./BeatCheckoutModal";
+import dynamic from "next/dynamic";
+const BeatCheckoutModal = dynamic(() => import("./BeatCheckoutModal"), { ssr: false });
 
 type Props = {
   beat: Beat;

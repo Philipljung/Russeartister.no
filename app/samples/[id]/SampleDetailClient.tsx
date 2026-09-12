@@ -7,7 +7,8 @@ import { Play, Pause, Share2, ChevronLeft, Sliders, FolderArchive, FileAudio } f
 import type { Sample } from "@/lib/supabase/types";
 import { useToast } from "@/lib/toast-context";
 import { CATEGORY_LABELS } from "@/lib/sampleCategories";
-import SampleCheckoutModal from "@/components/SampleCheckoutModal";
+import dynamic from "next/dynamic";
+const SampleCheckoutModal = dynamic(() => import("@/components/SampleCheckoutModal"), { ssr: false });
 import { slugifyName } from "@/lib/slugify";
 
 function genreColor(seed: string): string {
