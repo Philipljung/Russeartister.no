@@ -56,7 +56,7 @@ export async function fetchPublicBeats(filters: BeatsFilter = {}): Promise<Beat[
   const ascending = sortBy === "price_asc" || sortBy === "bpm_asc";
   q = q.order(sortCol, { ascending });
 
-  q = q.range(from, to);
+  q = q.range(from, to).limit(to - from + 1);
 
   const { data, error } = await q;
   if (error) {

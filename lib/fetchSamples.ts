@@ -42,7 +42,7 @@ export async function fetchPublicSamples(filters: SamplesFilter = {}): Promise<S
   if (genre) q = q.eq("genre", genre);
   if (vst) q = q.eq("vst", vst);
 
-  q = q.order("created_at", { ascending: false }).range(from, to);
+  q = q.order("created_at", { ascending: false }).range(from, to).limit(to - from + 1);
 
   const { data, error } = await q;
   if (error) {

@@ -34,7 +34,7 @@ export async function fetchPublicRemakes(filters: RemakesFilter = {}): Promise<R
   if (includeVsts.length > 0) q = q.overlaps("vsts", includeVsts);
   if (excludeVsts.length > 0) q = q.not("vsts", "ov", `{${excludeVsts.join(",")}}`);
 
-  q = q.order("created_at", { ascending: false }).range(from, to);
+  q = q.order("created_at", { ascending: false }).range(from, to).limit(to - from + 1);
 
   const { data, error } = await q;
   if (error) {
