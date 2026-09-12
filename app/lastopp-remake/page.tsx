@@ -275,7 +275,7 @@ export default function LastOppRemakePage() {
                   <button
                     key={v}
                     type="button"
-                    onClick={() => { setSelectedVsts([...selectedVsts, v]); setVstInput(""); }}
+                    onMouseDown={(e) => { e.preventDefault(); setSelectedVsts([...selectedVsts, v]); setVstInput(""); }}
                     className="rounded-full px-2.5 py-0.5 text-xs transition-all"
                     style={{ background: "transparent", border: "1px solid #2a2a2a", color: "#3a3a3a" }}
                   >
@@ -356,6 +356,7 @@ export default function LastOppRemakePage() {
             file={audioPreview?.file ?? null}
             inputRef={audioInputRef}
             onChange={handleAudioChange}
+            onClear={() => setAudioPreview(null)}
           />
           <FileRow
             label="Prosjektfil *"
@@ -365,6 +366,7 @@ export default function LastOppRemakePage() {
             file={projectFile?.file ?? null}
             inputRef={projectInputRef}
             onChange={handleProjectChange}
+            onClear={() => setProjectFile(null)}
           />
 
           {/* Anti-scam warning */}
@@ -429,11 +431,12 @@ function Label({ children }: { children: React.ReactNode }) {
 }
 
 function FileRow({
-  label, hint, accept, icon, file, inputRef, onChange,
+  label, hint, accept, icon, file, inputRef, onChange, onClear,
 }: {
   label: string; hint: string; accept: string; icon: React.ReactNode;
   file: File | null; inputRef: React.RefObject<HTMLInputElement | null>;
   onChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
+  onClear?: () => void;
 }) {
   return (
     <div className="flex items-center justify-between gap-4">
@@ -446,7 +449,7 @@ function FileRow({
       </div>
       <div className="flex items-center gap-2 shrink-0">
         {file && (
-          <button type="button" onClick={() => { if (inputRef.current) inputRef.current.value = ""; onChange({ target: { files: null } } as never); }} className="rounded-lg p-1.5" style={{ color: "#86868b" }}>
+          <button type="button" onClick={() => { if (inputRef.current) inputRef.current.value = ""; onClear?.(); }} className="rounded-lg p-1.5" style={{ color: "#86868b" }}>
             <X size={13} />
           </button>
         )}

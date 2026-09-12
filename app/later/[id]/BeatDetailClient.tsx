@@ -6,7 +6,8 @@ import { Play, Pause, Share2, ChevronLeft } from "lucide-react";
 import type { Beat } from "@/lib/supabase/types";
 import { usePlayer } from "@/lib/player-context";
 import { useToast } from "@/lib/toast-context";
-import BeatCheckoutModal from "@/components/BeatCheckoutModal";
+import dynamic from "next/dynamic";
+const BeatCheckoutModal = dynamic(() => import("@/components/BeatCheckoutModal"), { ssr: false });
 import BeatCard from "@/components/BeatCard";
 import { slugifyName } from "@/lib/slugify";
 

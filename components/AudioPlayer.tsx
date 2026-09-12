@@ -1,8 +1,8 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useCallback } from "react";
 import { usePathname } from "next/navigation";
-import { Play, Pause, X } from "lucide-react";
+import { Play, Pause, X, Volume2 } from "lucide-react";
 import { usePlayer } from "@/lib/player-context";
 
 function formatTime(s: number) {
@@ -29,6 +29,9 @@ export default function AudioPlayer() {
   const progressRef = useRef<HTMLDivElement>(null);
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
+  const [volume, setVolume] = useState(1);
+  const [showVolume, setShowVolume] = useState(false);
+  const volumeRef = useRef<HTMLDivElement>(null);
 
   // Show on beats, profile, remakes, samples, presets, and pack pages
   const showPlayer =
@@ -64,6 +67,25 @@ export default function AudioPlayer() {
       audio.pause();
     }
   }, [currentBeat, isPlaying]);
+
+  useEffect(() => {
+    if (audioRef.current) audioRef.current.volume = volume;
+  }, [volume]);
+
+  const handleClickOutsideVolume = useCallback((e: MouseEvent) => {
+    if (volumeRef.current && !volumeRef.current.contains(e.target as Node)) {
+      setShowVolume(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (showVolume) {
+      document.addEventListener("mousedown", handleClickOutsideVolume);
+    } else {
+      document.removeEventListener("mousedown", handleClickOutsideVolume);
+    }
+    return () => document.removeEventListener("mousedown", handleClickOutsideVolume);
+  }, [showVolume, handleClickOutsideVolume]);
 
   function seek(e: React.PointerEvent) {
     const rect = progressRef.current?.getBoundingClientRect();
@@ -195,6 +217,36 @@ export default function AudioPlayer() {
           )}
         </div>
       )}
+
+      {/* Volume */}
+      <div ref={volumeRef} className="relative shrink-0 hidden sm:flex items-center">
+        <button
+          onClick={() => setShowVolume((v) => !v)}
+          className="flex items-center justify-center rounded-lg transition-opacity hover:opacity-60"
+          style={{ color: "#86868b" }}
+        >
+          <Volume2 size={15} />
+        </button>
+        {showVolume && (
+          <div
+            className="absolute bottom-10 right-0 flex flex-col items-center gap-1 rounded-xl px-3 py-3"
+            style={{ background: "rgba(28,28,28,0.98)", border: "1px solid #2a2a2a", zIndex: 60 }}
+          >
+            <input
+              type="range"
+              min={0}
+              max={1}
+              step={0.02}
+              value={volume}
+              onChange={(e) => setVolume(parseFloat(e.target.value))}
+              style={{ writingMode: "vertical-lr", direction: "rtl", height: 80, width: 20, accentColor: "#f5f5f7", cursor: "pointer" }}
+            />
+            <span className="text-xs tabular-nums" style={{ color: "#86868b" }}>
+              {Math.round(volume * 100)}
+            </span>
+          </div>
+        )}
+      </div>
 
       {/* Close */}
       <button

@@ -37,24 +37,26 @@ const ACCENT: Record<number, string> = {
 const INTERVAL = 10000;
 
 export default function HeroCarousel() {
-  const [slides, setSlides] = useState<HeroSlide[]>(FALLBACK);
+  const [slides, setSlides] = useState<HeroSlide[] | null>(null);
   const [active, setActive] = useState(0);
   const [paused, setPaused] = useState(false);
 
   useEffect(() => {
     fetchHeroSlides().then((data) => {
-      if (data.length > 0) setSlides(data);
+      setSlides(data.length > 0 ? data : FALLBACK);
     });
   }, []);
 
-  const next = useCallback(() => setActive((i) => (i + 1) % slides.length), [slides.length]);
-  const prev = useCallback(() => setActive((i) => (i - 1 + slides.length) % slides.length), [slides.length]);
+  const next = useCallback(() => setActive((i) => (i + 1) % (slides?.length ?? 1)), [slides?.length]);
+  const prev = useCallback(() => setActive((i) => (i - 1 + (slides?.length ?? 1)) % (slides?.length ?? 1)), [slides?.length]);
 
   useEffect(() => {
-    if (paused) return;
+    if (paused || !slides) return;
     const t = setInterval(next, INTERVAL);
     return () => clearInterval(t);
-  }, [paused, next]);
+  }, [paused, next, slides]);
+
+  if (!slides) return null;
 
   return (
     <div

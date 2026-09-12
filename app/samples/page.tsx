@@ -1,352 +1,22 @@
 "use client";
 
-import { useState, useEffect, useMemo, useCallback, useRef, Suspense } from "react";
-import { Search, X, Package, Sliders, Play, Pause, FolderArchive, ChevronDown, ChevronUp, Share2 } from "lucide-react";
-import Link from "next/link";
-import { useRouter, useSearchParams } from "next/navigation";
-import Image from "next/image";
+import { useState, useEffect, useCallback, useRef, Suspense } from "react";
+import { Search, X, Package } from "lucide-react";
+import { useSearchParams } from "next/navigation";
 import { fetchPublicSamples } from "@/lib/fetchSamples";
 import { fetchPublicPacks } from "@/lib/fetchPacks";
+import { getSupabaseClient } from "@/lib/supabase/client";
 import { SAMPLE_CATEGORIES, PRESET_CATEGORIES, CATEGORY_LABELS } from "@/lib/sampleCategories";
 import type { Sample, Pack } from "@/lib/supabase/types";
-import SampleCheckoutModal from "@/components/SampleCheckoutModal";
-import { useToast } from "@/lib/toast-context";
+import dynamic from "next/dynamic";
+const SampleCheckoutModal = dynamic(() => import("@/components/SampleCheckoutModal"), { ssr: false });
 import { usePlayer } from "@/lib/player-context";
-import { slugifyName } from "@/lib/slugify";
+import SampleCard from "@/components/SampleCard";
+import SamplePackCard from "@/components/SamplePackCard";
+import PackGridCard from "@/components/PackGridCard";
 
 type ActiveType = "sample" | "preset" | "pack";
 
-function genreColor(cat: string): string {
-  const palette = ["#1a1040","#001a2e","#1a2e00","#2e1a00","#001e14","#14001e","#1e0a0a","#00141e"];
-  let hash = 0;
-  for (let i = 0; i < cat.length; i++) hash = cat.charCodeAt(i) + ((hash << 5) - hash);
-  return palette[Math.abs(hash) % palette.length];
-}
-
-// ── SampleCard ──────────────────────────────────────────────────────────────
-function SampleCard({
-  sample,
-  isActive,
-  isPlaying,
-  isSelected = false,
-  onToggle,
-  onBuy,
-}: {
-  sample: Sample;
-  isActive: boolean;
-  isPlaying: boolean;
-  isSelected?: boolean;
-  onToggle: (sample: Sample) => void;
-  onBuy: (sample: Sample) => void;
-}) {
-  const [hovered, setHovered] = useState(false);
-  const router = useRouter();
-  const { toast } = useToast();
-  const coverImg = sample.cover_url ?? sample.producer?.avatar_url ?? null;
-  const coverBg = genreColor(sample.category);
-  const canPlay = !!sample.audio_preview_url;
-  const isPreset = sample.item_type === "preset";
-
-  async function handleFreeDownload(e: React.MouseEvent) {
-    e.stopPropagation();
-    const res = await fetch(`/api/free-download?type=sample&id=${sample.id}`);
-    const data = await res.json();
-    if (data.url) window.location.href = data.url;
-    else toast("Nedlasting feilet. Prøv igjen.");
-  }
-
-  return (
-    <div
-      className="flex items-center gap-2 md:gap-4 rounded-xl px-2 md:px-4 py-3 transition-colors cursor-pointer"
-      style={{
-        background: isSelected ? "rgba(255,255,255,0.06)" : hovered ? "rgba(255,255,255,0.04)" : "transparent",
-        borderBottom: "1px solid #1a1a1a",
-        outline: isSelected ? "1px solid rgba(255,255,255,0.18)" : "none",
-        outlineOffset: -1,
-      }}
-      onMouseEnter={() => setHovered(true)}
-      onMouseLeave={() => setHovered(false)}
-      onClick={() => router.push(`/samples/${sample.id}`)}
-    >
-      {/* Play/pause button */}
-      <button
-        onClick={(e) => { e.stopPropagation(); if (canPlay) onToggle(sample); }}
-        className="shrink-0 flex items-center justify-center rounded-full transition-colors"
-        style={{
-          width: 36, height: 36,
-          background: isActive && isPlaying ? "#f5f5f7" : "rgba(255,255,255,0.06)",
-          color: isActive && isPlaying ? "#080808" : canPlay ? "#f5f5f7" : "#3a3a3a",
-          cursor: canPlay ? "pointer" : "default",
-        }}
-        title={canPlay ? (isPlaying && isActive ? "Pause" : "Spill av") : "Ingen forhåndsvisning"}
-      >
-        {isActive && isPlaying
-          ? <Pause size={13} fill="#080808" />
-          : !canPlay && isPreset
-            ? <Sliders size={13} />
-            : <Play size={13} fill="currentColor" />}
-      </button>
-
-      {/* Cover */}
-      <Link
-        href={`/profile/${slugifyName(sample.producer?.display_name ?? sample.producer?.username ?? "")}`}
-        onClick={(e) => e.stopPropagation()}
-        className="shrink-0 rounded-lg transition-opacity hover:opacity-80"
-        style={{
-          width: 40, height: 40,
-          backgroundColor: coverBg,
-          backgroundImage: coverImg ? `url(${coverImg})` : "none",
-          backgroundSize: "cover", backgroundPosition: "center",
-          boxShadow: "0 2px 8px rgba(0,0,0,0.4)",
-          display: "block",
-        }}
-      />
-
-      {/* Title + meta */}
-      <div className="min-w-0 flex-1">
-        <p className="truncate text-sm font-semibold tracking-wide" style={{ color: "#f5f5f7" }}>
-          {sample.title}
-        </p>
-        <p className="text-xs mt-0.5 truncate" style={{ color: "#86868b" }}>
-          <Link href={`/profile/${slugifyName(sample.producer?.display_name ?? sample.producer?.username ?? "")}`} onClick={(e) => e.stopPropagation()} className="hover:underline" style={{ color: "#86868b" }}>
-            {sample.producer?.display_name ?? "Ukjent"}
-          </Link>
-          {!isPreset && sample.bpm ? ` · ${sample.bpm} BPM` : ""}
-          {!isPreset && sample.key ? ` · ${sample.key}` : ""}
-        </p>
-      </div>
-
-      {/* Preset: Kategori + VST columns */}
-      {isPreset && (
-        <>
-          <div className="hidden sm:block shrink-0" style={{ width: 110 }}>
-            <span className="rounded-full px-2 py-0.5 text-xs" style={{ background: "rgba(255,255,255,0.06)", color: "#86868b" }}>
-              {CATEGORY_LABELS[sample.category] ?? sample.category}
-            </span>
-          </div>
-          <div className="hidden sm:block shrink-0" style={{ width: 110 }}>
-            {sample.vst && (
-              <span className="rounded-full px-2 py-0.5 text-xs" style={{ background: "rgba(255,255,255,0.08)", color: "#f5f5f7" }}>
-                {sample.vst}
-              </span>
-            )}
-          </div>
-        </>
-      )}
-
-      {/* Sample: Tags column */}
-      {!isPreset && (
-        <div className="hidden items-center gap-1.5 lg:flex" style={{ width: 200 }}>
-          {sample.tags.slice(0, 3).map((tag) => (
-            <span key={tag} className="rounded-full px-2.5 py-0.5 text-xs" style={{ background: "rgba(255,255,255,0.06)", color: "#86868b" }}>
-              {tag}
-            </span>
-          ))}
-        </div>
-      )}
-
-      {/* Price + buy + share */}
-      <div className="flex shrink-0 items-center gap-2">
-        <span className="text-sm font-semibold" style={{ color: "#f5f5f7", width: 80, textAlign: "right", flexShrink: 0 }}>
-          {sample.price === 0 ? "Gratis" : `kr ${sample.price.toLocaleString("nb-NO")}`}
-        </span>
-        <button
-          className="rounded-lg py-1.5 text-xs font-semibold transition-all"
-          style={{
-            background: hovered ? "#f5f5f7" : "rgba(255,255,255,0.08)",
-            color: hovered ? "#080808" : "#f5f5f7",
-            width: 76,
-          }}
-          onClick={sample.price === 0 ? handleFreeDownload : (e) => { e.stopPropagation(); onBuy(sample); }}
-        >
-          {sample.price === 0 ? "Last ned" : "Kjøp"}
-        </button>
-        <button
-          className="flex items-center justify-center rounded-lg transition-all"
-          style={{
-            width: 30, height: 30,
-            background: "rgba(255,255,255,0.06)",
-            color: "#86868b",
-            cursor: "pointer",
-          }}
-          title="Kopier lenke"
-          onClick={async (e) => {
-            e.stopPropagation();
-            await navigator.clipboard.writeText(window.location.origin + "/samples/" + sample.id);
-            toast("Lenke kopiert!");
-          }}
-        >
-          <Share2 size={12} />
-        </button>
-      </div>
-    </div>
-  );
-}
-
-// ── PackCard ─────────────────────────────────────────────────────────────────
-function PackCard({
-  sample,
-  isActive,
-  isPlaying,
-  onToggle,
-  onBuy,
-}: {
-  sample: Sample;
-  isActive: boolean;
-  isPlaying: boolean;
-  onToggle: (sample: Sample) => void;
-  onBuy: (sample: Sample) => void;
-}) {
-  const [hovered, setHovered] = useState(false);
-  const [expanded, setExpanded] = useState(false);
-  const { toast } = useToast();
-  const router = useRouter();
-
-  async function handleFreeDownload(e: React.MouseEvent) {
-    e.stopPropagation();
-    const res = await fetch(`/api/free-download?type=sample&id=${sample.id}`);
-    const data = await res.json();
-    if (data.url) window.location.href = data.url;
-    else toast("Nedlasting feilet. Prøv igjen.");
-  }
-  const coverImg = sample.cover_url ?? sample.producer?.avatar_url ?? null;
-  const coverBg = genreColor(sample.category);
-  const canPlay = !!sample.audio_preview_url;
-  const isPresetPack = sample.item_type === "preset-pack";
-
-  return (
-    <div
-      className="rounded-xl transition-colors"
-      style={{ borderBottom: "1px solid #1a1a1a" }}
-      onMouseEnter={() => setHovered(true)}
-      onMouseLeave={() => setHovered(false)}
-    >
-      <div
-        className="flex items-center gap-2 md:gap-4 px-2 md:px-4 py-3 cursor-pointer"
-        style={{ background: hovered ? "rgba(255,255,255,0.03)" : "transparent" }}
-        onClick={() => router.push(`/samples/${sample.id}`)}
-      >
-        {/* Play button */}
-        <button
-          onClick={(e) => { e.stopPropagation(); if (canPlay) onToggle(sample); }}
-          className="shrink-0 flex items-center justify-center rounded-full transition-colors"
-          style={{
-            width: 36, height: 36,
-            background: isActive && isPlaying ? "#f5f5f7" : "rgba(255,255,255,0.06)",
-            color: isActive && isPlaying ? "#080808" : canPlay ? "#f5f5f7" : "#3a3a3a",
-            cursor: canPlay ? "pointer" : "default",
-          }}
-        >
-          {isActive && isPlaying ? <Pause size={13} fill="#080808" /> : <Play size={13} fill="currentColor" />}
-        </button>
-
-        {/* Cover */}
-        <div
-          className="shrink-0 rounded-lg flex items-center justify-center"
-          style={{
-            width: 40, height: 40,
-            backgroundColor: coverImg ? "transparent" : coverBg,
-            backgroundImage: coverImg ? `url(${coverImg})` : "none",
-            backgroundSize: "cover", backgroundPosition: "center",
-            boxShadow: "0 2px 8px rgba(0,0,0,0.4)",
-          }}
-        >
-          {!coverImg && <FolderArchive size={16} style={{ color: "rgba(255,255,255,0.3)" }} />}
-        </div>
-
-        {/* Title + meta */}
-        <div className="min-w-0 flex-1">
-          <p className="truncate text-sm font-semibold tracking-wide" style={{ color: "#f5f5f7" }}>{sample.title}</p>
-          <p className="text-xs mt-0.5 truncate" style={{ color: "#86868b" }}>
-            <Link href={`/profile/${slugifyName(sample.producer?.display_name ?? sample.producer?.username ?? "")}`} className="hover:underline" style={{ color: "#86868b" }}>
-              {sample.producer?.display_name ?? "Ukjent"}
-            </Link>
-            {sample.pack_files ? ` · ${sample.pack_files.length} filer` : ""}
-          </p>
-        </div>
-
-        {/* Type column */}
-        <div className="hidden sm:block shrink-0" style={{ width: 120 }}>
-          <span className="rounded-full px-2 py-0.5 text-xs" style={{ background: "rgba(255,255,255,0.06)", color: "#86868b" }}>
-            {isPresetPack ? "Preset Pack" : "Sample Pack"}
-          </span>
-        </div>
-
-        {/* VST column (preset-packs only) */}
-        {isPresetPack && (
-          <div className="hidden sm:block shrink-0" style={{ width: 110 }}>
-            {sample.vst && (
-              <span className="rounded-full px-2 py-0.5 text-xs" style={{ background: "rgba(255,255,255,0.08)", color: "#f5f5f7" }}>
-                {sample.vst}
-              </span>
-            )}
-          </div>
-        )}
-
-        {/* Expand files */}
-        {sample.pack_files && sample.pack_files.length > 0 && (
-          <button
-            onClick={(e) => { e.stopPropagation(); setExpanded(!expanded); }}
-            className="hidden sm:flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs transition-all shrink-0"
-            style={{ background: "rgba(255,255,255,0.05)", color: "#86868b", border: "1px solid #2a2a2a" }}
-          >
-            {expanded ? <ChevronUp size={12} /> : <ChevronDown size={12} />}
-            Detaljer
-          </button>
-        )}
-
-        {/* Price + buy + share */}
-        <div className="flex shrink-0 items-center gap-2">
-          <span className="text-sm font-semibold" style={{ color: "#f5f5f7", width: 80, textAlign: "right", flexShrink: 0 }}>
-            {sample.price === 0 ? "Gratis" : `kr ${sample.price.toLocaleString("nb-NO")}`}
-          </span>
-          <button
-            className="rounded-lg py-1.5 text-xs font-semibold transition-all"
-            style={{
-              background: hovered ? "#f5f5f7" : "rgba(255,255,255,0.08)",
-              color: hovered ? "#080808" : "#f5f5f7",
-              width: 76,
-            }}
-            onClick={sample.price === 0 ? handleFreeDownload : (e) => { e.stopPropagation(); onBuy(sample); }}
-          >
-            {sample.price === 0 ? "Last ned" : "Kjøp"}
-          </button>
-          <button
-            className="flex items-center justify-center rounded-lg transition-all"
-            style={{
-              width: 30, height: 30,
-              background: "rgba(255,255,255,0.06)",
-              color: "#86868b",
-              cursor: "pointer",
-            }}
-            title="Kopier lenke"
-            onClick={async (e) => {
-              e.stopPropagation();
-              await navigator.clipboard.writeText(window.location.origin + "/samples/" + sample.id);
-              toast("Lenke kopiert!");
-            }}
-          >
-            <Share2 size={12} />
-          </button>
-        </div>
-      </div>
-
-      {/* File list */}
-      {expanded && sample.pack_files && (
-        <div className="mx-4 mb-3 rounded-xl px-4 py-3" style={{ background: "#0f0f0f", border: "1px solid #1e1e1e" }}>
-          <p className="text-xs font-medium mb-2" style={{ color: "#86868b" }}>{sample.pack_files.length} filer inkludert</p>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-1">
-            {sample.pack_files.map((name, i) => (
-              <p key={i} className="text-xs font-mono truncate" style={{ color: "#4a4a4a" }}>{name}</p>
-            ))}
-          </div>
-        </div>
-      )}
-    </div>
-  );
-}
-
-// ── Main page ───────────────────────────────────────────────────────────────
 export default function SamplesPageWrapper() {
   return (
     <Suspense>
@@ -361,6 +31,8 @@ function SamplesPage() {
   const [samples, setSamples] = useState<Sample[]>([]);
   const [packs, setPacks] = useState<Pack[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [hasMore, setHasMore] = useState(true);
   const [query, setQuery] = useState("");
   const [debouncedQuery, setDebouncedQuery] = useState("");
   const [activeType, setActiveType] = useState<ActiveType>(
@@ -371,87 +43,72 @@ function SamplesPage() {
   const [activeVst, setActiveVst] = useState("");
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [checkoutSample, setCheckoutSample] = useState<Sample | null>(null);
-  const [visibleCount, setVisibleCount] = useState(20);
+  const [genres, setGenres] = useState<string[]>([]);
+  const [vsts, setVsts] = useState<string[]>([]);
+  const offsetRef = useRef(0);
   const { currentBeat, isPlaying, toggleBeat } = usePlayer();
+
+  useEffect(() => {
+    const supabase = getSupabaseClient();
+    supabase.from("samples").select("genre, vst, item_type").eq("is_published", true).is("deleted_at", null).then(({ data }) => {
+      if (!data) return;
+      setGenres(Array.from(new Set(data.map((s: { genre: string }) => s.genre).filter(Boolean))).sort() as string[]);
+      setVsts(Array.from(new Set(
+        data.filter((s: { item_type: string }) => s.item_type === "preset" || s.item_type === "preset-pack")
+          .map((s: { vst: string }) => s.vst).filter(Boolean)
+      )).sort() as string[]);
+    });
+  }, []);
 
   const toggleSample = useCallback((sample: Sample) => {
     if (!sample.audio_preview_url) return;
     toggleBeat(sample);
   }, [toggleBeat]);
 
-  useEffect(() => {
-    Promise.all([fetchPublicSamples(), fetchPublicPacks()]).then(([s, p]) => {
-      setSamples(s);
-      setPacks(p);
-      setLoading(false);
-    });
+  const loadItems = useCallback(async (
+    type: ActiveType, q: string, cat: string, g: string, vst: string, reset: boolean
+  ) => {
+    const PAGE_SIZE = 20;
+    const from = reset ? 0 : offsetRef.current;
+    const to = from + PAGE_SIZE - 1;
+
+    if (reset) setLoading(true); else setLoadingMore(true);
+
+    if (type === "pack") {
+      const data = await fetchPublicPacks({ query: q, from, to });
+      if (reset) setPacks(data); else setPacks((prev) => [...prev, ...data]);
+      if (reset) offsetRef.current = data.length; else offsetRef.current += data.length;
+      setHasMore(data.length === PAGE_SIZE);
+    } else {
+      const data = await fetchPublicSamples({ query: q, itemType: type, category: cat, genre: g, vst, from, to });
+      if (reset) setSamples(data); else setSamples((prev) => [...prev, ...data]);
+      if (reset) offsetRef.current = data.length; else offsetRef.current += data.length;
+      setHasMore(data.length === PAGE_SIZE);
+    }
+
+    setLoading(false);
+    setLoadingMore(false);
   }, []);
+
+  useEffect(() => {
+    offsetRef.current = 0;
+    void loadItems(activeType, debouncedQuery, activeCategory, genre, activeVst, true);
+  }, [activeType, debouncedQuery, activeCategory, genre, activeVst, loadItems]);
 
   useEffect(() => {
     const id = setTimeout(() => setDebouncedQuery(query), 300);
     return () => clearTimeout(id);
   }, [query]);
 
-  const genres = useMemo(() => {
-    const all = samples.filter((s) => s.genre).map((s) => s.genre);
-    return Array.from(new Set(all)).sort();
-  }, [samples]);
-
-  const vsts = useMemo(() => {
-    const all = samples.filter((s) => (s.item_type === "preset" || s.item_type === "preset-pack") && s.vst).map((s) => s.vst as string);
-    return Array.from(new Set(all)).sort();
-  }, [samples]);
-
-  const filtered = useMemo(() => {
-    let result = [...samples];
-    if (debouncedQuery) {
-      const q = debouncedQuery.toLowerCase();
-      result = result.filter((s) =>
-        s.title.toLowerCase().includes(q) ||
-        s.category.toLowerCase().includes(q) ||
-        (s.genre ?? "").toLowerCase().includes(q) ||
-        s.tags.some((t) => t.toLowerCase().includes(q)) ||
-        s.producer?.display_name?.toLowerCase().includes(q)
-      );
-    }
-    result = result.filter((s) => s.item_type === activeType);
-    if (activeCategory) result = result.filter((s) => s.category === activeCategory);
-    if (genre) result = result.filter((s) => s.genre === genre);
-    if (activeVst) result = result.filter((s) => s.vst === activeVst);
-    return result;
-  }, [samples, debouncedQuery, activeType, activeCategory, genre, activeVst]);
-
-  const filteredPacks = useMemo(() => {
-    if (!debouncedQuery) return packs;
-    const q = debouncedQuery.toLowerCase();
-    return packs.filter((p) =>
-      p.title.toLowerCase().includes(q) ||
-      p.tags.some((t) => t.includes(q)) ||
-      p.producer?.display_name?.toLowerCase().includes(q)
-    );
-  }, [packs, debouncedQuery]);
-
-  // Reset visible count when filters change
-  useEffect(() => { setVisibleCount(20); }, [activeType, activeCategory, genre, activeVst, debouncedQuery]);
-
-  const hasFilters = !!activeCategory || !!genre || !!activeVst;
-
   const handleKeyDown = useCallback((e: KeyboardEvent) => {
-    if (!["ArrowUp", "ArrowDown"].includes(e.key)) return;
-    if (filtered.length === 0) return;
+    if (!["ArrowUp", "ArrowDown"].includes(e.key) || samples.length === 0) return;
     e.preventDefault();
     setSelectedId((prev) => {
-      const idx = filtered.findIndex((s) => s.id === prev);
-      if (e.key === "ArrowDown") {
-        const next = filtered[Math.min(idx + 1, filtered.length - 1)];
-        toggleSample(next);
-        return next.id;
-      }
-      const next = filtered[Math.max(idx - 1, 0)];
-      toggleSample(next);
-      return next.id;
+      const idx = samples.findIndex((s) => s.id === prev);
+      if (e.key === "ArrowDown") { const n = samples[Math.min(idx + 1, samples.length - 1)]; toggleSample(n); return n.id; }
+      const n = samples[Math.max(idx - 1, 0)]; toggleSample(n); return n.id;
     });
-  }, [filtered, toggleSample]);
+  }, [samples, toggleSample]);
 
   useEffect(() => {
     window.addEventListener("keydown", handleKeyDown);
@@ -459,13 +116,14 @@ function SamplesPage() {
   }, [handleKeyDown]);
 
   const TAB_OPTIONS: { value: ActiveType; label: string }[] = [
-    { value: "pack",         label: "Pakker" },
-    { value: "sample",       label: "Samples" },
-    { value: "preset",       label: "Presets" },
+    { value: "pack",   label: "Pakker" },
+    { value: "sample", label: "Samples" },
+    { value: "preset", label: "Presets" },
   ];
 
   const isPack = activeType === "pack";
   const isPreset = activeType === "preset";
+  const hasFilters = !!activeCategory || !!genre || !!activeVst;
 
   return (
     <>
@@ -475,7 +133,6 @@ function SamplesPage() {
         style={{ background: "rgba(8,8,8,0.92)", backdropFilter: "blur(20px)", WebkitBackdropFilter: "blur(20px)", borderColor: "#1e1e1e" }}
       >
         <div className="mx-auto max-w-7xl space-y-3 px-4 md:px-6 py-4">
-          {/* Search */}
           <div className="relative">
             <Search size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2" style={{ color: "#86868b" }} />
             <input
@@ -496,18 +153,16 @@ function SamplesPage() {
             )}
           </div>
 
-          {/* Tabs */}
           <div className="flex items-center gap-1 border-b" style={{ borderColor: "#1e1e1e", marginBottom: -1 }}>
             {TAB_OPTIONS.map(({ value, label }) => (
               <button
                 key={value}
-                onClick={() => { setActiveType(value); setActiveCategory(""); setActiveVst(""); setVisibleCount(20); }}
+                onClick={() => { setActiveType(value); setActiveCategory(""); setActiveVst(""); }}
                 className="px-4 py-2 text-sm font-medium transition-colors whitespace-nowrap"
                 style={{
                   color: activeType === value ? "#f5f5f7" : "#86868b",
                   borderBottom: activeType === value ? "2px solid #f5f5f7" : "2px solid transparent",
-                  background: "transparent",
-                  marginBottom: -1,
+                  background: "transparent", marginBottom: -1,
                 }}
               >
                 {label}
@@ -515,95 +170,57 @@ function SamplesPage() {
             ))}
           </div>
 
-          {/* Dropdowns row (always visible) */}
           {!isPack && (
             <div className="flex items-center gap-2 pt-3">
               {genres.length > 0 && (
-                <select
-                  value={genre}
-                  onChange={(e) => setGenre(e.target.value)}
-                  style={{
-                    background: "#141414", color: genre ? "#f5f5f7" : "#86868b",
-                    border: `1px solid ${genre ? "rgba(255,255,255,0.2)" : "#2a2a2a"}`,
-                    borderRadius: 12, padding: "7px 12px", fontSize: 13, outline: "none", cursor: "pointer",
-                  }}
-                >
+                <select value={genre} onChange={(e) => setGenre(e.target.value)}
+                  style={{ background: "#141414", color: genre ? "#f5f5f7" : "#86868b", border: `1px solid ${genre ? "rgba(255,255,255,0.2)" : "#2a2a2a"}`, borderRadius: 12, padding: "7px 12px", fontSize: 13, outline: "none", cursor: "pointer" }}>
                   <option value="">Alle sjangre</option>
                   {genres.map((g) => <option key={g} value={g}>{g}</option>)}
                 </select>
               )}
               {isPreset && vsts.length > 0 && (
-                <select
-                  value={activeVst}
-                  onChange={(e) => setActiveVst(e.target.value)}
-                  style={{
-                    background: "#141414", color: activeVst ? "#f5f5f7" : "#86868b",
-                    border: `1px solid ${activeVst ? "rgba(255,255,255,0.2)" : "#2a2a2a"}`,
-                    borderRadius: 12, padding: "7px 12px", fontSize: 13, outline: "none", cursor: "pointer",
-                  }}
-                >
+                <select value={activeVst} onChange={(e) => setActiveVst(e.target.value)}
+                  style={{ background: "#141414", color: activeVst ? "#f5f5f7" : "#86868b", border: `1px solid ${activeVst ? "rgba(255,255,255,0.2)" : "#2a2a2a"}`, borderRadius: 12, padding: "7px 12px", fontSize: 13, outline: "none", cursor: "pointer" }}>
                   <option value="">Alle VST</option>
                   {vsts.map((v) => <option key={v} value={v}>{v}</option>)}
                 </select>
               )}
               {hasFilters && (
-                <button
-                  onClick={() => { setActiveCategory(""); setGenre(""); setActiveVst(""); }}
+                <button onClick={() => { setActiveCategory(""); setGenre(""); setActiveVst(""); }}
                   className="flex items-center gap-1.5 rounded-xl px-3 py-1.5 text-xs whitespace-nowrap"
-                  style={{ background: "rgba(255,255,255,0.06)", border: "1px solid #2a2a2a", color: "#86868b" }}
-                >
+                  style={{ background: "rgba(255,255,255,0.06)", border: "1px solid #2a2a2a", color: "#86868b" }}>
                   <X size={12} /> Nullstill
                 </button>
               )}
             </div>
           )}
 
-          {/* Category chips (scrollable) */}
           {!isPack && (
-            <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-hide" style={{ scrollbarWidth: "none" }}>
-              {activeType === "sample" &&
-                Object.entries(SAMPLE_CATEGORIES).map(([, cats]) =>
-                  cats.map((cat) => (
-                    <button
-                      key={cat}
-                      onClick={() => setActiveCategory(activeCategory === cat ? "" : cat)}
-                      className="shrink-0 rounded-xl px-3 py-1.5 text-xs transition-all whitespace-nowrap"
-                      style={{
-                        background: activeCategory === cat ? "rgba(255,255,255,0.1)" : "transparent",
-                        border: `1px solid ${activeCategory === cat ? "rgba(255,255,255,0.2)" : "#2a2a2a"}`,
-                        color: activeCategory === cat ? "#f5f5f7" : "#3a3a3a",
-                      }}
-                    >
-                      {CATEGORY_LABELS[cat]}
-                    </button>
-                  ))
-                )}
-
-              {activeType === "preset" &&
-                Object.values(PRESET_CATEGORIES)[0].map((cat) => (
-                  <button
-                    key={cat}
-                    onClick={() => setActiveCategory(activeCategory === cat ? "" : cat)}
-                    className="rounded-xl px-3 py-1.5 text-xs transition-all"
-                    style={{
-                      background: activeCategory === cat ? "rgba(255,255,255,0.1)" : "transparent",
-                      border: `1px solid ${activeCategory === cat ? "rgba(255,255,255,0.2)" : "#2a2a2a"}`,
-                      color: activeCategory === cat ? "#f5f5f7" : "#3a3a3a",
-                    }}
-                  >
+            <div className="flex items-center gap-2 overflow-x-auto pb-1" style={{ scrollbarWidth: "none" }}>
+              {activeType === "sample" && Object.entries(SAMPLE_CATEGORIES).map(([, cats]) =>
+                cats.map((cat) => (
+                  <button key={cat} onClick={() => setActiveCategory(activeCategory === cat ? "" : cat)}
+                    className="shrink-0 rounded-xl px-3 py-1.5 text-xs transition-all whitespace-nowrap"
+                    style={{ background: activeCategory === cat ? "rgba(255,255,255,0.1)" : "transparent", border: `1px solid ${activeCategory === cat ? "rgba(255,255,255,0.2)" : "#2a2a2a"}`, color: activeCategory === cat ? "#f5f5f7" : "#3a3a3a" }}>
                     {CATEGORY_LABELS[cat]}
                   </button>
-                ))}
+                ))
+              )}
+              {activeType === "preset" && Object.values(PRESET_CATEGORIES)[0].map((cat) => (
+                <button key={cat} onClick={() => setActiveCategory(activeCategory === cat ? "" : cat)}
+                  className="rounded-xl px-3 py-1.5 text-xs transition-all"
+                  style={{ background: activeCategory === cat ? "rgba(255,255,255,0.1)" : "transparent", border: `1px solid ${activeCategory === cat ? "rgba(255,255,255,0.2)" : "#2a2a2a"}`, color: activeCategory === cat ? "#f5f5f7" : "#3a3a3a" }}>
+                  {CATEGORY_LABELS[cat]}
+                </button>
+              ))}
             </div>
           )}
         </div>
       </div>
 
-      {checkoutSample && (
-        <SampleCheckoutModal sample={checkoutSample} onClose={() => setCheckoutSample(null)} />
-      )}
+      {checkoutSample && <SampleCheckoutModal sample={checkoutSample} onClose={() => setCheckoutSample(null)} />}
 
-      {/* Content */}
       <div className="mx-auto max-w-7xl px-4 md:px-6 py-6">
         <div className="mb-6 flex items-baseline justify-between">
           <h1 className="text-xl font-semibold tracking-tight" style={{ color: "#f5f5f7" }}>
@@ -611,7 +228,7 @@ function SamplesPage() {
           </h1>
           {!loading && (
             <p className="text-sm" style={{ color: "#86868b" }}>
-              {isPack ? filteredPacks.length : filtered.length} {(isPack ? filteredPacks.length : filtered.length) === 1 ? "resultat" : "resultater"}
+              {isPack ? packs.length : samples.length} {(isPack ? packs.length : samples.length) === 1 ? "resultat" : "resultater"}
             </p>
           )}
         </div>
@@ -621,8 +238,7 @@ function SamplesPage() {
             <p className="text-sm">Laster...</p>
           </div>
         ) : isPack ? (
-          /* ── Packs grid ── */
-          filteredPacks.length === 0 ? (
+          packs.length === 0 ? (
             <div className="mt-20 text-center" style={{ color: "#3a3a3a" }}>
               <Package size={40} className="mx-auto mb-4" style={{ color: "#2a2a2a" }} />
               <p className="text-lg font-medium">{debouncedQuery ? "Ingen pakker funnet" : "Ingen pakker publisert enda"}</p>
@@ -630,37 +246,26 @@ function SamplesPage() {
           ) : (
             <>
               <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
-                {filteredPacks.slice(0, visibleCount).map((pack) => (
-                  <InlinePackCard key={pack.id} pack={pack} />
-                ))}
+                {packs.map((pack) => <PackGridCard key={pack.id} pack={pack} />)}
               </div>
-              {filteredPacks.length > visibleCount && (
+              {hasMore && (
                 <div className="mt-8 flex justify-center">
-                  <button
-                    onClick={() => setVisibleCount((v) => v + 20)}
-                    className="rounded-xl px-6 py-2.5 text-sm font-medium transition-opacity hover:opacity-80"
-                    style={{ background: "rgba(255,255,255,0.06)", color: "#f5f5f7", border: "1px solid #2a2a2a" }}
-                  >
-                    Last inn flere
+                  <button onClick={() => void loadItems(activeType, debouncedQuery, activeCategory, genre, activeVst, false)} disabled={loadingMore}
+                    className="rounded-xl px-6 py-2.5 text-sm font-medium transition-opacity hover:opacity-80 disabled:opacity-40"
+                    style={{ background: "rgba(255,255,255,0.06)", color: "#f5f5f7", border: "1px solid #2a2a2a" }}>
+                    {loadingMore ? "Laster..." : "Last inn flere"}
                   </button>
                 </div>
               )}
             </>
           )
         ) : samples.length === 0 ? (
-          <div className="mt-20 text-center">
-            <Package size={40} className="mx-auto mb-4" style={{ color: "#2a2a2a" }} />
-            <p className="text-lg font-medium" style={{ color: "#3a3a3a" }}>Ingen innhold enda</p>
-            <p className="mt-1 text-sm" style={{ color: "#2a2a2a" }}>Kom tilbake snart</p>
-          </div>
-        ) : filtered.length === 0 ? (
           <div className="mt-20 text-center" style={{ color: "#3a3a3a" }}>
             <p className="text-lg font-medium">Ingen resultater</p>
             <p className="mt-1 text-sm">Prøv å justere filtrene</p>
           </div>
         ) : (
           <>
-            {/* Column headers */}
             <div className="mb-2 flex items-center gap-4 px-4 text-xs font-medium uppercase tracking-wider" style={{ color: "#3a3a3a" }}>
               <div style={{ width: 36 }} />
               <div style={{ width: 40 }} />
@@ -672,18 +277,19 @@ function SamplesPage() {
               <div style={{ width: 76 }} />
             </div>
             <div>
-              {filtered.slice(0, visibleCount).map((s) => (
-                <SampleCard key={s.id} sample={s} isActive={currentBeat?.id === s.id} isPlaying={currentBeat?.id === s.id && isPlaying} isSelected={selectedId === s.id} onToggle={toggleSample} onBuy={setCheckoutSample} />
-              ))}
+              {samples.map((s) => {
+                const isPackType = s.item_type === "sample-pack" || s.item_type === "preset-pack";
+                return isPackType
+                  ? <SamplePackCard key={s.id} sample={s} isActive={currentBeat?.id === s.id} isPlaying={currentBeat?.id === s.id && isPlaying} onToggle={toggleSample} onBuy={setCheckoutSample} />
+                  : <SampleCard key={s.id} sample={s} isActive={currentBeat?.id === s.id} isPlaying={currentBeat?.id === s.id && isPlaying} isSelected={selectedId === s.id} onToggle={toggleSample} onBuy={setCheckoutSample} />;
+              })}
             </div>
-            {filtered.length > visibleCount && (
+            {hasMore && (
               <div className="mt-8 flex justify-center">
-                <button
-                  onClick={() => setVisibleCount((v) => v + 20)}
-                  className="rounded-xl px-6 py-2.5 text-sm font-medium transition-opacity hover:opacity-80"
-                  style={{ background: "rgba(255,255,255,0.06)", color: "#f5f5f7", border: "1px solid #2a2a2a" }}
-                >
-                  Last inn flere
+                <button onClick={() => void loadItems(activeType, debouncedQuery, activeCategory, genre, activeVst, false)} disabled={loadingMore}
+                  className="rounded-xl px-6 py-2.5 text-sm font-medium transition-opacity hover:opacity-80 disabled:opacity-40"
+                  style={{ background: "rgba(255,255,255,0.06)", color: "#f5f5f7", border: "1px solid #2a2a2a" }}>
+                  {loadingMore ? "Laster..." : "Last inn flere"}
                 </button>
               </div>
             )}
@@ -691,85 +297,5 @@ function SamplesPage() {
         )}
       </div>
     </>
-  );
-}
-
-// ── InlinePackCard (pack grid within samples page) ────────────────────────
-function InlinePackCard({ pack }: { pack: Pack }) {
-  const router = useRouter();
-  const { currentBeat, isPlaying: playerIsPlaying, toggleBeat } = usePlayer();
-  const [hovered, setHovered] = useState(false);
-  const coverImg = pack.cover_url ?? pack.producer?.avatar_url ?? null;
-  const sampleCount = pack.pack_items?.filter((i) => i.item_type === "sample").length ?? 0;
-  const presetCount = pack.pack_items?.filter((i) => i.item_type === "preset").length ?? 0;
-  const totalCount = pack.pack_items?.length ?? 0;
-
-  const hasPreview = !!pack.preview_url;
-  const packBeatId = `pack-${pack.id}`;
-  const isThisPlaying = currentBeat?.id === packBeatId && playerIsPlaying;
-
-  function togglePlay(e: React.MouseEvent) {
-    e.stopPropagation();
-    if (!pack.preview_url) return;
-    toggleBeat({
-      id: packBeatId,
-      title: pack.title,
-      audio_preview_url: pack.preview_url,
-      cover_url: pack.cover_url ?? null,
-      genre: null,
-      bpm: null,
-      key: null,
-      producer: pack.producer ?? undefined,
-    });
-  }
-
-  return (
-    <div
-      className="rounded-2xl overflow-hidden transition-all cursor-pointer"
-      style={{ background: hovered ? "rgba(255,255,255,0.04)" : "#141414", border: "1px solid #1e1e1e" }}
-      onMouseEnter={() => setHovered(true)}
-      onMouseLeave={() => setHovered(false)}
-      onClick={() => router.push(`/packs/${pack.id}`)}
-    >
-      <div className="relative aspect-square" style={{ background: "#0a0a0a" }}>
-        {coverImg ? (
-          <Image src={coverImg} alt={pack.title} fill className="object-cover" sizes="400px" />
-        ) : (
-          <div className="flex items-center justify-center h-full">
-            <span className="text-4xl font-bold" style={{ color: "#1e1e1e" }}>{pack.title.slice(0, 2).toUpperCase()}</span>
-          </div>
-        )}
-        {hasPreview && (
-          <button
-            onClick={togglePlay}
-            className="absolute bottom-3 right-3 flex items-center justify-center rounded-full transition-opacity hover:opacity-90"
-            style={{ width: 40, height: 40, background: "#f5f5f7", color: "#080808" }}
-          >
-            {isThisPlaying ? <Pause size={16} /> : <Play size={16} style={{ marginLeft: 2 }} />}
-          </button>
-        )}
-      </div>
-      <div className="px-4 py-3">
-        <p className="text-sm font-semibold truncate" style={{ color: "#f5f5f7" }}>{pack.title}</p>
-        <Link
-          href={`/profile/${slugifyName(pack.producer?.display_name ?? "")}`}
-          className="text-xs mt-0.5 block truncate transition-opacity hover:opacity-80"
-          style={{ color: "#86868b" }}
-          onClick={(e) => e.stopPropagation()}
-        >
-          {pack.producer?.display_name ?? "Ukjent"}
-        </Link>
-        <div className="flex items-center justify-between mt-2.5">
-          <div className="flex items-center gap-2">
-            {sampleCount > 0 && <span className="text-xs rounded-full px-2 py-0.5" style={{ background: "rgba(255,255,255,0.06)", color: "#86868b" }}>{sampleCount} samples</span>}
-            {presetCount > 0 && <span className="text-xs rounded-full px-2 py-0.5" style={{ background: "rgba(255,255,255,0.06)", color: "#86868b" }}>{presetCount} presets</span>}
-            {totalCount === 0 && <span className="text-xs" style={{ color: "#3a3a3a" }}>Tom pakke</span>}
-          </div>
-          <span className="text-sm font-semibold" style={{ color: "#f5f5f7" }}>
-            {pack.price === 0 ? "Gratis" : `${pack.price} kr`}
-          </span>
-        </div>
-      </div>
-    </div>
   );
 }

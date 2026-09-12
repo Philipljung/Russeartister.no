@@ -80,14 +80,20 @@ Da skal man helst klare å separere .wav / .mp3 (samples) fra .fxp osv (presets)
 Manuelt:
 - Du legger inn manuelt akkurat som normalt
 
-- [] Må finnes en bedre løsning å aktivere forhåndsvisning på, flowen nå er forvirrende
+- [X] Må finnes en bedre løsning å aktivere forhåndsvisning på, flowen nå er forvirrende
 
-- [] Nå mangler det audiocard på pakker, dette må addes.
+- [X] Nå mangler det audiocard på pakker, dette må addes.
 
 - [] Legg til * ved siden av lydfil uansett på lastopp pack
-- [] Flytt packs til første tab så det blir "Pakker" - "Samples" - "Presets"
-- [] Gjør "Legg til" knapp hvit 
-- [] Nå er det sånn at én av samplesene automatisk blir pakkens forhåndsvisning, det er feil. Hvis jeg ikke eksplisitt har gått inn og lagt til en forhåndsvisning for pakken, ikke ha en play knapp der.
+- [X] Flytt packs til første tab så det blir "Pakker" - "Samples" - "Presets"
+- [X] Gjør "Legg til" knapp hvit 
+- [X] Nå er det sånn at én av samplesene automatisk blir pakkens forhåndsvisning, det er feil. Hvis jeg ikke eksplisitt har gått inn og lagt til en forhåndsvisning for pakken, ikke ha en play knapp der.
 
-- [] Går ikke an å laste ned packs 
+- [X] Går ikke an å laste ned packs 
 (:3000/api/free-download?type=pack&id=91390c18-e598-4d27-8bc2-332b14a0ee8a:1  Failed to load resource: the server responded with a status of 404 (Not Found)), mistenker at dette er fordi det ikke blir en .zip fil automatisk? Dette må det bli.
+
+
+- [X] Etter man har uploadet en pakke så kommer man til https://www.russeartister.no/packs, jeg vet ikke engang hvorfor vi fortsatt har den men du skal i hvert fall ikke redirectes her
+
+- [] Preview må være en kortere versjon av sangen
+- [] 

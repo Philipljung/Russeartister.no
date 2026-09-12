@@ -1,15 +1,46 @@
 import { getSupabaseClient } from "./supabase/client";
 import type { Remake } from "./supabase/types";
 
-export async function fetchPublicRemakes(): Promise<Remake[]> {
+export interface RemakesFilter {
+  query?: string;
+  daw?: string;
+  includeVsts?: string[];
+  excludeVsts?: string[];
+  from?: number;
+  to?: number;
+}
+
+const PAGE_SIZE = 20;
+
+export async function fetchPublicRemakes(filters: RemakesFilter = {}): Promise<Remake[]> {
+  const {
+    query = "",
+    daw = "",
+    includeVsts = [],
+    excludeVsts = [],
+    from = 0,
+    to = PAGE_SIZE - 1,
+  } = filters;
+
   const supabase = getSupabaseClient();
-  const { data, error } = await supabase
+  let q = supabase
     .from("remakes")
     .select("*, producer:profiles(*)")
     .eq("is_published", true)
-    .is("deleted_at", null)
-    .order("created_at", { ascending: false });
-  if (error) { console.error("[fetchRemakes]", error.message); return []; }
+    .is("deleted_at", null);
+
+  if (query) q = q.ilike("title", `%${query}%`);
+  if (daw) q = q.eq("daw", daw);
+  if (includeVsts.length > 0) q = q.overlaps("vsts", includeVsts);
+  if (excludeVsts.length > 0) q = q.not("vsts", "ov", `{${excludeVsts.join(",")}}`);
+
+  q = q.order("created_at", { ascending: false }).range(from, to);
+
+  const { data, error } = await q;
+  if (error) {
+    console.error("[fetchRemakes]", error.message);
+    return [];
+  }
   return (data ?? []) as Remake[];
 }
 

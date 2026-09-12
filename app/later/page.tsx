@@ -1,76 +1,74 @@
 "use client";
 
-import { useState, useMemo, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
+import dynamic from "next/dynamic";
 import BeatCard from "@/components/BeatCard";
-import BeatFilters, { DEFAULT_FILTERS, Filters, BPM_MIN, BPM_MAX, PRICE_MIN, PRICE_MAX } from "@/components/BeatFilters";
-import HeroCarousel from "@/components/HeroCarousel";
+import { DEFAULT_FILTERS } from "@/lib/beatFilterTypes";
+import type { Filters } from "@/lib/beatFilterTypes";
+const BeatFilters = dynamic(() => import("@/components/BeatFilters"), { ssr: false });
+const HeroCarousel = dynamic(() => import("@/components/HeroCarousel"), { ssr: false });
 import { fetchPublicBeats } from "@/lib/fetchBeats";
 import type { Beat } from "@/lib/supabase/types";
+
+const PAGE_SIZE = 20;
 
 export default function LaterPage() {
   const [beats, setBeats] = useState<Beat[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [hasMore, setHasMore] = useState(true);
   const [filters, setFilters] = useState<Filters>(DEFAULT_FILTERS);
   const [selectedId, setSelectedId] = useState<string | null>(null);
-  const [visibleCount, setVisibleCount] = useState(20);
+  const offsetRef = useRef(0);
 
-  useEffect(() => {
-    fetchPublicBeats().then((data) => {
-      setBeats(data);
-      setLoading(false);
+  const load = useCallback(async (currentFilters: Filters, reset: boolean) => {
+    const from = reset ? 0 : offsetRef.current;
+    const to = from + PAGE_SIZE - 1;
+
+    if (reset) setLoading(true);
+    else setLoadingMore(true);
+
+    const data = await fetchPublicBeats({
+      query: currentFilters.query,
+      genre: currentFilters.genre,
+      vocal: currentFilters.vocal,
+      minBpm: currentFilters.minBpm,
+      maxBpm: currentFilters.maxBpm,
+      minPrice: currentFilters.minPrice,
+      maxPrice: currentFilters.maxPrice,
+      sortBy: currentFilters.sortBy,
+      from,
+      to,
     });
+
+    if (reset) {
+      setBeats(data);
+      offsetRef.current = data.length;
+    } else {
+      setBeats((prev) => [...prev, ...data]);
+      offsetRef.current += data.length;
+    }
+
+    setHasMore(data.length === PAGE_SIZE);
+    setLoading(false);
+    setLoadingMore(false);
   }, []);
 
-  const genres = useMemo(() => {
-    const counts = new Map<string, number>();
-    for (const b of beats) counts.set(b.genre, (counts.get(b.genre) ?? 0) + 1);
-    return Array.from(counts.entries()).sort((a, b) => b[1] - a[1]).map(([g]) => g);
-  }, [beats]);
-
-  const filtered = useMemo(() => {
-    let result = [...beats];
-
-    if (filters.query) {
-      const q = filters.query.toLowerCase();
-      result = result.filter(
-        (b) =>
-          b.title.toLowerCase().includes(q) ||
-          b.genre.toLowerCase().includes(q) ||
-          b.tags.some((t) => t.toLowerCase().includes(q)) ||
-          b.producer?.display_name?.toLowerCase().includes(q)
-      );
-    }
-
-    if (filters.genre) result = result.filter((b) => b.genre === filters.genre);
-    if (filters.vocal) result = result.filter((b) => b.vocal_type === filters.vocal);
-    if (filters.minBpm > BPM_MIN) result = result.filter((b) => b.bpm >= filters.minBpm);
-    if (filters.maxBpm < BPM_MAX) result = result.filter((b) => b.bpm <= filters.maxBpm);
-    if (filters.minPrice > PRICE_MIN) result = result.filter((b) => b.price >= filters.minPrice);
-    if (filters.maxPrice < PRICE_MAX) result = result.filter((b) => b.price <= filters.maxPrice);
-
-    switch (filters.sortBy) {
-      case "price_asc": result.sort((a, b) => a.price - b.price); break;
-      case "price_desc": result.sort((a, b) => b.price - a.price); break;
-      case "bpm_asc": result.sort((a, b) => a.bpm - b.bpm); break;
-      case "bpm_desc": result.sort((a, b) => b.bpm - a.bpm); break;
-    }
-
-    return result;
-  }, [beats, filters]);
-
-  // Reset visible count when filters change
-  useEffect(() => { setVisibleCount(20); }, [filters]);
+  useEffect(() => {
+    offsetRef.current = 0;
+    void load(filters, true);
+  }, [filters, load]);
 
   const handleKeyDown = useCallback((e: KeyboardEvent) => {
     if (!["ArrowUp", "ArrowDown"].includes(e.key)) return;
-    if (filtered.length === 0) return;
+    if (beats.length === 0) return;
     e.preventDefault();
     setSelectedId((prev) => {
-      const idx = filtered.findIndex((b) => b.id === prev);
-      if (e.key === "ArrowDown") return filtered[Math.min(idx + 1, filtered.length - 1)].id;
-      return filtered[Math.max(idx - 1, 0)].id;
+      const idx = beats.findIndex((b) => b.id === prev);
+      if (e.key === "ArrowDown") return beats[Math.min(idx + 1, beats.length - 1)].id;
+      return beats[Math.max(idx - 1, 0)].id;
     });
-  }, [filtered]);
+  }, [beats]);
 
   useEffect(() => {
     window.addEventListener("keydown", handleKeyDown);
@@ -80,23 +78,21 @@ export default function LaterPage() {
   return (
     <>
       <HeroCarousel />
-      <BeatFilters filters={filters} genres={genres} onChange={setFilters} />
+      <BeatFilters filters={filters} genres={[]} onChange={setFilters} />
 
       <div className="mx-auto max-w-7xl px-4 md:px-6 py-6">
         <div className="mb-6 flex items-baseline justify-between">
-          <h1 className="text-xl font-semibold tracking-tight" style={{ color: "#f5f5f7" }}>
-            Låter
-          </h1>
-          {!loading && (
-            <p className="text-sm" style={{ color: "#86868b" }}>
-              {filtered.length} {filtered.length === 1 ? "låt" : "låter"}
-            </p>
-          )}
+          <h1 className="text-xl font-semibold tracking-tight" style={{ color: "#f5f5f7" }}>Låter</h1>
         </div>
 
         {loading ? (
           <div className="mt-20 text-center" style={{ color: "#3a3a3a" }}>
             <p className="text-sm">Laster låter...</p>
+          </div>
+        ) : beats.length === 0 ? (
+          <div className="mt-20 text-center" style={{ color: "#3a3a3a" }}>
+            <p className="text-lg font-medium">Ingen låter funnet</p>
+            <p className="mt-1 text-sm">Prøv å justere filtrene dine</p>
           </div>
         ) : (
           <>
@@ -113,35 +109,28 @@ export default function LaterPage() {
               <div style={{ width: 60 }} />
             </div>
 
-            {filtered.length === 0 ? (
-              <div className="mt-20 text-center" style={{ color: "#3a3a3a" }}>
-                <p className="text-lg font-medium">Ingen låter funnet</p>
-                <p className="mt-1 text-sm">Prøv å justere filtrene dine</p>
+            <div>
+              {beats.map((beat) => (
+                <BeatCard
+                  key={beat.id}
+                  beat={beat}
+                  isSelected={selectedId === beat.id}
+                  onSelect={() => setSelectedId(beat.id)}
+                />
+              ))}
+            </div>
+
+            {hasMore && (
+              <div className="mt-8 flex justify-center">
+                <button
+                  onClick={() => void load(filters, false)}
+                  disabled={loadingMore}
+                  className="rounded-xl px-6 py-2.5 text-sm font-medium transition-opacity hover:opacity-80 disabled:opacity-40"
+                  style={{ background: "rgba(255,255,255,0.06)", color: "#f5f5f7", border: "1px solid #2a2a2a" }}
+                >
+                  {loadingMore ? "Laster..." : "Last inn flere"}
+                </button>
               </div>
-            ) : (
-              <>
-                <div>
-                  {filtered.slice(0, visibleCount).map((beat) => (
-                    <BeatCard
-                      key={beat.id}
-                      beat={beat}
-                      isSelected={selectedId === beat.id}
-                      onSelect={() => setSelectedId(beat.id)}
-                    />
-                  ))}
-                </div>
-                {filtered.length > visibleCount && (
-                  <div className="mt-8 flex justify-center">
-                    <button
-                      onClick={() => setVisibleCount((v) => v + 20)}
-                      className="rounded-xl px-6 py-2.5 text-sm font-medium transition-opacity hover:opacity-80"
-                      style={{ background: "rgba(255,255,255,0.06)", color: "#f5f5f7", border: "1px solid #2a2a2a" }}
-                    >
-                      Last inn flere
-                    </button>
-                  </div>
-                )}
-              </>
             )}
           </>
         )}

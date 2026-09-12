@@ -3,32 +3,10 @@
 import { useState, useRef, useEffect, useCallback } from "react";
 import { Search, X, ChevronDown, Check, SlidersHorizontal } from "lucide-react";
 
-export const BPM_MIN = 60;
-export const BPM_MAX = 220;
-export const PRICE_MIN = 0;
-export const PRICE_MAX = 30000;
-
-export type Filters = {
-  query: string;
-  genre: string;
-  vocal: "" | "med_vokal" | "uten_vokal";
-  minBpm: number;
-  maxBpm: number;
-  minPrice: number;
-  maxPrice: number;
-  sortBy: string;
-};
-
-export const DEFAULT_FILTERS: Filters = {
-  query: "",
-  genre: "",
-  vocal: "",
-  minBpm: BPM_MIN,
-  maxBpm: BPM_MAX,
-  minPrice: PRICE_MIN,
-  maxPrice: PRICE_MAX,
-  sortBy: "newest",
-};
+export { BPM_MIN, BPM_MAX, PRICE_MIN, PRICE_MAX, DEFAULT_FILTERS } from "@/lib/beatFilterTypes";
+export type { Filters } from "@/lib/beatFilterTypes";
+import { BPM_MIN, BPM_MAX, PRICE_MIN, PRICE_MAX, DEFAULT_FILTERS } from "@/lib/beatFilterTypes";
+import type { Filters } from "@/lib/beatFilterTypes";
 
 const sortOptions = [
   { value: "newest", label: "Nyeste" },
