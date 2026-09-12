@@ -26,6 +26,7 @@ export default function RemakesPage() {
   const [checkoutRemake, setCheckoutRemake] = useState<Remake | null>(null);
   const [daws, setDaws] = useState<string[]>([]);
   const [vsts, setVsts] = useState<string[]>([]);
+  const [totalCount, setTotalCount] = useState<number | null>(null);
   const offsetRef = useRef(0);
   const { currentBeat, isPlaying, toggleBeat } = usePlayer();
 
@@ -38,6 +39,17 @@ export default function RemakesPage() {
       setVsts(Array.from(new Set(allVsts)).sort() as string[]);
     });
   }, []);
+
+  useEffect(() => {
+    const supabase = getSupabaseClient();
+    let q = supabase.from("remakes").select("*", { count: "exact", head: true })
+      .eq("is_published", true).is("deleted_at", null);
+    if (debouncedQuery) q = q.ilike("title", `%${debouncedQuery}%`);
+    if (activeDaw) q = q.eq("daw", activeDaw);
+    if (includeVsts.length > 0) q = q.overlaps("vsts", includeVsts);
+    if (excludeVsts.length > 0) q = q.not("vsts", "ov", `{${excludeVsts.join(",")}}`);
+    q.then(({ count }) => { if (count !== null) setTotalCount(count); });
+  }, [debouncedQuery, activeDaw, includeVsts, excludeVsts]);
 
   const toggleRemake = useCallback((remake: Remake) => {
     if (!remake.audio_preview_url) return;
@@ -224,7 +236,7 @@ export default function RemakesPage() {
           <h1 className="text-xl font-semibold tracking-tight" style={{ color: "#f5f5f7" }}>Remakes</h1>
           {!loading && (
             <p className="text-sm" style={{ color: "#86868b" }}>
-              {filtered.length} {filtered.length === 1 ? "resultat" : "resultater"}
+              {totalCount ?? filtered.length} {(totalCount ?? filtered.length) === 1 ? "resultat" : "resultater"}
             </p>
           )}
         </div>
