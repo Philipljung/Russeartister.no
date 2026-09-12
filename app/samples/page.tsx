@@ -50,12 +50,12 @@ function SamplesPage() {
 
   useEffect(() => {
     const supabase = getSupabaseClient();
-    supabase.from("samples").select("genre, vst, item_type").eq("is_published", true).is("deleted_at", null).then(({ data }) => {
+    supabase.from("samples").select("genre, vst, item_type").eq("is_published", true).is("deleted_at", null).then(({ data }: { data: { genre: string; vst: string; item_type: string }[] | null }) => {
       if (!data) return;
-      setGenres(Array.from(new Set(data.map((s: { genre: string }) => s.genre).filter(Boolean))).sort() as string[]);
+      setGenres(Array.from(new Set(data.map((s) => s.genre).filter(Boolean))).sort() as string[]);
       setVsts(Array.from(new Set(
-        data.filter((s: { item_type: string }) => s.item_type === "preset" || s.item_type === "preset-pack")
-          .map((s: { vst: string }) => s.vst).filter(Boolean)
+        data.filter((s) => s.item_type === "preset" || s.item_type === "preset-pack")
+          .map((s) => s.vst).filter(Boolean)
       )).sort() as string[]);
     });
   }, []);
