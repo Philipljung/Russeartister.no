@@ -102,17 +102,6 @@ export default function Navbar() {
         {/* Desktop nav */}
         <div className="hidden md:flex items-center justify-center gap-1">
 
-          {/* Bestill */}
-          <Link
-            href="/tjenester"
-            className="rounded-md px-3 py-1.5 text-sm font-medium transition-colors"
-            style={navLinkStyle(pathname.startsWith("/tjenester"), "tjenester")}
-            onMouseEnter={() => setHoveredLink("tjenester")}
-            onMouseLeave={() => setHoveredLink(null)}
-          >
-            Bestill
-          </Link>
-
           {/* Låter */}
           <Link
             href="/later"
@@ -242,17 +231,6 @@ export default function Navbar() {
           style={{ background: "rgba(8,8,8,0.97)", borderColor: "#1e1e1e" }}
         >
           <div className="px-4 py-3 flex flex-col gap-1">
-
-            <Link
-              href="/tjenester"
-              className="rounded-lg px-3 py-2.5 text-sm font-medium"
-              style={navLinkStyle(pathname.startsWith("/tjenester"), "m-tjenester")}
-              onMouseEnter={() => setHoveredLink("m-tjenester")}
-              onMouseLeave={() => setHoveredLink(null)}
-              onClick={() => setMenuOpen(false)}
-            >
-              Bestill
-            </Link>
 
             <Link
               href="/later"
