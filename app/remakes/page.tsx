@@ -48,7 +48,7 @@ export default function RemakesPage() {
     if (activeDaw) q = q.eq("daw", activeDaw);
     if (includeVsts.length > 0) q = q.overlaps("vsts", includeVsts);
     if (excludeVsts.length > 0) q = q.not("vsts", "ov", `{${excludeVsts.join(",")}}`);
-    q.then(({ count }) => { if (count !== null) setTotalCount(count); });
+    q.then(({ count }: { count: number | null }) => { if (count !== null) setTotalCount(count); });
   }, [debouncedQuery, activeDaw, includeVsts, excludeVsts]);
 
   const toggleRemake = useCallback((remake: Remake) => {
