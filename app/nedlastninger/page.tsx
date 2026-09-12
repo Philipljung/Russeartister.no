@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { Download, Music, RefreshCw, Package, AlertCircle } from "lucide-react";
 import { getSupabaseClient } from "@/lib/supabase/client";
 import type { Purchase } from "@/lib/supabase/types";
+import { SkeletonRows } from "@/components/SkeletonRow";
 
 type PurchaseWithDetails = Purchase & {
   beat?: {
@@ -118,9 +119,7 @@ export default function NedlastningerPage() {
       </p>
 
       {loading ? (
-        <div className="mt-20 text-center" style={{ color: "#3a3a3a" }}>
-          <p className="text-sm">Laster...</p>
-        </div>
+        <SkeletonRows count={8} />
       ) : purchases.length === 0 ? (
         <EmptyAll />
       ) : (

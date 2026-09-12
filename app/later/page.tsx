@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import dynamic from "next/dynamic";
 import BeatCard from "@/components/BeatCard";
+import { SkeletonRows } from "@/components/SkeletonRow";
 import { DEFAULT_FILTERS } from "@/lib/beatFilterTypes";
 import type { Filters } from "@/lib/beatFilterTypes";
 const BeatFilters = dynamic(() => import("@/components/BeatFilters"), { ssr: false });
@@ -86,9 +87,7 @@ export default function LaterPage() {
         </div>
 
         {loading ? (
-          <div className="mt-20 text-center" style={{ color: "#3a3a3a" }}>
-            <p className="text-sm">Laster låter...</p>
-          </div>
+          <SkeletonRows count={8} />
         ) : beats.length === 0 ? (
           <div className="mt-20 text-center" style={{ color: "#3a3a3a" }}>
             <p className="text-lg font-medium">Ingen låter funnet</p>

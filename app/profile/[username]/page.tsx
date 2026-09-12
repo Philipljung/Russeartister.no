@@ -17,6 +17,7 @@ import dynamic from "next/dynamic";
 const StripeOnboardingModal = dynamic(() => import("@/components/StripeOnboardingModal"), { ssr: false });
 const ImageCropModal = dynamic(() => import("@/components/ImageCropModal"), { ssr: false });
 const EditProductModal = dynamic(() => import("@/components/EditProductModal"), { ssr: false });
+import { SkeletonProfilePage } from "@/components/SkeletonRow";
 import { CATEGORY_LABELS } from "@/lib/sampleCategories";
 import type { Profile, Beat, Sample, Remake, Pack } from "@/lib/supabase/types";
 import { slugifyName } from "@/lib/slugify";
@@ -291,13 +292,7 @@ export default function ProfilePage() {
   }
 
   if (loading) {
-    return (
-      <div className="flex min-h-screen items-center justify-center">
-        <p className="text-sm" style={{ color: "#3a3a3a" }}>
-          Laster profil...
-        </p>
-      </div>
-    );
+    return <SkeletonProfilePage />;
   }
 
   if (notFound || !profile) {
