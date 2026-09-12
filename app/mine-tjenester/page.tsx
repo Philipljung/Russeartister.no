@@ -6,6 +6,7 @@ import Link from "next/link";
 import { Plus, Star, Pencil, ToggleLeft, ToggleRight, AlertCircle } from "lucide-react";
 import { getSupabaseClient } from "@/lib/supabase/client";
 import { useToast } from "@/lib/toast-context";
+import { SkeletonNarrowRows } from "@/components/SkeletonRow";
 
 type GigRow = {
   id: string;
@@ -94,8 +95,8 @@ export default function MineTjenesterPage() {
 
   if (loading) {
     return (
-      <div className="mx-auto max-w-2xl px-6 py-20 text-center">
-        <p className="text-sm" style={{ color: "#3a3a3a" }}>Laster...</p>
+      <div className="mx-auto max-w-2xl px-6 py-8">
+        <SkeletonNarrowRows count={4} />
       </div>
     );
   }

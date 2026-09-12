@@ -9,6 +9,7 @@ import { fetchPublicPacks } from "@/lib/fetchPacks";
 import type { Pack } from "@/lib/supabase/types";
 import { useToast } from "@/lib/toast-context";
 import { slugifyName } from "@/lib/slugify";
+import { SkeletonGridCards } from "@/components/SkeletonRow";
 
 export default function PacksPage() {
   const [packs, setPacks] = useState<Pack[]>([]);
@@ -66,7 +67,7 @@ export default function PacksPage() {
       </div>
 
       {loading ? (
-        <p className="text-sm py-20 text-center" style={{ color: "#3a3a3a" }}>Laster pakker...</p>
+        <SkeletonGridCards count={6} />
       ) : filtered.length === 0 ? (
         <p className="text-sm py-20 text-center" style={{ color: "#3a3a3a" }}>
           {search ? "Ingen pakker funnet." : "Ingen pakker publisert enda."}

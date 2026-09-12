@@ -14,6 +14,7 @@ import { usePlayer } from "@/lib/player-context";
 import SampleCard from "@/components/SampleCard";
 import SamplePackCard from "@/components/SamplePackCard";
 import PackGridCard from "@/components/PackGridCard";
+import { SkeletonRows } from "@/components/SkeletonRow";
 
 type ActiveType = "sample" | "preset" | "pack";
 
@@ -234,9 +235,13 @@ function SamplesPage() {
         </div>
 
         {loading ? (
-          <div className="mt-20 text-center" style={{ color: "#3a3a3a" }}>
-            <p className="text-sm">Laster...</p>
-          </div>
+          isPack
+            ? <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+                {Array.from({ length: 6 }).map((_, i) => (
+                  <div key={i} className="skeleton rounded-2xl" style={{ height: 280 }} />
+                ))}
+              </div>
+            : <SkeletonRows count={8} />
         ) : isPack ? (
           packs.length === 0 ? (
             <div className="mt-20 text-center" style={{ color: "#3a3a3a" }}>

@@ -6,6 +6,7 @@ import { getSupabaseClient } from "@/lib/supabase/client";
 import { slugifyName } from "@/lib/slugify";
 import { KeyRound, LogOut, Trash2, ChevronLeft } from "lucide-react";
 import Link from "next/link";
+import { SkeletonNarrowRows } from "@/components/SkeletonRow";
 
 const inputStyle: React.CSSProperties = {
   background: "#141414",
@@ -66,8 +67,8 @@ export default function InnstillingerPage() {
 
   if (loading) {
     return (
-      <div className="flex min-h-screen items-center justify-center">
-        <p className="text-sm" style={{ color: "#3a3a3a" }}>Laster...</p>
+      <div className="mx-auto max-w-lg px-6 py-10">
+        <SkeletonNarrowRows count={5} />
       </div>
     );
   }

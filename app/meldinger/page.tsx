@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { getSupabaseClient } from "@/lib/supabase/client";
+import { SkeletonNarrowRows } from "@/components/SkeletonRow";
 
 type ConversationRow = {
   orderId: string;
@@ -114,7 +115,7 @@ export default function MeldingerPage() {
   }
 
   if (loading) {
-    return <div className="mx-auto max-w-2xl px-6 py-20 text-center"><p className="text-sm" style={{ color: "#3a3a3a" }}>Laster...</p></div>;
+    return <div className="mx-auto max-w-2xl px-6 py-8"><SkeletonNarrowRows count={6} /></div>;
   }
 
   return (

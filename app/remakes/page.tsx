@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback, useRef } from "react";
 import { Search, X } from "lucide-react";
 import { fetchPublicRemakes } from "@/lib/fetchRemakes";
 import RemakeCard from "@/components/RemakeCard";
+import { SkeletonRows } from "@/components/SkeletonRow";
 import dynamic from "next/dynamic";
 const RemakeCheckoutModal = dynamic(() => import("@/components/RemakeCheckoutModal"), { ssr: false });
 import { usePlayer } from "@/lib/player-context";
@@ -242,9 +243,7 @@ export default function RemakesPage() {
         </div>
 
         {loading ? (
-          <div className="mt-20 text-center" style={{ color: "#3a3a3a" }}>
-            <p className="text-sm">Laster remakes...</p>
-          </div>
+          <SkeletonRows count={8} />
         ) : filtered.length === 0 ? (
           <div className="mt-20 text-center" style={{ color: "#3a3a3a" }}>
             <p className="text-lg font-medium">{query || activeDaw || (includeVsts.length > 0 || excludeVsts.length > 0) ? "Ingen remakes funnet" : "Ingen remakes enda"}</p>

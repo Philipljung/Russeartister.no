@@ -22,6 +22,7 @@ export default function Navbar() {
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [username, setUsername] = useState<string | undefined>(undefined);
   const [displayName, setDisplayName] = useState<string | undefined>(undefined);
+  const [hoveredLink, setHoveredLink] = useState<string | null>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -69,9 +70,9 @@ export default function Navbar() {
 
   const isProducerActive = pathname.startsWith("/samples") || pathname.startsWith("/remakes");
 
-  const navLinkStyle = (active: boolean) => ({
-    color: active ? "#f5f5f7" : "#86868b",
-    background: active ? "rgba(255,255,255,0.06)" : "transparent",
+  const navLinkStyle = (active: boolean, key: string) => ({
+    color: active || hoveredLink === key ? "#f5f5f7" : "#86868b",
+    background: active ? "rgba(255,255,255,0.06)" : hoveredLink === key ? "rgba(255,255,255,0.04)" : "transparent",
   });
 
   return (
@@ -105,7 +106,9 @@ export default function Navbar() {
           <Link
             href="/tjenester"
             className="rounded-md px-3 py-1.5 text-sm font-medium transition-colors"
-            style={navLinkStyle(pathname.startsWith("/tjenester"))}
+            style={navLinkStyle(pathname.startsWith("/tjenester"), "tjenester")}
+            onMouseEnter={() => setHoveredLink("tjenester")}
+            onMouseLeave={() => setHoveredLink(null)}
           >
             Bestill
           </Link>
@@ -114,7 +117,9 @@ export default function Navbar() {
           <Link
             href="/later"
             className="rounded-md px-3 py-1.5 text-sm font-medium transition-colors"
-            style={navLinkStyle(pathname.startsWith("/later"))}
+            style={navLinkStyle(pathname.startsWith("/later"), "later")}
+            onMouseEnter={() => setHoveredLink("later")}
+            onMouseLeave={() => setHoveredLink(null)}
           >
             Låter
           </Link>
@@ -124,7 +129,9 @@ export default function Navbar() {
             <button
               onClick={() => setDropdownOpen((o) => !o)}
               className="flex items-center gap-1 rounded-md px-3 py-1.5 text-sm font-medium transition-colors"
-              style={navLinkStyle(isProducerActive)}
+              style={navLinkStyle(isProducerActive, "producer")}
+              onMouseEnter={() => setHoveredLink("producer")}
+              onMouseLeave={() => setHoveredLink(null)}
             >
               For produsenter
               <ChevronDown
@@ -150,10 +157,9 @@ export default function Navbar() {
                     key={link.href}
                     href={link.href}
                     className="block px-3.5 py-2 text-sm font-medium transition-colors rounded-lg mx-1"
-                    style={{
-                      color: pathname.startsWith(link.href) ? "#f5f5f7" : "#86868b",
-                      background: pathname.startsWith(link.href) ? "rgba(255,255,255,0.06)" : "transparent",
-                    }}
+                    style={navLinkStyle(pathname.startsWith(link.href), `dd-${link.href}`)}
+                    onMouseEnter={() => setHoveredLink(`dd-${link.href}`)}
+                    onMouseLeave={() => setHoveredLink(null)}
                   >
                     {link.label}
                   </Link>
@@ -171,8 +177,10 @@ export default function Navbar() {
             <>
               <Link
                 href="/nedlastninger"
-                className="rounded-md px-3 py-1.5 text-sm font-medium transition-opacity hover:opacity-80"
-                style={navLinkStyle(pathname.startsWith("/nedlastninger"))}
+                className="rounded-md px-3 py-1.5 text-sm font-medium"
+                style={navLinkStyle(pathname.startsWith("/nedlastninger"), "nedlastninger")}
+                onMouseEnter={() => setHoveredLink("nedlastninger")}
+                onMouseLeave={() => setHoveredLink(null)}
               >
                 Mine nedlastninger
               </Link>
@@ -238,7 +246,9 @@ export default function Navbar() {
             <Link
               href="/tjenester"
               className="rounded-lg px-3 py-2.5 text-sm font-medium"
-              style={navLinkStyle(pathname.startsWith("/tjenester"))}
+              style={navLinkStyle(pathname.startsWith("/tjenester"), "m-tjenester")}
+              onMouseEnter={() => setHoveredLink("m-tjenester")}
+              onMouseLeave={() => setHoveredLink(null)}
               onClick={() => setMenuOpen(false)}
             >
               Bestill
@@ -247,7 +257,9 @@ export default function Navbar() {
             <Link
               href="/later"
               className="rounded-lg px-3 py-2.5 text-sm font-medium"
-              style={navLinkStyle(pathname.startsWith("/later"))}
+              style={navLinkStyle(pathname.startsWith("/later"), "m-later")}
+              onMouseEnter={() => setHoveredLink("m-later")}
+              onMouseLeave={() => setHoveredLink(null)}
               onClick={() => setMenuOpen(false)}
             >
               Låter
@@ -263,7 +275,9 @@ export default function Navbar() {
                   key={link.href}
                   href={link.href}
                   className="block rounded-lg px-3 py-2.5 text-sm font-medium"
-                  style={navLinkStyle(pathname.startsWith(link.href))}
+                  style={navLinkStyle(pathname.startsWith(link.href), `m-${link.href}`)}
+                  onMouseEnter={() => setHoveredLink(`m-${link.href}`)}
+                  onMouseLeave={() => setHoveredLink(null)}
                   onClick={() => setMenuOpen(false)}
                 >
                   {link.label}
@@ -299,7 +313,9 @@ export default function Navbar() {
                     <Link
                       href="/nedlastninger"
                       className="rounded-lg px-3 py-2.5 text-sm font-medium"
-                      style={navLinkStyle(pathname.startsWith("/nedlastninger"))}
+                      style={navLinkStyle(pathname.startsWith("/nedlastninger"), "m-nedlastninger")}
+                      onMouseEnter={() => setHoveredLink("m-nedlastninger")}
+                      onMouseLeave={() => setHoveredLink(null)}
                       onClick={() => setMenuOpen(false)}
                     >
                       Mine nedlastninger

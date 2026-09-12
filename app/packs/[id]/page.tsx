@@ -10,6 +10,7 @@ import type { Pack, PackItem } from "@/lib/supabase/types";
 import { useToast } from "@/lib/toast-context";
 import { slugifyName } from "@/lib/slugify";
 import { usePlayer } from "@/lib/player-context";
+import { SkeletonDetailHero } from "@/components/SkeletonRow";
 
 type Tab = "alle" | "samples" | "presets";
 
@@ -86,11 +87,7 @@ export default function PackDetailPage() {
   }
 
   if (loading) {
-    return (
-      <div className="flex min-h-screen items-center justify-center">
-        <p className="text-sm" style={{ color: "#3a3a3a" }}>Laster pakke...</p>
-      </div>
-    );
+    return <SkeletonDetailHero />;
   }
 
   if (notFound || !pack) {

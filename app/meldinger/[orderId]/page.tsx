@@ -6,6 +6,7 @@ import Link from "next/link";
 import { ChevronLeft, Paperclip, Send, Download, CheckCircle, RefreshCw, X, AlertTriangle, Clock } from "lucide-react";
 import { getSupabaseClient } from "@/lib/supabase/client";
 import { useToast } from "@/lib/toast-context";
+import { SkeletonNarrowRows } from "@/components/SkeletonRow";
 
 type OrderStatus = "pending_approval"|"approved"|"in_progress"|"delivered"|"revision_requested"|"completed"|"rejected"|"disputed";
 
@@ -306,7 +307,7 @@ export default function GigChatPage() {
     else toast("Kunne ikke laste ned filen.");
   }
 
-  if (loading) return <div className="mx-auto max-w-4xl px-4 py-20 text-center"><p className="text-sm" style={{ color: "#3a3a3a" }}>Laster...</p></div>;
+  if (loading) return <div className="mx-auto max-w-4xl px-4 py-8"><SkeletonNarrowRows count={6} /></div>;
   if (!order) return null;
 
   const isProducer  = userId === order.producer_id;
