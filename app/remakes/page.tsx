@@ -31,10 +31,10 @@ export default function RemakesPage() {
 
   useEffect(() => {
     const supabase = getSupabaseClient();
-    supabase.from("remakes").select("daw, vsts").eq("is_published", true).is("deleted_at", null).then(({ data }) => {
+    supabase.from("remakes").select("daw, vsts").eq("is_published", true).is("deleted_at", null).then(({ data }: { data: { daw: string; vsts: string[] | null }[] | null }) => {
       if (!data) return;
-      setDaws(Array.from(new Set(data.map((r: { daw: string }) => r.daw).filter(Boolean))).sort() as string[]);
-      const allVsts = data.flatMap((r: { vsts: string[] | null }) => r.vsts ?? []);
+      setDaws(Array.from(new Set(data.map((r) => r.daw).filter(Boolean))).sort() as string[]);
+      const allVsts = data.flatMap((r) => r.vsts ?? []);
       setVsts(Array.from(new Set(allVsts)).sort() as string[]);
     });
   }, []);
