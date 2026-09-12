@@ -1,15 +1,16 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { usePathname } from "next/navigation";
-import { Menu, X, ChevronDown } from "lucide-react";
+import { Menu, X } from "lucide-react";
 import { getSupabaseClient } from "@/lib/supabase/client";
 import type { Session, AuthChangeEvent } from "@supabase/supabase-js";
 import { slugifyName } from "@/lib/slugify";
 
-const producerLinks = [
+const navLinks = [
+  { label: "Låter", href: "/later" },
   { label: "Samples & Presets", href: "/samples" },
   { label: "Remakes", href: "/remakes" },
 ];
@@ -19,11 +20,9 @@ export default function Navbar() {
   const [session, setSession] = useState<Session | null>(null);
   const [authReady, setAuthReady] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
-  const [dropdownOpen, setDropdownOpen] = useState(false);
   const [username, setUsername] = useState<string | undefined>(undefined);
   const [displayName, setDisplayName] = useState<string | undefined>(undefined);
   const [hoveredLink, setHoveredLink] = useState<string | null>(null);
-  const dropdownRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const supabase = getSupabaseClient();
@@ -57,19 +56,6 @@ export default function Navbar() {
   }, []);
 
 
-  // Close dropdown on outside click
-  useEffect(() => {
-    function handleClick(e: MouseEvent) {
-      if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
-        setDropdownOpen(false);
-      }
-    }
-    document.addEventListener("mousedown", handleClick);
-    return () => document.removeEventListener("mousedown", handleClick);
-  }, []);
-
-  const isProducerActive = pathname.startsWith("/samples") || pathname.startsWith("/remakes");
-
   const navLinkStyle = (active: boolean, key: string) => ({
     color: active || hoveredLink === key ? "#f5f5f7" : "#86868b",
     background: active ? "rgba(255,255,255,0.06)" : hoveredLink === key ? "rgba(255,255,255,0.04)" : "transparent",
@@ -101,61 +87,18 @@ export default function Navbar() {
 
         {/* Desktop nav */}
         <div className="hidden md:flex items-center justify-center gap-1">
-
-          {/* Låter */}
-          <Link
-            href="/later"
-            className="rounded-md px-3 py-1.5 text-sm font-medium transition-colors"
-            style={navLinkStyle(pathname.startsWith("/later"), "later")}
-            onMouseEnter={() => setHoveredLink("later")}
-            onMouseLeave={() => setHoveredLink(null)}
-          >
-            Låter
-          </Link>
-
-          {/* For produsenter dropdown */}
-          <div className="relative" ref={dropdownRef}>
-            <button
-              onClick={() => setDropdownOpen((o) => !o)}
-              className="flex items-center gap-1 rounded-md px-3 py-1.5 text-sm font-medium transition-colors"
-              style={navLinkStyle(isProducerActive, "producer")}
-              onMouseEnter={() => setHoveredLink("producer")}
+          {navLinks.map((link) => (
+            <Link
+              key={link.href}
+              href={link.href}
+              className="rounded-md px-3 py-1.5 text-sm font-medium"
+              style={navLinkStyle(pathname.startsWith(link.href), link.href)}
+              onMouseEnter={() => setHoveredLink(link.href)}
               onMouseLeave={() => setHoveredLink(null)}
             >
-              For produsenter
-              <ChevronDown
-                size={13}
-                style={{
-                  transition: "transform 0.15s",
-                  transform: dropdownOpen ? "rotate(180deg)" : "rotate(0deg)",
-                }}
-              />
-            </button>
-
-            {dropdownOpen && (
-              <div
-                className="absolute left-1/2 top-full mt-2 w-44 rounded-xl py-1.5 shadow-xl"
-                style={{
-                  background: "#141414",
-                  border: "1px solid #2a2a2a",
-                  transform: "translateX(-50%)",
-                }}
-              >
-                {producerLinks.map((link) => (
-                  <Link
-                    key={link.href}
-                    href={link.href}
-                    className="block px-3.5 py-2 text-sm font-medium transition-colors rounded-lg mx-1"
-                    style={navLinkStyle(pathname.startsWith(link.href), `dd-${link.href}`)}
-                    onMouseEnter={() => setHoveredLink(`dd-${link.href}`)}
-                    onMouseLeave={() => setHoveredLink(null)}
-                  >
-                    {link.label}
-                  </Link>
-                ))}
-              </div>
-            )}
-          </div>
+              {link.label}
+            </Link>
+          ))}
         </div>
 
         {/* Desktop auth */}
@@ -232,36 +175,19 @@ export default function Navbar() {
         >
           <div className="px-4 py-3 flex flex-col gap-1">
 
-            <Link
-              href="/later"
-              className="rounded-lg px-3 py-2.5 text-sm font-medium"
-              style={navLinkStyle(pathname.startsWith("/later"), "m-later")}
-              onMouseEnter={() => setHoveredLink("m-later")}
-              onMouseLeave={() => setHoveredLink(null)}
-              onClick={() => setMenuOpen(false)}
-            >
-              Låter
-            </Link>
-
-            {/* For produsenter — expanded inline on mobile */}
-            <div>
-              <p className="px-3 py-1.5 text-xs font-medium uppercase tracking-wider" style={{ color: "#3a3a3a" }}>
-                For produsenter
-              </p>
-              {producerLinks.map((link) => (
-                <Link
-                  key={link.href}
-                  href={link.href}
-                  className="block rounded-lg px-3 py-2.5 text-sm font-medium"
-                  style={navLinkStyle(pathname.startsWith(link.href), `m-${link.href}`)}
-                  onMouseEnter={() => setHoveredLink(`m-${link.href}`)}
-                  onMouseLeave={() => setHoveredLink(null)}
-                  onClick={() => setMenuOpen(false)}
-                >
-                  {link.label}
-                </Link>
-              ))}
-            </div>
+            {navLinks.map((link) => (
+              <Link
+                key={link.href}
+                href={link.href}
+                className="rounded-lg px-3 py-2.5 text-sm font-medium"
+                style={navLinkStyle(pathname.startsWith(link.href), `m-${link.href}`)}
+                onMouseEnter={() => setHoveredLink(`m-${link.href}`)}
+                onMouseLeave={() => setHoveredLink(null)}
+                onClick={() => setMenuOpen(false)}
+              >
+                {link.label}
+              </Link>
+            ))}
 
             <div className="my-2 h-px" style={{ background: "#1e1e1e" }} />
 
