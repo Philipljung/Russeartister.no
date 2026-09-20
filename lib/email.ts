@@ -133,7 +133,7 @@ export function buildProducerSaleEmail({
       </table>
     </div>
 
-    <p style="color:#86868b;font-size:13px;">Pengene overføres direkte til din Stripe-konto og utbetales til bankkontoen din ukentlig (mandager).</p>
+    <p style="color:#86868b;font-size:13px;">Pengene overføres direkte til din Stripe-konto og utbetales til bankkontoen din månedlig (den 1. hver måned).</p>
   </div>
 </body>
 </html>`,

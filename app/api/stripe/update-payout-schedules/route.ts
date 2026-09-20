@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
-import { stripe } from "@/lib/stripe";
+import { stripe, PAYOUT_SCHEDULE } from "@/lib/stripe";
 import { createServiceClient } from "@/lib/supabase/server";
 
-// Admin-only: update all existing connected accounts to weekly payouts.
+// Admin-only: update all existing connected accounts to the payout schedule in lib/stripe.ts.
 // Call once via curl or Postman with the admin secret:
 // POST /api/stripe/update-payout-schedules
 // Headers: x-admin-secret: <ADMIN_SECRET env var>
@@ -29,14 +29,7 @@ export async function POST(req: NextRequest) {
     const accountId = profile.stripe_account_id as string;
     try {
       await stripe.accounts.update(accountId, {
-        settings: {
-          payouts: {
-            schedule: {
-              interval: "weekly",
-              weekly_anchor: "monday",
-            },
-          },
-        },
+        settings: { payouts: { schedule: PAYOUT_SCHEDULE } },
       });
       results.push({ accountId, status: "ok" });
     } catch (err) {
@@ -46,6 +39,7 @@ export async function POST(req: NextRequest) {
 
   const failed = results.filter((r) => r.status === "failed");
   return NextResponse.json({
+    schedule: PAYOUT_SCHEDULE,
     total: results.length,
     ok: results.length - failed.length,
     failed: failed.length,

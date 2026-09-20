@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { stripe } from "@/lib/stripe";
+import { stripe, PAYOUT_SCHEDULE } from "@/lib/stripe";
 import { createClient } from "@/lib/supabase/server";
 
 export async function POST(request: Request) {
@@ -41,12 +41,7 @@ export async function POST(request: Request) {
           transfers: { requested: true },
         },
         settings: {
-          payouts: {
-            schedule: {
-              interval: "weekly",
-              weekly_anchor: "monday",
-            },
-          },
+          payouts: { schedule: PAYOUT_SCHEDULE },
         },
         // Stripe rejects localhost URLs — only set in production
         ...(!isLocalhost && {

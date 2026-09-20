@@ -11,12 +11,23 @@ export const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
  * per-transaction cost (2.4% + 2 kr) on small sales. The cap keeps the fee below the
  * price on very cheap items, so there is no need for a minimum price.
  *
- * Sized to break even at ~30 sales/month (fixed costs ~399 kr/month: Supabase, domain,
- * Stripe monthly bill). If sales stay low, raising it to 10% + 15.7 kr breaks even at ~20.
+ * Not yet break-even at current volume: Stripe Connect charges the platform 15 kr per
+ * active producer per month + 5 kr + 0.25% per payout, so each producer's first sale of
+ * the month costs ~20 kr on top of Stripe's payment fee. Revisit when there is more data.
  */
 export const PLATFORM_FEE_PERCENT = 0.10;
 export const PLATFORM_FEE_FIXED_NOK = 9;
 export const PLATFORM_FEE_MAX_SHARE = 0.5;
+
+/**
+ * Payout schedule for producers' connected accounts: once a month, on the 1st.
+ * Stripe bills the platform 5 kr + 0.25% per payout, so fewer payouts cost less.
+ * Used for new accounts (onboard) and for migrating existing ones (update-payout-schedules).
+ */
+export const PAYOUT_SCHEDULE: Stripe.AccountUpdateParams.Settings.Payouts.Schedule = {
+  interval: "monthly",
+  monthly_anchor: 1,
+};
 
 /** Convert NOK (integer) to øre (Stripe's smallest unit: 1 NOK = 100 øre) */
 export function nokToOre(nok: number): number {
