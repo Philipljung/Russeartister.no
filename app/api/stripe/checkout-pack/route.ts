@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { stripe, nokToOre } from "@/lib/stripe";
+import { stripe, nokToOre, platformFeeOre } from "@/lib/stripe";
 import { createClient } from "@/lib/supabase/server";
 
 export async function POST(request: NextRequest) {
@@ -61,6 +61,11 @@ export async function POST(request: NextRequest) {
         },
       ],
       mode: "payment",
+      payment_intent_data: {
+        on_behalf_of: producer.stripe_account_id,
+        application_fee_amount: platformFeeOre(pack.price),
+        transfer_data: { destination: producer.stripe_account_id },
+      },
       metadata: {
         pack_id: packId,
         pack_title: pack.title,

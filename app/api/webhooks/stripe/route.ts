@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { stripe, nokToOre } from "@/lib/stripe";
+import { stripe, APPLICATION_FEE_PERCENT, PLATFORM_FEE_FIXED_NOK } from "@/lib/stripe";
 import { createServiceClient } from "@/lib/supabase/server";
 import {
   sendBatch,
@@ -7,41 +7,7 @@ import {
   buildProducerSaleEmail,
   buildAdminSaleEmail,
 } from "@/lib/email";
-import Stripe from "stripe";
-
-const PLATFORM_FEE_PERCENT = 0.15;
-
-/** Transfer producer's share immediately using source_transaction so Stripe queues it on settlement. */
-async function transferToProducer(
-  paymentIntentId: string,
-  amountNok: number,
-  stripeAccountId: string,
-  orderNumber: string
-) {
-  try {
-    const pi = await stripe.paymentIntents.retrieve(paymentIntentId, {
-      expand: ["latest_charge"],
-    });
-    const chargeId =
-      typeof pi.latest_charge === "string"
-        ? pi.latest_charge
-        : (pi.latest_charge as Stripe.Charge | null)?.id ?? null;
-
-    const payoutOre = nokToOre(Math.round(amountNok * (1 - PLATFORM_FEE_PERCENT)));
-
-    await stripe.transfers.create({
-      amount: payoutOre,
-      currency: "nok",
-      destination: stripeAccountId,
-      transfer_group: orderNumber,
-      ...(chargeId ? { source_transaction: chargeId } : {}),
-      metadata: { order_number: orderNumber },
-    });
-
-  } catch (err) {
-    console.error(`[webhook] Transfer failed for ${orderNumber}:`, err);
-  }
-}
+import type Stripe from "stripe";
 
 function generateOrderNumber(): string {
   return "RA-" + Math.random().toString(36).slice(2, 7).toUpperCase();
@@ -110,7 +76,7 @@ export async function POST(request: NextRequest) {
       typeof session.payment_intent === "string" ? session.payment_intent : null;
     const customerEmail = session.customer_details?.email ?? null;
     const amountNok = session.amount_total ? Math.round(session.amount_total / 100) : 0;
-    const platformFeeNok = Math.round(amountNok * PLATFORM_FEE_PERCENT);
+    const platformFeeNok = Math.round(amountNok * APPLICATION_FEE_PERCENT) + PLATFORM_FEE_FIXED_NOK;
 
     const supabase = createServiceClient();
 
@@ -175,9 +141,6 @@ export async function POST(request: NextRequest) {
       });
       if (insertBeatError) console.error("[webhook] Beat purchase insert failed:", insertBeatError.message);
 
-      if (paymentIntentId && producer?.stripe_account_id) {
-        await transferToProducer(paymentIntentId, amountNok, producer.stripe_account_id, orderNumber);
-      }
     }
 
     // ── Remake path ──
@@ -218,9 +181,6 @@ export async function POST(request: NextRequest) {
       });
       if (insertRemakeError) console.error("[webhook] Remake purchase insert failed:", insertRemakeError.message);
 
-      if (paymentIntentId && producer?.stripe_account_id) {
-        await transferToProducer(paymentIntentId, amountNok, producer.stripe_account_id, orderNumber);
-      }
     }
 
     // ── Sample path ──
@@ -260,9 +220,6 @@ export async function POST(request: NextRequest) {
       });
       if (insertSampleError) console.error("[webhook] Sample purchase insert failed:", insertSampleError.message);
 
-      if (paymentIntentId && producer?.stripe_account_id) {
-        await transferToProducer(paymentIntentId, amountNok, producer.stripe_account_id, orderNumber);
-      }
     }
 
     // ── Pack path ──
@@ -302,9 +259,6 @@ export async function POST(request: NextRequest) {
       });
       if (insertPackError) console.error("[webhook] Pack purchase insert failed:", insertPackError.message);
 
-      if (paymentIntentId && producer?.stripe_account_id) {
-        await transferToProducer(paymentIntentId, amountNok, producer.stripe_account_id, orderNumber);
-      }
     }
 
     // ── Send emails ──

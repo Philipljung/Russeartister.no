@@ -40,6 +40,14 @@ export async function POST(request: Request) {
           card_payments: { requested: true },
           transfers: { requested: true },
         },
+        settings: {
+          payouts: {
+            schedule: {
+              interval: "weekly",
+              weekly_anchor: "monday",
+            },
+          },
+        },
         // Stripe rejects localhost URLs — only set in production
         ...(!isLocalhost && {
           business_profile: {
