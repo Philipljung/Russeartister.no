@@ -125,7 +125,7 @@ export function buildProducerSaleEmail({
       <p style="margin:0 0 16px;font-size:18px;font-weight:600;">${itemTitle}</p>
       <table style="width:100%;font-size:14px;border-collapse:collapse;">
         <tr><td style="color:#86868b;padding:4px 0;">Salgspris</td><td style="text-align:right;">${formatNok(amountNok)}</td></tr>
-        <tr><td style="color:#86868b;padding:4px 0;">Plattformavgift (15%)</td><td style="text-align:right;">- ${formatNok(platformFeeNok)}</td></tr>
+        <tr><td style="color:#86868b;padding:4px 0;">Plattformavgift</td><td style="text-align:right;">- ${formatNok(platformFeeNok)}</td></tr>
         <tr style="border-top:1px solid #2a2a2a;">
           <td style="padding-top:8px;font-weight:600;">Din utbetaling</td>
           <td style="text-align:right;padding-top:8px;font-weight:600;color:#34d399;">${formatNok(payoutNok)}</td>
@@ -133,7 +133,7 @@ export function buildProducerSaleEmail({
       </table>
     </div>
 
-    <p style="color:#86868b;font-size:13px;">Pengene overføres direkte til din Stripe-konto. Forventet ankomsttid: 2–3 bankdager.</p>
+    <p style="color:#86868b;font-size:13px;">Pengene overføres direkte til din Stripe-konto og utbetales til bankkontoen din ukentlig (mandager).</p>
   </div>
 </body>
 </html>`,

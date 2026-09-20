@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { stripe, APPLICATION_FEE_PERCENT, PLATFORM_FEE_FIXED_NOK } from "@/lib/stripe";
+import { stripe, platformFeeNok as calcPlatformFeeNok } from "@/lib/stripe";
 import { createServiceClient } from "@/lib/supabase/server";
 import {
   sendBatch,
@@ -76,7 +76,7 @@ export async function POST(request: NextRequest) {
       typeof session.payment_intent === "string" ? session.payment_intent : null;
     const customerEmail = session.customer_details?.email ?? null;
     const amountNok = session.amount_total ? Math.round(session.amount_total / 100) : 0;
-    const platformFeeNok = Math.round(amountNok * APPLICATION_FEE_PERCENT) + PLATFORM_FEE_FIXED_NOK;
+    const platformFeeNok = calcPlatformFeeNok(amountNok);
 
     const supabase = createServiceClient();
 
