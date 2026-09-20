@@ -6,12 +6,15 @@ export const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
 });
 
 /**
- * Platform fee: 12% + 9 kr fixed, never more than 50% of the price.
+ * Platform fee: 10% + 9 kr fixed, never more than 50% of the price.
  * The fixed part makes the effective rate fall as the price rises, and covers Stripe's
  * per-transaction cost (2.4% + 2 kr) on small sales. The cap keeps the fee below the
  * price on very cheap items, so there is no need for a minimum price.
+ *
+ * Sized to break even at ~30 sales/month (fixed costs ~399 kr/month: Supabase, domain,
+ * Stripe monthly bill). If sales stay low, raising it to 10% + 15.7 kr breaks even at ~20.
  */
-export const PLATFORM_FEE_PERCENT = 0.12;
+export const PLATFORM_FEE_PERCENT = 0.10;
 export const PLATFORM_FEE_FIXED_NOK = 9;
 export const PLATFORM_FEE_MAX_SHARE = 0.5;
 
