@@ -148,7 +148,8 @@ export default function StripeOnboardingModal({ onClose, onComplete }: Props) {
               <p className="mt-1.5 text-sm leading-relaxed" style={{ color: "#86868b" }}>
                 For å motta betaling for beats bruker vi <strong style={{ color: "#f5f5f7" }}>Stripe</strong> —
                 en trygg betalingsløsning brukt av millioner av selgere verden over.
-                Vi tar <strong style={{ color: "#f5f5f7" }}>15&thinsp;%</strong> i plattformavgift, og resten går direkte til deg.
+                Vi tar <strong style={{ color: "#f5f5f7" }}>10&thinsp;% + 9&thinsp;kr</strong> i plattformavgift per salg, og resten går direkte til deg.
+                Utbetaling til bankkontoen din skjer månedlig, den 1. hver måned.
               </p>
             </div>
 
